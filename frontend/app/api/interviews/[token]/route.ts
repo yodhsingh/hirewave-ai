@@ -4,10 +4,11 @@ import { mockStore } from '@/lib/mock/store';
 // GET /api/interviews/[token] - Get interview questions for a candidate
 export async function GET(
   request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const invite = mockStore.getInviteByToken(params.token);
+    const { token } = await params;
+    const invite = mockStore.getInviteByToken(token);
 
     if (!invite) {
       return NextResponse.json(

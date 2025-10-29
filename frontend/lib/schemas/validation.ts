@@ -14,7 +14,7 @@ export const jobCreateSchema = z.object({
     timeLimit: z.number().min(30).max(1800).optional(), // 30s to 30min (phone interviews can be longer)
     maxLength: z.number().min(100).max(2000).optional(), // for text questions
     options: z.array(z.string()).min(2).max(6).optional(), // for multiple choice
-    required: z.boolean().default(true),
+    required: z.boolean(),
     order: z.number().min(0).optional(),
     scoreWeight: z.number().min(0).max(10).optional(),
   })).min(3, 'At least 3 questions required').max(10, 'Maximum 10 questions allowed'),

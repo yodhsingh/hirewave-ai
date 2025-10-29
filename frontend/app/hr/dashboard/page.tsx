@@ -1,5 +1,5 @@
 'use client';
-
+// Force recompile - color visibility fix
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
@@ -24,7 +24,10 @@ import {
   Filter,
   MoreVertical,
   ExternalLink,
-  Building
+  Building,
+  User,
+  Settings,
+  Bell
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -70,10 +73,22 @@ export default function HRDashboard() {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Background Effects */}
-      <div className="fixed inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-blue-900/20 to-pink-900/30" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/10 via-transparent to-purple-600/10" />
+      <div className="fixed inset-0 bg-gray-950">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-950/40 via-gray-900/50 to-blue-900/30" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-orange-950/20 via-transparent to-blue-950/20" />
         <FloatingParticles />
+      </div>
+
+      {/* Demo Login Info Banner */}
+      <div className="relative z-50 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 backdrop-blur-sm border-b border-blue-500/30">
+        <div className="container mx-auto px-6 py-2">
+          <div className="flex items-center justify-center gap-2 text-sm">
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <span className="text-blue-200">
+              Demo Mode: Try logging in with <code className="px-2 py-0.5 bg-blue-900/50 rounded text-blue-300 font-mono">hr@company.com</code> on the home page
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Navigation Header */}
@@ -86,7 +101,7 @@ export default function HRDashboard() {
                 <span className="font-semibold">Home</span>
               </Link>
               <div className="h-6 w-px bg-gray-700" />
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">
                 HR Dashboard
               </h1>
             </div>
@@ -94,26 +109,57 @@ export default function HRDashboard() {
             <div className="flex items-center gap-4">
               <Button
                 onClick={() => router.push('/hr/jobs/new')}
-                className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                className="gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
               >
                 <Plus className="w-4 h-4" />
                 Create Job
               </Button>
 
+              {/* Notifications */}
+              <Button variant="ghost" className="relative p-2 hover:bg-gray-800">
+                <Bell className="w-5 h-5 text-gray-400" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </Button>
+
+              {/* User Profile Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="border-gray-700 bg-gray-900/50 text-white hover:bg-gray-800">
-                    <MoreVertical className="w-4 h-4" />
+                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-800">
+                    <div className="flex items-center gap-3">
+                      <div className="text-right hidden md:block">
+                        <p className="text-sm font-medium text-white">Dalyodh Singh</p>
+                        <p className="text-xs text-gray-400">HR Manager</p>
+                      </div>
+                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
+                        <span className="text-white text-sm font-bold">DS</span>
+                      </div>
+                    </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white">
-                  <DropdownMenuLabel>Account</DropdownMenuLabel>
+                <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white w-56" align="end">
+                  <div className="px-3 py-2 border-b border-gray-800">
+                    <p className="text-sm font-medium">Dalyodh Singh</p>
+                    <p className="text-xs text-gray-400">dalyodh.singh@seai.com</p>
+                  </div>
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    <User className="w-4 h-4 mr-2" />
+                    View Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-800" />
-                  <DropdownMenuItem>Settings</DropdownMenuItem>
-                  <DropdownMenuItem>Team</DropdownMenuItem>
-                  <DropdownMenuItem className="text-red-400">
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    Team Members
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    Help & Support
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem className="text-red-400 hover:bg-gray-800">
                     <LogOut className="w-4 h-4 mr-2" />
-                    Logout
+                    Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -131,11 +177,11 @@ export default function HRDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:border-purple-500 transition-colors">
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700 hover:border-blue-500 transition-colors">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-gray-300 text-sm font-medium">Active Jobs</p>
+                    <p className="text-gray-400 text-sm font-medium">Active Jobs</p>
                     <p className="text-3xl font-bold mt-2 text-white">
                       {stats.activeJobs}
                     </p>
@@ -144,8 +190,8 @@ export default function HRDashboard() {
                       +12% from last month
                     </p>
                   </div>
-                  <div className="p-3 bg-purple-600/30 rounded-lg">
-                    <Briefcase className="w-6 h-6 text-purple-400" />
+                  <div className="p-3 bg-blue-600/20 rounded-lg border border-blue-500/30">
+                    <Briefcase className="w-6 h-6 text-blue-400" />
                   </div>
                 </div>
               </CardContent>
@@ -157,11 +203,11 @@ export default function HRDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:border-blue-500 transition-colors">
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700 hover:border-cyan-500 transition-colors">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-gray-300 text-sm font-medium">Total Candidates</p>
+                    <p className="text-gray-400 text-sm font-medium">Total Candidates</p>
                     <p className="text-3xl font-bold mt-2 text-white">
                       {stats.totalCandidates}
                     </p>
@@ -170,8 +216,8 @@ export default function HRDashboard() {
                       +28% from last month
                     </p>
                   </div>
-                  <div className="p-3 bg-blue-600/30 rounded-lg">
-                    <Users className="w-6 h-6 text-blue-400" />
+                  <div className="p-3 bg-cyan-600/20 rounded-lg border border-cyan-500/30">
+                    <Users className="w-6 h-6 text-cyan-400" />
                   </div>
                 </div>
               </CardContent>
@@ -183,21 +229,21 @@ export default function HRDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:border-green-500 transition-colors">
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700 hover:border-orange-500 transition-colors">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-gray-300 text-sm font-medium">Interviews Today</p>
+                    <p className="text-gray-400 text-sm font-medium">Interviews Today</p>
                     <p className="text-3xl font-bold mt-2 text-white">
                       {stats.interviewsToday}
                     </p>
-                    <p className="text-yellow-400 text-sm mt-2 flex items-center gap-1 font-medium">
+                    <p className="text-orange-400 text-sm mt-2 flex items-center gap-1 font-medium">
                       <Clock className="w-3 h-3" />
                       5 pending review
                     </p>
                   </div>
-                  <div className="p-3 bg-green-600/30 rounded-lg">
-                    <Calendar className="w-6 h-6 text-green-400" />
+                  <div className="p-3 bg-orange-600/20 rounded-lg border border-orange-500/30">
+                    <Calendar className="w-6 h-6 text-orange-400" />
                   </div>
                 </div>
               </CardContent>
@@ -209,11 +255,11 @@ export default function HRDashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <Card className="bg-white/10 backdrop-blur-md border-white/20 hover:border-pink-500 transition-colors">
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700 hover:border-green-500 transition-colors">
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-gray-300 text-sm font-medium">Completion Rate</p>
+                    <p className="text-gray-400 text-sm font-medium">Completion Rate</p>
                     <p className="text-3xl font-bold mt-2 text-white">
                       {stats.avgCompletionRate}%
                     </p>
@@ -222,8 +268,8 @@ export default function HRDashboard() {
                       Above industry avg
                     </p>
                   </div>
-                  <div className="p-3 bg-pink-600/30 rounded-lg">
-                    <BarChart className="w-6 h-6 text-pink-400" />
+                  <div className="p-3 bg-green-600/20 rounded-lg border border-green-500/30">
+                    <BarChart className="w-6 h-6 text-green-400" />
                   </div>
                 </div>
               </CardContent>
@@ -237,14 +283,14 @@ export default function HRDashboard() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
         >
-          <Card className="bg-white/10 backdrop-blur-md border-white/20">
-            <CardHeader className="border-b border-white/20">
+          <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+            <CardHeader className="border-b border-gray-800">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-xl bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                  <CardTitle className="text-xl text-white">
                     Active Jobs
                   </CardTitle>
-                  <p className="text-gray-300 text-sm mt-1">Manage your open positions</p>
+                  <p className="text-gray-400 text-sm mt-1">Manage your open positions</p>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -278,27 +324,27 @@ export default function HRDashboard() {
                   <p className="text-gray-300 mb-4">Create your first job to start interviewing candidates</p>
                   <Button
                     onClick={() => router.push('/hr/jobs/new')}
-                    className="gap-2 bg-gradient-to-r from-purple-600 to-pink-600"
+                    className="gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
                   >
                     <Plus className="w-4 h-4" />
                     Create First Job
                   </Button>
                 </div>
               ) : (
-                <div className="divide-y divide-white/10">
+                <div className="divide-y divide-white/5">
                   {filteredJobs.map((job: Job, index: number) => (
                     <motion.div
                       key={job.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
-                      className="p-6 hover:bg-gray-800/50 transition-colors group cursor-pointer"
+                      className="p-8 hover:bg-gray-800/50 transition-all group cursor-pointer"
                       onClick={() => router.push(`/hr/jobs/${job.id}`)}
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-lg text-white group-hover:text-purple-400 transition-colors">
+                            <h3 className="font-semibold text-lg text-white group-hover:text-blue-400 transition-colors">
                               {job.title}
                             </h3>
                             <Badge
@@ -311,34 +357,31 @@ export default function HRDashboard() {
                               {job.status === 'active' ? 'Active' : job.status}
                             </Badge>
                             {job.questions && job.questions.length > 0 && (
-                              <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/50">
+                              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/50">
                                 <Sparkles className="w-3 h-3 mr-1" />
                                 {job.questions.filter(q => q.type === 'phone').length > 0 ? 'AI Phone Interview' : 'AI Questions'}
                               </Badge>
                             )}
                           </div>
 
-                          <div className="flex items-center gap-4 text-sm text-gray-300 mb-3">
-                            <span className="flex items-center gap-1">
+                          <div className="flex items-center gap-6 text-sm mb-4 text-gray-400">
+                            <span className="flex items-center gap-2">
                               <Building className="w-4 h-4" />
-                              {job.department}
+                              <span>{job.department}</span>
                             </span>
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-2">
                               <Users className="w-4 h-4" />
-                              {job.stats?.total || 0} candidates
+                              <span className="text-white font-medium">{job.stats?.total || 0} candidates</span>
                             </span>
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-2">
                               <Calendar className="w-4 h-4" />
-                              {new Date(job.createdAt).toLocaleDateString()}
+                              <span>{new Date(job.createdAt).toLocaleDateString()}</span>
                             </span>
                           </div>
 
                           {job.questions && job.questions.length > 0 && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-500">Questions:</span>
-                              <Badge variant="outline" className="text-xs border-gray-700">
-                                {job.questions.length} total
-                              </Badge>
+                            <div className="text-sm text-gray-500">
+                              {job.questions.length} interview questions
                             </div>
                           )}
                         </div>
@@ -400,11 +443,11 @@ export default function HRDashboard() {
           transition={{ delay: 0.6 }}
           className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"
         >
-          <Card className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 backdrop-blur border-purple-800 hover:border-purple-600 transition-colors cursor-pointer group">
+          <Card className="bg-gradient-to-br from-blue-900/50 to-cyan-900/50 backdrop-blur border-blue-800 hover:border-blue-600 transition-colors cursor-pointer group">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <Sparkles className="w-8 h-8 text-purple-400 group-hover:scale-110 transition-transform" />
-                <ArrowRight className="w-5 h-5 text-purple-400 group-hover:translate-x-1 transition-transform" />
+                <Sparkles className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform" />
+                <ArrowRight className="w-5 h-5 text-blue-400 group-hover:translate-x-1 transition-transform" />
               </div>
               <h3 className="font-semibold mb-2 text-white">AI Interview Assistant</h3>
               <p className="text-sm text-gray-300">Generate interview questions with AI</p>

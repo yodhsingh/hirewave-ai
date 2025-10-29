@@ -4,10 +4,11 @@ import { mockStore } from '@/lib/mock/store';
 // GET /api/candidates/[id] - Get a specific candidate
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const candidate = mockStore.getCandidateById(params.id);
+    const { id } = await params;
+    const candidate = mockStore.getCandidateById(id);
 
     if (!candidate) {
       return NextResponse.json(
@@ -36,14 +37,15 @@ export async function GET(
 // PATCH /api/candidates/[id] - Update a candidate
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { status } = body;
 
     if (status) {
-      const updatedCandidate = mockStore.updateCandidateStatus(params.id, status);
+      const updatedCandidate = mockStore.updateCandidateStatus(id, status);
 
       if (!updatedCandidate) {
         return NextResponse.json(

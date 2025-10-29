@@ -50,7 +50,7 @@ export default function NewJobPage() {
     description: '',
     department: '',
     location: '',
-    roleType: '',
+    roleType: 'Full-time',
     questions: [],
     requirements: [],
   });

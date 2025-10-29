@@ -4,10 +4,11 @@ import { mockStore } from '@/lib/mock/store';
 // GET /api/jobs/[id]/candidates - Get candidates for a specific job
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const candidates = mockStore.getCandidatesByJobId(params.id);
+    const { id } = await params;
+    const candidates = mockStore.getCandidatesByJobId(id);
 
     // Transform candidates to row format for the table
     const candidateRows = candidates.map(candidate => ({

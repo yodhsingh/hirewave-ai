@@ -4,10 +4,11 @@ import { mockStore } from '@/lib/mock/store';
 // GET /api/jobs/[id] - Get a specific job
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const job = mockStore.getJobById(params.id);
+    const { id } = await params;
+    const job = mockStore.getJobById(id);
 
     if (!job) {
       return NextResponse.json(
@@ -28,11 +29,12 @@ export async function GET(
 // PATCH /api/jobs/[id] - Update a job
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
-    const updatedJob = mockStore.updateJob(params.id, body);
+    const updatedJob = mockStore.updateJob(id, body);
 
     if (!updatedJob) {
       return NextResponse.json(
@@ -53,12 +55,13 @@ export async function PATCH(
 // DELETE /api/jobs/[id] - Delete a job
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     // In a real app, this would delete the job
     // For now, we'll just mark it as closed
-    const updatedJob = mockStore.updateJob(params.id, { status: 'closed' });
+    const updatedJob = mockStore.updateJob(id, { status: 'closed' });
 
     if (!updatedJob) {
       return NextResponse.json(

@@ -4,9 +4,10 @@ import { mockStore } from '@/lib/mock/store';
 // POST /api/interviews/[token]/submit - Submit interview responses
 export async function POST(
   request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
+    const { token } = await params;
     const body = await request.json();
     const { responses } = body;
 
@@ -17,7 +18,7 @@ export async function POST(
       );
     }
 
-    const invite = mockStore.getInviteByToken(params.token);
+    const invite = mockStore.getInviteByToken(token);
 
     if (!invite) {
       return NextResponse.json(

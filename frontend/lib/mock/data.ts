@@ -225,7 +225,7 @@ export const generateJob = (status: JobStatus = 'active'): Job => {
     description,
     department: faker.helpers.arrayElement(['Engineering', 'Data Science', 'Product', 'Operations', 'Research']),
     location: faker.helpers.arrayElement(indianCities),
-    roleType: faker.helpers.arrayElement<RoleType>(['Engineering', 'Design', 'Sales', 'Marketing', 'Operations', 'Other']),
+    roleType: faker.helpers.arrayElement<RoleType>(['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance', 'Temporary']),
     companyId: generateId(),
     createdBy: generateId(),
     questions: generateQuestions(faker.number.int({ min: 3, max: 8 })),
@@ -432,9 +432,17 @@ export const generateMockData = () => {
 let mockDataInstance: ReturnType<typeof generateMockData> | null = null;
 
 export const getMockData = () => {
-  // Force regeneration to use new job titles
-  mockDataInstance = generateMockData();
+  // Use cached data if exists, otherwise generate new
+  if (!mockDataInstance) {
+    mockDataInstance = generateMockData();
+  }
   return mockDataInstance;
+};
+
+// Force reset mock data (useful for development)
+export const resetMockData = () => {
+  mockDataInstance = null;
+  return getMockData();
 };
 
 // Helper functions for filtering and searching

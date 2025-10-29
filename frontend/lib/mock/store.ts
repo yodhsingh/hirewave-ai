@@ -1,5 +1,5 @@
 // Mock data store for development - simulates a backend database
-import { getMockData, generateCandidate, generateInvite } from './data';
+import { getMockData, resetMockData, generateCandidate, generateInvite } from './data';
 import type {
   Job,
   Candidate,
@@ -10,6 +10,12 @@ import type {
   JobCreate,
   InviteResult,
 } from '@/types';
+
+// Use global to persist across hot module reloads in development
+declare global {
+  var mockStoreInstance: MockStore | undefined;
+  var mockStoreInitialized: boolean | undefined;
+}
 
 class MockStore {
   private static instance: MockStore;
@@ -39,7 +45,7 @@ class MockStore {
 
   // Reset store with fresh mock data
   reset() {
-    const mockData = getMockData();
+    const mockData = resetMockData(); // Force regenerate data
     this.data = {
       ...mockData,
       responses: [],

@@ -85,7 +85,7 @@ const QUESTION_TYPES = [
   },
 ];
 
-const SUGGESTED_QUESTIONS = {
+const SUGGESTED_QUESTIONS: Record<string, string[]> = {
   phone: [
     'Explain your experience with the key technologies mentioned in the job description',
     'Describe a complex technical problem you solved and walk me through your approach',
@@ -110,6 +110,13 @@ const SUGGESTED_QUESTIONS = {
     'What is your preferred work arrangement?',
     'When can you start if selected?',
     'Are you authorized to work in this location?',
+  ],
+  code: [
+    'Write a function to reverse a string without using built-in methods',
+    'Implement a binary search algorithm',
+    'Create a function that checks if a string is a palindrome',
+    'Write code to find the factorial of a number',
+    'Implement a function to remove duplicates from an array',
   ],
 };
 

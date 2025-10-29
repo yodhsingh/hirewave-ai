@@ -4,9 +4,10 @@ import { mockStore } from '@/lib/mock/store';
 // POST /api/jobs/[id]/invites - Create invites for a job
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await request.json();
     const { emails } = body;
 
@@ -17,7 +18,7 @@ export async function POST(
       );
     }
 
-    const result = mockStore.createInvites(params.id, emails);
+    const result = mockStore.createInvites(id, emails);
 
     return NextResponse.json({ success: true, data: result }, { status: 201 });
   } catch (error) {

@@ -44,7 +44,7 @@ Before you begin, ensure you have the following installed:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/soft-engg-project-sept-2025-se-SEP-15.git
+git clone https://github.com/just-ravina/soft-engg-project-sept-2025-se-SEP-15.git
 
 # Navigate to the frontend directory
 cd soft-engg-project-sept-2025-se-SEP-15/frontend

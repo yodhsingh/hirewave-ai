@@ -23,7 +23,7 @@ export interface AuthSession {
 
 // Job Related Types
 export type JobStatus = 'draft' | 'active' | 'closed';
-export type RoleType = 'Engineering' | 'Design' | 'Sales' | 'Marketing' | 'Operations' | 'Other';
+export type RoleType = 'Full-time' | 'Part-time' | 'Contract' | 'Internship' | 'Freelance' | 'Temporary';
 
 export interface Job {
   id: ID;
