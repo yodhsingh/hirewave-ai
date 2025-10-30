@@ -29,6 +29,7 @@ import {
   Rocket
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/store/authStore';
+import { gradients } from '@/lib/theme';
 
 export default function HomePage() {
   const router = useRouter();
@@ -72,28 +73,28 @@ export default function HomePage() {
       icon: <Video className="w-6 h-6" />,
       title: 'AI-Powered Video Screening',
       description: 'Advanced AI analyzes responses, body language, and communication skills automatically',
-      gradient: 'from-blue-500 to-cyan-600',
+      gradient: gradients.primary,
       stats: '95% Accuracy'
     },
     {
       icon: <Brain className="w-6 h-6" />,
       title: 'Smart Scoring Algorithm',
       description: 'Multi-dimensional evaluation based on technical skills, culture fit, and potential',
-      gradient: 'from-cyan-500 to-blue-600',
+      gradient: gradients.cardHeaderAlt,
       stats: '10x Faster'
     },
     {
       icon: <Target className="w-6 h-6" />,
       title: 'Zero Bias Hiring',
       description: 'Focus on skills and competencies, not resumes. Every candidate gets equal opportunity',
-      gradient: 'from-green-500 to-teal-600',
+      gradient: gradients.success,
       stats: '100% Fair'
     },
     {
       icon: <Rocket className="w-6 h-6" />,
       title: 'Scale Without Limits',
       description: 'Handle thousands of interviews simultaneously without adding headcount',
-      gradient: 'from-orange-500 to-orange-600',
+      gradient: gradients.accent,
       stats: '∞ Scale'
     }
   ];
@@ -133,7 +134,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
       {/* Animated Background */}
       <div className="fixed inset-0 z-0 bg-gray-950">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-950/40 via-gray-900/50 to-blue-900/30" />
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradients.bgPrimary}`} />
         <motion.div
           className="absolute inset-0"
           animate={{
@@ -145,7 +146,7 @@ export default function HomePage() {
           }}
           transition={{ duration: 10, repeat: Infinity }}
         />
-        <div className="absolute inset-0 bg-gradient-to-tr from-orange-950/20 via-transparent to-blue-950/20" />
+        <div className={`absolute inset-0 bg-gradient-to-tr ${gradients.bgSecondary}`} />
         {/* Floating particles */}
         <FloatingParticles />
       </div>
@@ -158,7 +159,7 @@ export default function HomePage() {
       >
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center">
+            <div className={`w-10 h-10 bg-gradient-to-br ${gradients.primary} rounded-xl flex items-center justify-center`}>
               <Brain className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
@@ -191,7 +192,7 @@ export default function HomePage() {
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border border-blue-500/30 mb-8"
+            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${gradients.cardHeader} border border-blue-500/30 mb-8`}
           >
             <Sparkles className="w-4 h-4 text-blue-400" />
             <span className="text-sm text-blue-300">AI-Powered Hiring Platform</span>
@@ -204,7 +205,7 @@ export default function HomePage() {
             transition={{ delay: 0.2 }}
             className="text-6xl md:text-7xl font-bold mb-6"
           >
-            <span className="bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent">
+            <span className={`bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
               Interview 10,000+
             </span>
             <br />
@@ -234,7 +235,7 @@ export default function HomePage() {
             <Button
               onClick={handleHRLogin}
               size="lg"
-              className="group bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-6 text-lg rounded-2xl shadow-2xl shadow-blue-500/25 transition-all duration-300 hover:scale-105"
+              className={`group bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-6 text-lg rounded-2xl shadow-2xl shadow-blue-500/25 transition-all duration-300 hover:scale-105`}
             >
               <Briefcase className="w-5 h-5 mr-2" />
               Start as HR Manager
@@ -260,10 +261,10 @@ export default function HomePage() {
             transition={{ delay: 0.6 }}
             className="mt-20 relative"
           >
-            <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-blue-900/50 to-cyan-900/50 backdrop-blur-xl border border-white/10 shadow-2xl">
+            <div className={`relative rounded-3xl overflow-hidden bg-gradient-to-br ${gradients.cardHeader} backdrop-blur-xl border border-white/10 shadow-2xl`}>
               <div className="aspect-video relative group cursor-pointer" onClick={() => setIsVideoPlaying(!isVideoPlaying)}>
                 {!isVideoPlaying ? (
-                  <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-blue-600/20 to-cyan-600/20">
+                  <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${gradients.cardHeader}`}>
                     <motion.div
                       whileHover={{ scale: 1.1 }}
                       whileTap={{ scale: 0.95 }}
@@ -282,7 +283,7 @@ export default function HomePage() {
                   <div className="bg-black/50 rounded-xl p-6">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-xl" />
+                        <div className={`w-12 h-12 bg-gradient-to-br ${gradients.primary} rounded-xl`} />
                         <div>
                           <div className="h-4 bg-white/20 rounded w-32 mb-2" />
                           <div className="h-3 bg-white/10 rounded w-24" />
@@ -303,7 +304,7 @@ export default function HomePage() {
                       ))}
                     </div>
                     <div className="bg-white/5 rounded-lg p-4">
-                      <div className="h-32 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded" />
+                      <div className={`h-32 bg-gradient-to-r ${gradients.cardHeader} rounded`} />
                     </div>
                   </div>
                 </div>
@@ -314,7 +315,7 @@ export default function HomePage() {
             <motion.div
               animate={{ y: [0, -10, 0] }}
               transition={{ duration: 3, repeat: Infinity }}
-              className="absolute -top-6 -left-6 bg-gradient-to-r from-green-500 to-teal-500 text-white px-4 py-2 rounded-full text-sm shadow-lg"
+              className={`absolute -top-6 -left-6 bg-gradient-to-r ${gradients.success} text-white px-4 py-2 rounded-full text-sm shadow-lg`}
             >
               ✨ Live Now
             </motion.div>
@@ -322,7 +323,7 @@ export default function HomePage() {
             <motion.div
               animate={{ y: [0, 10, 0] }}
               transition={{ duration: 3, repeat: Infinity, delay: 1 }}
-              className="absolute -bottom-6 -right-6 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-4 py-2 rounded-full text-sm shadow-lg"
+              className={`absolute -bottom-6 -right-6 bg-gradient-to-r ${gradients.accent} text-white px-4 py-2 rounded-full text-sm shadow-lg`}
             >
               🚀 10x Faster
             </motion.div>
@@ -346,7 +347,7 @@ export default function HomePage() {
                 variants={fadeInUp}
                 className="text-center"
               >
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-xl mb-4">
+                <div className={`inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br ${gradients.cardHeader} rounded-xl mb-4`}>
                   {stat.icon}
                 </div>
                 <div className="text-4xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent mb-2">
@@ -372,7 +373,7 @@ export default function HomePage() {
               Features
             </Badge>
             <h2 className="text-5xl font-bold mb-6">
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+              <span className={`bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
                 Next-Gen Hiring Technology
               </span>
             </h2>
@@ -412,7 +413,7 @@ export default function HomePage() {
                   </p>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">
+                    <span className={`text-sm font-semibold bg-gradient-to-r ${gradients.success} bg-clip-text text-transparent`}>
                       {feature.stats}
                     </span>
                     <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
@@ -425,7 +426,7 @@ export default function HomePage() {
       </section>
 
       {/* Testimonials */}
-      <section className="relative z-10 py-32 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent">
+      <section className={`relative z-10 py-32 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent`}>
         <div className="container mx-auto px-6">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -437,7 +438,7 @@ export default function HomePage() {
               Testimonials
             </Badge>
             <h2 className="text-5xl font-bold mb-6">
-              <span className="bg-gradient-to-r from-green-400 to-teal-400 bg-clip-text text-transparent">
+              <span className={`bg-gradient-to-r ${gradients.success} bg-clip-text text-transparent`}>
                 Loved by HR Teams Worldwide
               </span>
             </h2>
@@ -489,9 +490,9 @@ export default function HomePage() {
             viewport={{ once: true }}
             className="relative"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 blur-3xl" />
+            <div className={`absolute inset-0 bg-gradient-to-r ${gradients.cardHeader} blur-3xl`} />
 
-            <div className="relative bg-gradient-to-br from-blue-600/10 to-cyan-600/10 backdrop-blur-xl border border-white/10 rounded-3xl p-12 md:p-20 text-center">
+            <div className={`relative bg-gradient-to-br ${gradients.cardHeader} backdrop-blur-xl border border-white/10 rounded-3xl p-12 md:p-20 text-center`}>
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -556,7 +557,7 @@ export default function HomePage() {
         <div className="container mx-auto px-6">
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-lg flex items-center justify-center">
+              <div className={`w-8 h-8 bg-gradient-to-br ${gradients.primary} rounded-lg flex items-center justify-center`}>
                 <Brain className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold text-white">HireAI</span>

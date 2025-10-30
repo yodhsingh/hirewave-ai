@@ -3,49 +3,101 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme (default) */
   :root {
+    /* Backgrounds */
+    --bg-primary: 0 0% 100%;        /* #ffffff */
+    --bg-secondary: 210 20% 98%;    /* #f9fafb */
+    --bg-tertiary: 214 14% 95%;     /* #f3f4f6 */
+    --bg-elevated: 0 0% 100%;       /* #ffffff */
+
+    /* Text colors */
+    --text-primary: 222 47% 11%;    /* #111827 */
+    --text-secondary: 215 14% 34%;  /* #374151 */
+    --text-tertiary: 215 10% 47%;   /* #6b7280 */
+    --text-quaternary: 214 8% 66%;  /* #9ca3af */
+
+    /* Border colors */
+    --border-primary: 214 20% 89%;  /* #e5e7eb */
+    --border-secondary: 215 18% 82%; /* #d1d5db */
+    --border-tertiary: 214 8% 66%;  /* #9ca3af */
+
+    /* Brand colors */
+    --primary: 217 91% 60%;         /* #3b82f6 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 189 94% 43%;       /* #06b6d4 */
+    --secondary-foreground: 0 0% 100%;
+    --accent: 25 95% 53%;           /* #f97316 */
+    --accent-foreground: 0 0% 100%;
+
+    /* Semantic colors */
+    --success: 158 64% 52%;         /* #10b981 */
+    --warning: 38 92% 50%;          /* #f59e0b */
+    --error: 4 90% 58%;             /* #ef4444 */
+    --info: 217 91% 60%;            /* #3b82f6 */
+
+    /* shadcn/ui compatibility */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 222 47% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --popover-foreground: 222 47% 11%;
+    --muted: 214 14% 95%;
+    --muted-foreground: 215 10% 47%;
+    --destructive: 4 90% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --input: 214 20% 89%;
+    --ring: 217 91% 60%;
     --radius: 0.5rem;
   }
 
+  /* Dark theme */
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    /* Backgrounds */
+    --bg-primary: 0 0% 0%;          /* #000000 */
+    --bg-secondary: 0 0% 4%;        /* #0a0a0a */
+    --bg-tertiary: 220 13% 9%;      /* #111827 */
+    --bg-elevated: 215 14% 15%;     /* #1f2937 */
+
+    /* Text colors */
+    --text-primary: 0 0% 100%;      /* #ffffff */
+    --text-secondary: 214 15% 91%;  /* #e5e7eb */
+    --text-tertiary: 214 8% 61%;    /* #9ca3af */
+    --text-quaternary: 215 11% 45%; /* #6b7280 */
+
+    /* Border colors */
+    --border-primary: 215 14% 15%;  /* #1f2937 */
+    --border-secondary: 215 12% 25%; /* #374151 */
+    --border-tertiary: 215 12% 34%; /* #4b5563 */
+
+    /* Brand colors (same as light for consistency) */
+    --primary: 217 91% 60%;         /* #3b82f6 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 189 94% 43%;       /* #06b6d4 */
+    --secondary-foreground: 0 0% 100%;
+    --accent: 25 95% 53%;           /* #f97316 */
+    --accent-foreground: 0 0% 100%;
+
+    /* Semantic colors */
+    --success: 158 64% 52%;         /* #10b981 */
+    --warning: 38 92% 50%;          /* #f59e0b */
+    --error: 4 90% 58%;             /* #ef4444 */
+    --info: 217 91% 60%;            /* #3b82f6 */
+
+    /* shadcn/ui compatibility */
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+    --card: 0 0% 4%;
+    --card-foreground: 0 0% 100%;
+    --popover: 215 14% 15%;
+    --popover-foreground: 0 0% 100%;
+    --muted: 215 14% 15%;
+    --muted-foreground: 214 8% 61%;
+    --destructive: 4 90% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --input: 215 14% 15%;
+    --ring: 217 91% 60%;
   }
 }
 

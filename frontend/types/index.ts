@@ -171,6 +171,9 @@ export interface Score {
   breakdown?: ScoreBreakdown;
   scoredAt?: Date;
   scoredBy?: ID;
+  aiInsights?: AIInsights;
+  skillsExtracted?: ExtractedSkill[];
+  competencyRanking?: CompetencyRanking;
 }
 
 export interface ScoreBreakdown {
@@ -180,6 +183,32 @@ export interface ScoreBreakdown {
   cultureFit?: number;
   experience?: number;
   [key: string]: number | undefined;
+}
+
+export interface AIInsights {
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  redFlags?: string[];
+  recommendations: string[];
+  confidenceLevel: number; // 0-100
+}
+
+export interface ExtractedSkill {
+  name: string;
+  category: 'technical' | 'soft' | 'domain';
+  proficiency: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  yearsOfExperience?: number;
+  matchesJobRequirement: boolean;
+  mentionedIn: string[]; // question IDs where mentioned
+}
+
+export interface CompetencyRanking {
+  percentile: number; // 0-100, where this candidate ranks among all candidates
+  rank: number; // actual rank (1, 2, 3, etc.)
+  totalCandidates: number;
+  topCompetencies: string[]; // top 3 competencies
+  comparisonText: string; // "Top 15% for technical skills"
 }
 
 export interface QuestionScore {

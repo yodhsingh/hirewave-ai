@@ -292,19 +292,95 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
 
   // Generate score if candidate is scored or beyond
   const hasScore = ['scored', 'shortlisted', 'rejected', 'hired'].includes(candidateStatus);
+
+  const overallScore = faker.number.int({ min: 40, max: 95 });
+  const technicalScore = faker.number.int({ min: 40, max: 100 });
+  const communicationScore = faker.number.int({ min: 40, max: 100 });
+  const problemSolvingScore = faker.number.int({ min: 40, max: 100 });
+
   const score: Score = hasScore ? {
-    overall: faker.number.int({ min: 40, max: 95 }),
+    overall: overallScore,
     aiScore: faker.number.int({ min: 40, max: 95 }),
     humanScore: faker.number.int({ min: 40, max: 95 }),
     breakdown: {
-      communication: faker.number.int({ min: 40, max: 100 }),
-      technicalSkills: faker.number.int({ min: 40, max: 100 }),
-      problemSolving: faker.number.int({ min: 40, max: 100 }),
+      communication: communicationScore,
+      technicalSkills: technicalScore,
+      problemSolving: problemSolvingScore,
       cultureFit: faker.number.int({ min: 40, max: 100 }),
       experience: faker.number.int({ min: 40, max: 100 }),
     },
     scoredAt: submittedDate,
     scoredBy: generateId(),
+    // AI Insights
+    aiInsights: {
+      summary: faker.helpers.arrayElement([
+        'Strong technical candidate with excellent problem-solving skills and solid communication abilities.',
+        'Highly proficient developer with deep expertise in modern frameworks and cloud technologies.',
+        'Well-rounded candidate with good balance of technical skills and soft skills.',
+        'Experienced professional with proven track record in delivering complex projects.',
+        'Promising candidate with strong fundamentals and eagerness to learn.',
+      ]),
+      strengths: faker.helpers.arrayElements([
+        'Excellent problem-solving approach',
+        'Strong technical fundamentals',
+        'Clear and articulate communication',
+        'Experience with modern tech stack',
+        'Demonstrated leadership skills',
+        'Quick learner with adaptability',
+        'Strong architectural thinking',
+        'Good code quality and best practices',
+      ], 3),
+      weaknesses: faker.helpers.arrayElements([
+        'Limited experience with cloud platforms',
+        'Could improve system design knowledge',
+        'Less exposure to large-scale systems',
+        'Communication could be more concise',
+        'Limited testing experience',
+        'Needs more experience with CI/CD',
+      ], 2),
+      redFlags: overallScore < 60 ? faker.helpers.arrayElements([
+        'Struggled with basic algorithmic questions',
+        'Inconsistent responses across interviews',
+        'Limited depth in claimed expertise areas',
+      ], 1) : undefined,
+      recommendations: faker.helpers.arrayElements([
+        'Strong hire - proceed with offer',
+        'Schedule final round with team lead',
+        'Good fit for mid-level position',
+        'Consider for fast-track onboarding',
+        'Recommend additional technical round',
+        'Suitable for junior-to-mid level role',
+      ], 2),
+      confidenceLevel: faker.number.int({ min: 75, max: 98 }),
+    },
+    // Extracted Skills
+    skillsExtracted: [
+      { name: 'React', category: 'technical', proficiency: 'advanced', yearsOfExperience: 3, matchesJobRequirement: true, mentionedIn: ['q1', 'q3'] },
+      { name: 'Node.js', category: 'technical', proficiency: faker.helpers.arrayElement(['intermediate', 'advanced', 'expert']), yearsOfExperience: 2, matchesJobRequirement: true, mentionedIn: ['q2'] },
+      { name: 'TypeScript', category: 'technical', proficiency: faker.helpers.arrayElement(['intermediate', 'advanced']), matchesJobRequirement: true, mentionedIn: ['q1'] },
+      { name: 'AWS', category: 'technical', proficiency: faker.helpers.arrayElement(['beginner', 'intermediate', 'advanced']), yearsOfExperience: 1, matchesJobRequirement: true, mentionedIn: ['q3'] },
+      { name: 'Problem Solving', category: 'soft', proficiency: 'advanced', matchesJobRequirement: true, mentionedIn: ['q1', 'q2'] },
+      { name: 'Team Collaboration', category: 'soft', proficiency: faker.helpers.arrayElement(['intermediate', 'advanced']), matchesJobRequirement: true, mentionedIn: ['q4'] },
+      { name: faker.helpers.arrayElement(['Docker', 'Kubernetes', 'GraphQL', 'PostgreSQL']), category: 'technical', proficiency: faker.helpers.arrayElement(['beginner', 'intermediate']), matchesJobRequirement: false, mentionedIn: ['q2'] },
+    ],
+    // Competency Ranking
+    competencyRanking: {
+      percentile: Math.round((overallScore / 95) * 100),
+      rank: faker.number.int({ min: 1, max: 20 }),
+      totalCandidates: faker.number.int({ min: 30, max: 100 }),
+      topCompetencies: [
+        technicalScore >= 80 ? 'Technical Skills' : undefined,
+        communicationScore >= 80 ? 'Communication' : undefined,
+        problemSolvingScore >= 80 ? 'Problem Solving' : undefined,
+      ].filter(Boolean) as string[],
+      comparisonText: overallScore >= 85
+        ? 'Top 15% across all candidates'
+        : overallScore >= 75
+        ? 'Top 30% for technical competencies'
+        : overallScore >= 65
+        ? 'Above average performer'
+        : 'Meets minimum requirements',
+    },
   } : {};
 
   // Use predefined names, cycling through them

@@ -33,6 +33,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { gradients } from '@/lib/theme';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -73,22 +74,10 @@ export default function HRDashboard() {
   return (
     <div className="min-h-screen bg-black text-white">
       {/* Background Effects */}
-      <div className="fixed inset-0 bg-gray-950">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-950/40 via-gray-900/50 to-blue-900/30" />
-        <div className="absolute inset-0 bg-gradient-to-tr from-orange-950/20 via-transparent to-blue-950/20" />
+      <div className="fixed inset-0">
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradients.bgPrimary}`} />
+        <div className={`absolute inset-0 bg-gradient-to-tr ${gradients.bgSecondary}`} />
         <FloatingParticles />
-      </div>
-
-      {/* Demo Login Info Banner */}
-      <div className="relative z-50 bg-gradient-to-r from-blue-600/20 to-cyan-600/20 backdrop-blur-sm border-b border-blue-500/30">
-        <div className="container mx-auto px-6 py-2">
-          <div className="flex items-center justify-center gap-2 text-sm">
-            <Sparkles className="w-4 h-4 text-blue-400" />
-            <span className="text-blue-200">
-              Demo Mode: Try logging in with <code className="px-2 py-0.5 bg-blue-900/50 rounded text-blue-300 font-mono">hr@company.com</code> on the home page
-            </span>
-          </div>
-        </div>
       </div>
 
       {/* Navigation Header */}
@@ -101,7 +90,7 @@ export default function HRDashboard() {
                 <span className="font-semibold">Home</span>
               </Link>
               <div className="h-6 w-px bg-gray-700" />
-              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-400 to-blue-500 bg-clip-text text-transparent">
+              <h1 className={`text-xl font-bold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
                 HR Dashboard
               </h1>
             </div>
@@ -109,7 +98,7 @@ export default function HRDashboard() {
             <div className="flex items-center gap-4">
               <Button
                 onClick={() => router.push('/hr/jobs/new')}
-                className="gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                className={`gap-2 bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white`}
               >
                 <Plus className="w-4 h-4" />
                 Create Job
@@ -130,7 +119,7 @@ export default function HRDashboard() {
                         <p className="text-sm font-medium text-white">Dalyodh Singh</p>
                         <p className="text-xs text-gray-400">HR Manager</p>
                       </div>
-                      <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-blue-700 flex items-center justify-center">
+                      <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${gradients.primary} flex items-center justify-center`}>
                         <span className="text-white text-sm font-bold">DS</span>
                       </div>
                     </div>
@@ -139,7 +128,7 @@ export default function HRDashboard() {
                 <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white w-56" align="end">
                   <div className="px-3 py-2 border-b border-gray-800">
                     <p className="text-sm font-medium">Dalyodh Singh</p>
-                    <p className="text-xs text-gray-400">dalyodh.singh@seai.com</p>
+                    <p className="text-xs text-gray-400">22f3001166@ds.study.iitm.ac.in</p>
                   </div>
                   <DropdownMenuItem className="hover:bg-gray-800">
                     <User className="w-4 h-4 mr-2" />
@@ -281,7 +270,7 @@ export default function HRDashboard() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5 }}
+          transition={{ delay: 0.6 }}
         >
           <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
             <CardHeader className="border-b border-gray-800">
@@ -324,7 +313,7 @@ export default function HRDashboard() {
                   <p className="text-gray-300 mb-4">Create your first job to start interviewing candidates</p>
                   <Button
                     onClick={() => router.push('/hr/jobs/new')}
-                    className="gap-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white"
+                    className={`gap-2 bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white`}
                   >
                     <Plus className="w-4 h-4" />
                     Create First Job
@@ -440,10 +429,10 @@ export default function HRDashboard() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          transition={{ delay: 0.7 }}
           className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"
         >
-          <Card className="bg-gradient-to-br from-blue-900/50 to-cyan-900/50 backdrop-blur border-blue-800 hover:border-blue-600 transition-colors cursor-pointer group">
+          <Card className={`bg-gradient-to-br ${gradients.cardHeader} backdrop-blur border-blue-800 hover:border-blue-600 transition-colors cursor-pointer group`}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <Sparkles className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform" />
@@ -454,18 +443,18 @@ export default function HRDashboard() {
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-blue-900/50 to-cyan-900/50 backdrop-blur border-blue-800 hover:border-blue-600 transition-colors cursor-pointer group">
+          <Card className={`bg-gradient-to-br ${gradients.cardHeaderAlt} backdrop-blur border-blue-800 hover:border-blue-600 transition-colors cursor-pointer group`}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <BarChart className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform" />
-                <ArrowRight className="w-5 h-5 text-blue-400 group-hover:translate-x-1 transition-transform" />
+                <BarChart className="w-8 h-8 text-cyan-400 group-hover:scale-110 transition-transform" />
+                <ArrowRight className="w-5 h-5 text-cyan-400 group-hover:translate-x-1 transition-transform" />
               </div>
               <h3 className="font-semibold mb-2 text-white">Analytics Dashboard</h3>
               <p className="text-sm text-gray-300">View detailed hiring metrics</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-900/50 to-emerald-900/50 backdrop-blur border-green-800 hover:border-green-600 transition-colors cursor-pointer group">
+          <Card className={`bg-gradient-to-br ${gradients.success} backdrop-blur border-green-800 hover:border-green-600 transition-colors cursor-pointer group`}>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <Users className="w-8 h-8 text-green-400 group-hover:scale-110 transition-transform" />
