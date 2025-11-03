@@ -1,0 +1,939 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import {
+  ArrowLeft,
+  Phone,
+  Video,
+  FileText,
+  Code,
+  MessageSquare,
+  Play,
+  Pause,
+  Download,
+  Clock,
+  Star,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  User,
+  Mail,
+  Sparkles,
+  FileAudio,
+  Brain,
+  TrendingUp,
+  Award,
+  BarChart3,
+  Mic,
+  PhoneCall,
+  MessageCircle,
+  Briefcase,
+  Bell,
+  Settings,
+  LogOut,
+  Home
+} from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { mockStore } from '@/lib/mock/store';
+import type { Candidate, Job, InterviewResponse } from '@/types';
+import { gradients } from '@/lib/theme';
+import {
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  ResponsiveContainer,
+} from 'recharts';
+
+const QUESTION_TYPE_ICONS = {
+  phone: Phone,
+  video: Video,
+  text: FileText,
+  code: Code,
+  multiple_choice: MessageSquare,
+};
+
+// Mock phone interview transcript
+const generatePhoneTranscript = (candidateName: string) => ({
+  duration: '15:32',
+  transcript: [
+    { speaker: 'AI', time: '00:00', text: 'Hello! This is your AI interview assistant. Thank you for taking the time to speak with us today. Can you hear me clearly?' },
+    { speaker: candidateName, time: '00:05', text: 'Yes, I can hear you perfectly. Thank you for having me.' },
+    { speaker: 'AI', time: '00:08', text: 'Great! Let\'s begin. Can you tell me about your experience with cloud technologies and distributed systems?' },
+    { speaker: candidateName, time: '00:15', text: 'I have been working with cloud technologies for the past 3 years, primarily AWS and Azure. I\'ve designed and implemented microservices architectures using Docker and Kubernetes. In my recent project, I led the migration of a monolithic application to a distributed system, which improved scalability by 40% and reduced deployment time from hours to minutes.' },
+    { speaker: 'AI', time: '00:45', text: 'That sounds impressive. What were the main challenges you faced during this migration?' },
+    { speaker: candidateName, time: '00:52', text: 'The biggest challenge was managing data consistency across microservices. We implemented event sourcing and CQRS patterns to handle this. Another challenge was service discovery and load balancing, which we solved using Istio service mesh.' },
+    { speaker: 'AI', time: '01:15', text: 'How do you approach debugging issues in a distributed system?' },
+    { speaker: candidateName, time: '01:20', text: 'I use distributed tracing tools like Jaeger and comprehensive logging with correlation IDs. We also implement health checks and circuit breakers to quickly identify and isolate failing services.' },
+  ],
+  audioUrl: '/mock-audio/interview-recording.mp3', // Mock audio URL
+  sentiment: 'positive',
+  confidence: 87,
+  keyTopics: ['AWS', 'Kubernetes', 'Microservices', 'Event Sourcing', 'CQRS', 'Istio'],
+});
+
+export default function CandidateDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const [candidate, setCandidate] = useState<Candidate | null>(null);
+  const [job, setJob] = useState<Job | null>(null);
+  const [responses, setResponses] = useState<InterviewResponse[]>([]);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [notes, setNotes] = useState('');
+
+  useEffect(() => {
+    // Fetch candidate details
+    const candidateId = params.id as string;
+    const candidateData = mockStore.getCandidateById(candidateId);
+
+    if (candidateData) {
+      setCandidate(candidateData);
+      // Fetch job details
+      const jobData = mockStore.getJobById(candidateData.jobId);
+      if (jobData) {
+        setJob(jobData);
+      }
+      // Fetch responses
+      const responsesData = mockStore.getResponsesByCandidateId(candidateId);
+      setResponses(responsesData);
+      setNotes(candidateData.notes || '');
+    }
+  }, [params.id]);
+
+  if (!candidate || !job) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+          <h2 className="text-2xl font-bold mb-2">Candidate Not Found</h2>
+          <p className="text-gray-400 mb-4">The candidate you're looking for doesn't exist.</p>
+          <Button onClick={() => router.back()} className={`bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white`}>
+            Go Back
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const phoneTranscript = generatePhoneTranscript(candidate.name);
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      invited: 'text-blue-400',
+      started: 'text-yellow-400',
+      in_progress: 'text-orange-400',
+      submitted: 'text-blue-400',
+      scored: 'text-cyan-400',
+      shortlisted: 'text-green-400',
+      rejected: 'text-red-400',
+    };
+    return colors[status] || 'text-gray-400';
+  };
+
+  const getStatusBadgeColor = (status: string) => {
+    const colors: Record<string, string> = {
+      invited: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+      started: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+      in_progress: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
+      submitted: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+      scored: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
+      shortlisted: 'bg-green-500/20 text-green-400 border-green-500/30',
+      rejected: 'bg-red-500/20 text-red-400 border-red-500/30',
+    };
+    return colors[status] || 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white">
+      {/* Background Effects */}
+      <div className="fixed inset-0 bg-gray-950">
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradients.bgPrimary}`} />
+        <div className={`absolute inset-0 bg-gradient-to-tr ${gradients.bgSecondary}`} />
+      </div>
+
+      {/* Navigation Header */}
+      <nav className="relative z-10 border-b border-gray-800 bg-black/50 backdrop-blur-lg sticky top-0">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <Home className="w-5 h-5" />
+                <span className="font-semibold">Home</span>
+              </Link>
+              <div className="h-6 w-px bg-gray-700" />
+              <Link href="/hr/dashboard" className="hover:opacity-80 transition-opacity">
+                <span className="text-gray-300 hover:text-white">Dashboard</span>
+              </Link>
+            </div>
+
+            <div className="flex items-center gap-4">
+              {/* Notifications */}
+              <Button variant="ghost" className="relative p-2 hover:bg-gray-800">
+                <Bell className="w-5 h-5 text-gray-400" />
+                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+              </Button>
+
+              {/* User Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-800">
+                    <div className="flex items-center gap-3">
+                      <div className="text-right hidden md:block">
+                        <p className="text-sm font-medium text-white">Dalyodh Singh</p>
+                        <p className="text-xs text-gray-400">HR Manager</p>
+                      </div>
+                      <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${gradients.primary} flex items-center justify-center`}>
+                        <span className="text-white text-sm font-bold">DS</span>
+                      </div>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white w-56" align="end">
+                  <div className="px-3 py-2 border-b border-gray-800">
+                    <p className="text-sm font-medium">Dalyodh Singh</p>
+                    <p className="text-xs text-gray-400">22f3001166@ds.study.iitm.ac.in</p>
+                  </div>
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    <User className="w-4 h-4 mr-2" />
+                    View Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    Team Members
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    Help & Support
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem
+                    className="text-red-400 hover:bg-gray-800"
+                    onClick={() => router.push('/')}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Page Header */}
+      <div className="relative z-10 bg-black/30 backdrop-blur-sm border-b border-gray-800">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <h1 className="text-xl font-semibold text-white">{candidate.name}</h1>
+                  <Badge variant="outline" className={getStatusBadgeColor(candidate.status)}>
+                    {candidate.status.replace('_', ' ')}
+                  </Badge>
+                </div>
+                <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <span className="flex items-center gap-1">
+                    <Mail className="w-3 h-3" />
+                    {candidate.email}
+                  </span>
+                  <span className="text-gray-600">•</span>
+                  <span className="flex items-center gap-1 text-blue-400">
+                    <Briefcase className="w-3 h-3" />
+                    {job.title}
+                  </span>
+                  {candidate.scores?.overall && (
+                    <span className="flex items-center gap-1">
+                      <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                      AI Score: {candidate.scores.overall}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {candidate.status === 'scored' && (
+                <>
+                  <Button
+                    variant="outline"
+                    className="gap-2 bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30"
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Shortlist
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="gap-2 bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30"
+                  >
+                    <XCircle className="w-4 h-4" />
+                    Reject
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="outline"
+                className="gap-2 bg-gray-800 border-gray-600 hover:bg-gray-700"
+              >
+                <Download className="w-4 h-4" />
+                Export Report
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="relative z-10 container mx-auto px-6 py-8">
+        {/* Main Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="bg-gray-900/90 backdrop-blur-md border border-gray-700">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-gray-700">Overview</TabsTrigger>
+            <TabsTrigger value="phone-interview" className="data-[state=active]:bg-gray-700">
+              <Phone className="w-4 h-4 mr-2" />
+              Phone Interview
+            </TabsTrigger>
+            <TabsTrigger value="responses" className="data-[state=active]:bg-gray-700">All Responses</TabsTrigger>
+            <TabsTrigger value="ai-analysis" className="data-[state=active]:bg-gray-700">
+              <Brain className="w-4 h-4 mr-2" />
+              AI Analysis
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Overview Tab */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Candidate Info */}
+              <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white">Candidate Information</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div>
+                    <p className="text-sm text-gray-400">Applied for</p>
+                    <p className="font-medium text-white">{job.title}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Department</p>
+                    <p className="font-medium text-white">{job.department}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Location</p>
+                    <p className="font-medium text-white">{job.location}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Interview Date</p>
+                    <p className="font-medium text-white">
+                      {candidate.submittedAt ? new Date(candidate.submittedAt).toLocaleDateString() : 'Not submitted'}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* AI Score Breakdown */}
+              <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700 md:col-span-2">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white flex items-center gap-2">
+                    <Award className="w-5 h-5 text-yellow-400" />
+                    AI Score Breakdown
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {candidate.scores ? (
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className={`text-2xl font-bold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
+                          Overall Score: {candidate.scores.overall}/100
+                        </span>
+                        {candidate.scores.overall && candidate.scores.overall >= 80 && (
+                          <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                            Top Performer
+                          </Badge>
+                        )}
+                      </div>
+
+                      {/* Radar Chart for Competency Visualization */}
+                      {candidate.scores.breakdown && (
+                        <div className="bg-gray-800/50 rounded-lg p-4">
+                          <h4 className="text-sm font-semibold text-gray-300 mb-4 text-center">Competency Overview</h4>
+                          <ResponsiveContainer width="100%" height={280}>
+                            <RadarChart data={[
+                              { subject: 'Communication', value: candidate.scores.breakdown.communication || 0, fullMark: 100 },
+                              { subject: 'Technical', value: candidate.scores.breakdown.technicalSkills || 0, fullMark: 100 },
+                              { subject: 'Problem Solving', value: candidate.scores.breakdown.problemSolving || 0, fullMark: 100 },
+                              { subject: 'Culture Fit', value: candidate.scores.breakdown.cultureFit || 0, fullMark: 100 },
+                              { subject: 'Experience', value: candidate.scores.breakdown.experience || 0, fullMark: 100 },
+                            ]}>
+                              <PolarGrid stroke="#374151" />
+                              <PolarAngleAxis
+                                dataKey="subject"
+                                tick={{ fill: '#9ca3af', fontSize: 12 }}
+                              />
+                              <PolarRadiusAxis
+                                angle={90}
+                                domain={[0, 100]}
+                                tick={{ fill: '#6b7280', fontSize: 10 }}
+                              />
+                              <Radar
+                                name="Score"
+                                dataKey="value"
+                                stroke="#3b82f6"
+                                fill="#3b82f6"
+                                fillOpacity={0.5}
+                                strokeWidth={2}
+                              />
+                            </RadarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+
+                      {/* Progress Bars for Detailed Breakdown */}
+                      <div className="space-y-4">
+                        {candidate.scores.breakdown && Object.entries(candidate.scores.breakdown).map(([key, value]) => (
+                          <div key={key} className="space-y-1">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-300 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                              <span className="text-white font-medium">{value}/100</span>
+                            </div>
+                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full bg-gradient-to-r ${gradients.primary} rounded-full transition-all duration-300`}
+                                style={{ width: `${value}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-gray-400">No AI scoring available yet</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* AI Insights Section */}
+            {candidate.scores?.aiInsights && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* AI Summary & Insights */}
+                <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+                  <CardHeader className="border-b border-gray-800">
+                    <CardTitle className="text-lg text-white flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-blue-400" />
+                      AI Analysis Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-6">
+                    <p className="text-gray-300 text-sm leading-relaxed">
+                      {candidate.scores.aiInsights.summary}
+                    </p>
+
+                    <div>
+                      <h4 className="text-sm font-semibold text-green-400 mb-2 flex items-center gap-1.5">
+                        <CheckCircle className="w-4 h-4" />
+                        Key Strengths
+                      </h4>
+                      <ul className="space-y-1.5">
+                        {candidate.scores.aiInsights.strengths.map((strength, idx) => (
+                          <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
+                            <span className="text-green-400 mt-1">•</span>
+                            {strength}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div>
+                      <h4 className="text-sm font-semibold text-yellow-400 mb-2 flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4" />
+                        Areas for Development
+                      </h4>
+                      <ul className="space-y-1.5">
+                        {candidate.scores.aiInsights.weaknesses.map((weakness, idx) => (
+                          <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
+                            <span className="text-yellow-400 mt-1">•</span>
+                            {weakness}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {candidate.scores.aiInsights.redFlags && candidate.scores.aiInsights.redFlags.length > 0 && (
+                      <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                        <h4 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-1.5">
+                          <XCircle className="w-4 h-4" />
+                          Red Flags
+                        </h4>
+                        <ul className="space-y-1">
+                          {candidate.scores.aiInsights.redFlags.map((flag, idx) => (
+                            <li key={idx} className="text-sm text-red-300 flex items-start gap-2">
+                              <span className="text-red-400 mt-1">•</span>
+                              {flag}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Recommendations & Skills */}
+                <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+                  <CardHeader className="border-b border-gray-800">
+                    <CardTitle className="text-lg text-white flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-cyan-400" />
+                      Recommendations & Skills
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-6">
+                    <div>
+                      <h4 className="text-sm font-semibold text-cyan-400 mb-3">HR Recommendations</h4>
+                      <ul className="space-y-2">
+                        {candidate.scores.aiInsights.recommendations.map((rec, idx) => (
+                          <li key={idx} className="text-sm text-gray-300 bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-2.5">
+                            {rec}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {candidate.scores.skillsExtracted && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-blue-400 mb-3">Extracted Skills</h4>
+                        <div className="flex flex-wrap gap-2">
+                          {candidate.scores.skillsExtracted.map((skill, idx) => (
+                            <Badge
+                              key={idx}
+                              variant="outline"
+                              className={`${
+                                skill.matchesJobRequirement
+                                  ? 'bg-blue-500/20 text-blue-400 border-blue-500/30'
+                                  : 'bg-gray-500/20 text-gray-400 border-gray-500/30'
+                              }`}
+                            >
+                              {skill.name}
+                              {skill.yearsOfExperience && (
+                                <span className="ml-1 text-xs opacity-75">({skill.yearsOfExperience}y)</span>
+                              )}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {candidate.scores.competencyRanking && (
+                      <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+                        <h4 className="text-sm font-semibold text-blue-400 mb-2">Performance Ranking</h4>
+                        <p className="text-sm text-gray-300 mb-1">{candidate.scores.competencyRanking.comparisonText}</p>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <span>Rank {candidate.scores.competencyRanking.rank} of {candidate.scores.competencyRanking.totalCandidates}</span>
+                          <span>•</span>
+                          <span>{candidate.scores.competencyRanking.percentile}th percentile</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between pt-2 border-t border-gray-800">
+                      <span className="text-xs text-gray-400">AI Confidence</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all"
+                            style={{ width: `${candidate.scores.aiInsights.confidenceLevel}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-medium text-blue-400">
+                          {candidate.scores.aiInsights.confidenceLevel}%
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Notes Section */}
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-lg text-white">Interview Notes</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Add your notes about this candidate..."
+                  className="min-h-[150px] bg-gray-800 border-gray-600 text-white"
+                />
+                <Button className={`mt-4 bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white`}>
+                  Save Notes
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Phone Interview Tab */}
+          <TabsContent value="phone-interview" className="space-y-6">
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+              <CardHeader className={`bg-gradient-to-r ${gradients.cardHeader} border-b border-gray-700 rounded-t-lg`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl text-white flex items-center gap-2">
+                      <PhoneCall className="w-6 h-6 text-blue-400" />
+                      AI Phone Interview Recording
+                    </CardTitle>
+                    <CardDescription className="text-gray-300 mt-2">
+                      Automated technical screening call conducted by our AI assistant
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Completed
+                    </Badge>
+                    <span className="text-sm text-gray-300 flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      {phoneTranscript.duration}
+                    </span>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {/* Audio Player */}
+                <div className="bg-gray-800 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <Button
+                        size="icon"
+                        onClick={() => setIsPlaying(!isPlaying)}
+                        className={`bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white`}
+                      >
+                        {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                      </Button>
+                      <div className="flex items-center gap-2">
+                        <FileAudio className="w-5 h-5 text-blue-400" />
+                        <span className="text-white font-medium">Interview Recording</span>
+                      </div>
+                    </div>
+                    <Button variant="outline" size="sm" className="gap-2 bg-gray-700 border-gray-600">
+                      <Download className="w-4 h-4" />
+                      Download Audio
+                    </Button>
+                  </div>
+                  <div className="relative">
+                    <div className="h-2 bg-gray-700 rounded-full">
+                      <div className={`h-2 bg-gradient-to-r ${gradients.primary} rounded-full`} style={{ width: '35%' }} />
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-400 mt-1">
+                      <span>5:23</span>
+                      <span>15:32</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Key Topics */}
+                <div className="mb-6">
+                  <h4 className="text-sm font-semibold text-gray-200 mb-3">Key Topics Discussed</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {phoneTranscript.keyTopics.map((topic, index) => (
+                      <Badge key={index} variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+                        {topic}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sentiment Analysis */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-gray-800 rounded-lg p-4">
+                    <p className="text-sm text-gray-400 mb-1">Candidate Confidence</p>
+                    <div className="flex items-center gap-2">
+                      <div className="text-2xl font-bold text-green-400">{phoneTranscript.confidence}%</div>
+                      <TrendingUp className="w-5 h-5 text-green-400" />
+                    </div>
+                  </div>
+                  <div className="bg-gray-800 rounded-lg p-4">
+                    <p className="text-sm text-gray-400 mb-1">Overall Sentiment</p>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
+                        Positive
+                      </Badge>
+                      <MessageCircle className="w-5 h-5 text-green-400" />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Transcript */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-200 mb-3 flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Interview Transcript
+                  </h4>
+                  <div className="bg-gray-800 rounded-lg p-4 max-h-[500px] overflow-y-auto space-y-4">
+                    {phoneTranscript.transcript.map((entry, index) => (
+                      <div key={index} className={`flex gap-3 ${entry.speaker === 'AI' ? 'justify-start' : 'justify-end'}`}>
+                        <div className={`max-w-[70%] ${entry.speaker === 'AI' ? 'order-2' : 'order-1'}`}>
+                          <div className={`rounded-lg p-3 ${
+                            entry.speaker === 'AI'
+                              ? `bg-gradient-to-r ${gradients.cardHeader} border border-blue-500/30`
+                              : 'bg-gray-700'
+                          }`}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`text-xs font-semibold ${
+                                entry.speaker === 'AI' ? 'text-blue-400' : 'text-cyan-400'
+                              }`}>
+                                {entry.speaker === 'AI' ? (
+                                  <>
+                                    <Sparkles className="w-3 h-3 inline mr-1" />
+                                    AI Assistant
+                                  </>
+                                ) : (
+                                  <>
+                                    <User className="w-3 h-3 inline mr-1" />
+                                    {entry.speaker}
+                                  </>
+                                )}
+                              </span>
+                              <span className="text-xs text-gray-500">{entry.time}</span>
+                            </div>
+                            <p className="text-sm text-gray-200">{entry.text}</p>
+                          </div>
+                        </div>
+                        <div className={`flex-shrink-0 ${entry.speaker === 'AI' ? 'order-1' : 'order-2'}`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                            entry.speaker === 'AI'
+                              ? `bg-gradient-to-r ${gradients.primary}`
+                              : 'bg-cyan-600'
+                          }`}>
+                            {entry.speaker === 'AI' ? (
+                              <Mic className="w-4 h-4 text-white" />
+                            ) : (
+                              <span className="text-xs font-semibold text-white">
+                                {entry.speaker.split(' ').map(n => n[0]).join('')}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* All Responses Tab */}
+          <TabsContent value="responses" className="space-y-6">
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Interview Responses</CardTitle>
+                <CardDescription className="text-gray-300">
+                  All answers provided by the candidate
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Accordion type="single" collapsible className="space-y-4">
+                  {job.questions.map((question, index) => {
+                    const Icon = QUESTION_TYPE_ICONS[question.type as keyof typeof QUESTION_TYPE_ICONS] || FileText;
+                    const response = responses.find(r => r.questionId === question.id);
+
+                    return (
+                      <AccordionItem key={question.id} value={question.id} className="bg-gray-800 rounded-lg border border-gray-700">
+                        <AccordionTrigger className="px-4 hover:no-underline">
+                          <div className="flex items-center gap-3 text-left">
+                            <div className={`p-2 bg-gradient-to-r ${gradients.cardHeader} rounded-lg`}>
+                              <Icon className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <div>
+                              <p className="font-medium text-white">Question {index + 1}</p>
+                              <p className="text-sm text-gray-400">{question.question}</p>
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-4 pb-4">
+                          {response ? (
+                            <div className="space-y-3">
+                              <div className="bg-gray-700 rounded-lg p-4">
+                                <p className="text-sm text-gray-200">
+                                  {question.type === 'phone' ? (
+                                    <span className="italic">See Phone Interview tab for full conversation</span>
+                                  ) : question.type === 'video' ? (
+                                    <span className="italic">Video response available - [Mock video player would go here]</span>
+                                  ) : (
+                                    response.content || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. I have extensive experience with the technologies mentioned and have successfully delivered similar projects.'
+                                  )}
+                                </p>
+                              </div>
+                              {response.score && (
+                                <div className="flex items-center gap-2">
+                                  <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
+                                    AI Score: {response.score.score}/{response.score.maxScore}
+                                  </Badge>
+                                  {response.duration && (
+                                    <span className="text-xs text-gray-400">
+                                      Duration: {Math.floor(response.duration / 60)}:{(response.duration % 60).toString().padStart(2, '0')}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-gray-500 italic">No response recorded</p>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* AI Analysis Tab */}
+          <TabsContent value="ai-analysis" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white flex items-center gap-2">
+                    <Brain className="w-5 h-5 text-cyan-400" />
+                    AI Recommendation
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className={`bg-gradient-to-r ${gradients.success} border border-green-500/30 rounded-lg p-4`}>
+                      <p className="text-green-400 font-semibold mb-2">Strong Candidate</p>
+                      <p className="text-sm text-gray-200">
+                        Based on the AI analysis, this candidate demonstrates strong technical skills and excellent communication.
+                        They show deep understanding of cloud technologies and have relevant experience with the required tech stack.
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-200 mb-2">Key Strengths:</p>
+                      <ul className="space-y-1 text-sm text-gray-300">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
+                          <span>Strong problem-solving approach</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
+                          <span>Excellent technical knowledge</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
+                          <span>Clear communication skills</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-blue-400" />
+                    Comparison with Other Candidates
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-300">Overall Ranking</span>
+                        <span className="text-white font-semibold">#3 of 47</span>
+                      </div>
+                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-300"
+                          style={{ width: '93%' }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-300">Technical Skills</span>
+                        <span className="text-white font-semibold">Top 10%</span>
+                      </div>
+                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full bg-gradient-to-r ${gradients.success} rounded-full transition-all duration-300`}
+                          style={{ width: '90%' }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-300">Communication</span>
+                        <span className="text-white font-semibold">Top 15%</span>
+                      </div>
+                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full bg-gradient-to-r ${gradients.accent} rounded-full transition-all duration-300`}
+                          style={{ width: '85%' }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm mb-1">
+                        <span className="text-gray-300">Cultural Fit</span>
+                        <span className="text-white font-semibold">Top 20%</span>
+                      </div>
+                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full bg-gradient-to-r ${gradients.cardHeaderAlt} rounded-full transition-all duration-300`}
+                          style={{ width: '80%' }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Skills Match */}
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-lg text-white">Skills Match Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {['Cloud Computing', 'Microservices', 'Docker/Kubernetes', 'Event Sourcing', 'API Design', 'Problem Solving', 'Team Collaboration', 'Communication'].map((skill) => (
+                    <div key={skill} className="bg-gray-800 rounded-lg p-3 text-center">
+                      <CheckCircle className="w-6 h-6 text-green-400 mx-auto mb-2" />
+                      <p className="text-xs text-gray-300">{skill}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
