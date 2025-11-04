@@ -324,7 +324,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
                 <Phone className="w-5 h-5 text-purple-400 animate-pulse" />
-                <h3 className="text-lg font-semibold text-white">AI Phone Interview Setup</h3>
+                <h3 className="text-lg font-bold text-white">AI Phone Interview Setup</h3>
                 <Badge className="bg-purple-600/20 text-purple-300 border-purple-500/30">Voice-Based AI Screening</Badge>
               </div>
               <p className="text-sm text-gray-300 mb-4">
@@ -421,11 +421,11 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.2 }}
           >
-            <Card className="overflow-hidden bg-gray-800 border-gray-700">
+            <Card className="overflow-hidden bg-white border-black">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-start gap-3 flex-1">
-                    <button className="mt-1 cursor-move text-gray-500 hover:text-gray-300">
+                    <button className="mt-1 cursor-move text-gray-500 hover:text-gray-700">
                       <GripVertical className="w-5 h-5" />
                     </button>
                     <div className="flex-1">
@@ -436,7 +436,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
                             {question.type.replace('_', ' ')}
                           </span>
                         </Badge>
-                        <Badge variant="outline" className="border-gray-600 text-gray-300">
+                        <Badge variant="outline" className="border-black text-black">
                           <Clock className="w-3 h-3 mr-1" />
                           {question.timeLimit ? `${question.timeLimit}s` : 'No limit'}
                         </Badge>
@@ -444,16 +444,16 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
                           <Badge variant="secondary" className="bg-yellow-900/30 text-yellow-400 border-yellow-500/30">Required</Badge>
                         )}
                       </div>
-                      <p className="font-medium text-gray-200">Question {index + 1}</p>
-                      <p className="text-sm text-gray-400 mt-1">
+                      <p className="font-bold text-lg text-black">Question {index + 1}</p>
+                      <p className="text-sm text-gray-700 mt-1">
                         {question.question}
                       </p>
                       {question.options && question.options.length > 0 && (
                         <div className="mt-2 space-y-1">
                           {question.options.map((option, optIndex) => (
                             <div key={optIndex} className="flex items-center gap-2 text-sm">
-                              <div className="w-4 h-4 rounded-full border-2 border-gray-500" />
-                              <span className="text-gray-300">{option}</span>
+                              <div className="w-4 h-4 rounded-full border-2 border-black" />
+                              <span className="text-black">{option}</span>
                             </div>
                           ))}
                         </div>
@@ -504,7 +504,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
       {!isAddingQuestion && (
         <Button
           onClick={() => setIsAddingQuestion(true)}
-          className="w-full gap-2 bg-gray-800 text-white border-gray-600 hover:bg-gray-700 hover:text-white"
+          className="w-full gap-2 bg-white text-black border-black hover:bg-gray-100 hover:text-black"
           variant="outline"
         >
           <Plus className="w-4 h-4" />
@@ -514,22 +514,22 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
 
       {/* Add/Edit Question Dialog */}
       <Dialog open={isAddingQuestion} onOpenChange={setIsAddingQuestion}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gray-900 border-gray-700">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-white border-black">
           <DialogHeader>
-            <DialogTitle className="text-white">
+            <DialogTitle className="font-bold text-lg text-black">
               {editingIndex !== null ? 'Edit Question' : 'Add New Question'}
             </DialogTitle>
-            <DialogDescription className="text-gray-400">
+            <DialogDescription className="text-gray-600">
               Create engaging questions to evaluate candidates effectively
             </DialogDescription>
           </DialogHeader>
 
           <Tabs value={newQuestion.type} onValueChange={(v) => setNewQuestion({ ...newQuestion, type: v as any })}>
-            <TabsList className="grid grid-cols-4 w-full bg-gray-800 border-gray-700">
+            <TabsList className="grid grid-cols-4 w-full bg-white border-black">
               {QUESTION_TYPES.map((type) => {
                 const Icon = type.icon;
                 return (
-                  <TabsTrigger key={type.type} value={type.type} className="gap-2 text-gray-300 data-[state=active]:text-white data-[state=active]:bg-gray-700">
+                  <TabsTrigger key={type.type} value={type.type} className="gap-2 text-black data-[state=active]:text-white data-[state=active]:bg-black">
                     <Icon className="w-4 h-4" />
                     {type.title}
                   </TabsTrigger>
@@ -540,20 +540,20 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
             <div className="mt-6 space-y-4">
               {/* Question Text */}
               <div>
-                <Label htmlFor="question" className="text-gray-200">Question *</Label>
+                <Label htmlFor="question" className="font-bold text-lg text-black">Question</Label>
                 <Textarea
                   id="question"
                   value={newQuestion.question}
                   onChange={(e) => setNewQuestion({ ...newQuestion, question: e.target.value })}
                   placeholder="Enter your interview question..."
-                  className="mt-2 bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+                  className="mt-2 bg-white border-black text-black placeholder:text-black focus:border-blue-500"
                   rows={3}
                 />
 
                 {/* Suggestions */}
                 <div className="mt-3">
-                  <p className="text-sm text-gray-400 mb-2 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-purple-400" />
+                  <p className="text-sm text-gray-600 mb-2 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-purple-600" />
                     Suggested questions:
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -562,7 +562,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
                         key={i}
                         variant="outline"
                         size="sm"
-                        className="text-xs bg-gray-800 text-gray-300 border-gray-600 hover:bg-gray-700 hover:text-white"
+                        className="text-xs bg-white text-black border-black hover:bg-gray-100 hover:text-black"
                         onClick={() => setNewQuestion({ ...newQuestion, question: q })}
                       >
                         {q.substring(0, 50)}...
@@ -575,7 +575,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
               {/* Multiple Choice Options */}
               {newQuestion.type === 'multiple_choice' && (
                 <div>
-                  <Label>Answer Options</Label>
+                  <Label className="font-bold text-lg text-black">Answer Options</Label>
                   <div className="space-y-2 mt-2">
                     {mcOptions.map((option, index) => (
                       <div key={index} className="flex gap-2">
@@ -583,6 +583,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
                           value={option}
                           onChange={(e) => updateMcOption(index, e.target.value)}
                           placeholder={`Option ${index + 1}`}
+                          className="bg-white border-black text-black placeholder:text-black"
                         />
                         <Button
                           size="sm"
@@ -598,7 +599,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
                       size="sm"
                       variant="outline"
                       onClick={addMcOption}
-                      className="gap-1"
+                      className="gap-1 bg-white text-black border-black hover:bg-gray-100"
                     >
                       <Plus className="w-3 h-3" />
                       Add Option
@@ -610,22 +611,22 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
               {/* Time Limit */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>Time Limit</Label>
+                  <Label className="font-bold text-lg text-black">Time Limit</Label>
                   <Select
                     value={String(newQuestion.timeLimit)}
                     onValueChange={(v) => setNewQuestion({ ...newQuestion, timeLimit: parseInt(v) })}
                   >
-                    <SelectTrigger className="mt-2 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 focus:ring-2 focus:ring-blue-500">
-                      <SelectValue className="text-white" />
+                    <SelectTrigger className="mt-2 bg-white border-black text-black">
+                      <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                    <SelectContent className="bg-white text-black">
                       {TIME_LIMITS.filter(
                         tl => tl.type === 'all' || tl.type === newQuestion.type
                       ).map((limit) => (
                         <SelectItem
                           key={limit.value}
                           value={limit.value}
-                          className="text-white hover:bg-gray-700 focus:bg-gray-700 focus:text-white cursor-pointer"
+                          className="text-black cursor-pointer"
                         >
                           {limit.label}
                         </SelectItem>
@@ -635,17 +636,17 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
                 </div>
 
                 <div>
-                  <Label>Required</Label>
+                  <Label className="font-bold text-lg text-black">Required</Label>
                   <Select
                     value={newQuestion.required ? 'yes' : 'no'}
                     onValueChange={(v) => setNewQuestion({ ...newQuestion, required: v === 'yes' })}
                   >
-                    <SelectTrigger className="mt-2 bg-gray-800 border-gray-600 text-white hover:bg-gray-700 focus:ring-2 focus:ring-blue-500">
-                      <SelectValue className="text-white" />
+                    <SelectTrigger className="mt-2 bg-white border-black text-black">
+                      <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-800 border-gray-700 text-white">
-                      <SelectItem value="yes" className="text-white hover:bg-gray-700 focus:bg-gray-700 focus:text-white cursor-pointer">Yes, required</SelectItem>
-                      <SelectItem value="no" className="text-white hover:bg-gray-700 focus:bg-gray-700 focus:text-white cursor-pointer">No, optional</SelectItem>
+                    <SelectContent className="bg-white text-black">
+                      <SelectItem value="yes" className="text-black cursor-pointer">Yes, required</SelectItem>
+                      <SelectItem value="no" className="text-black cursor-pointer">No, optional</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -653,10 +654,10 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
 
               {/* Actions */}
               <div className="flex justify-end gap-2 pt-4">
-                <Button variant="outline" onClick={resetForm}>
+                <Button variant="outline" onClick={resetForm} className="border-black text-black hover:bg-gray-100">
                   Cancel
                 </Button>
-                <Button onClick={handleAddQuestion} className="gap-2">
+                <Button onClick={handleAddQuestion} className="gap-2 bg-black text-white hover:bg-gray-800">
                   <Save className="w-4 h-4" />
                   {editingIndex !== null ? 'Update Question' : 'Add Question'}
                 </Button>
@@ -667,13 +668,13 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
       </Dialog>
 
       {/* AI Tips */}
-      <Card className="bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+      <Card className="bg-white border-black">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
             <div className="text-2xl">💡</div>
             <div>
-              <p className="font-medium mb-2">Tips for Better Interviews</p>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <p className="font-bold text-lg text-black mb-2">Tips for Better Interviews</p>
+              <ul className="text-sm text-gray-700 space-y-1">
                 <li>• Mix question types to evaluate different skills</li>
                 <li>• Keep video responses under 2 minutes for better completion rates</li>
                 <li>• Start with easier questions to help candidates warm up</li>
