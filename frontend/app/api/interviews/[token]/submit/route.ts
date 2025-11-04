@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 
-// POST /api/interviews/[token]/submit - Submit interview responses
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }

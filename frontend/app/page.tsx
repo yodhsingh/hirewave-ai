@@ -46,7 +46,7 @@ export default function HomePage() {
   };
 
   const handleCandidateDemo = () => {
-    router.push('/i/demo-token-123');
+    router.push('/applicant');
   };
 
   const fadeInUp = {
@@ -249,7 +249,7 @@ export default function HomePage() {
                   variant="outline"
                   className="border border-black/20 bg-transparent hover:bg-black/5 text-black rounded-lg px-8 py-3 text-sm font-normal transition-all inline-flex items-center gap-2"
                 >
-                  <span>Try Demo Interview</span>
+                  <span>I'm an Applicant</span>
                   <Image src="/Double Right.svg" alt="" width={18} height={18} className="opacity-90" />
                 </Button>
               </motion.div>

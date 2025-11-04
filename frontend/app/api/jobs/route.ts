@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 import type { JobCreate } from '@/types';
 
-// GET /api/jobs - Get all jobs
 export async function GET() {
   try {
     const jobs = mockStore.getJobs();
@@ -15,7 +14,6 @@ export async function GET() {
   }
 }
 
-// POST /api/jobs - Create a new job
 export async function POST(request: NextRequest) {
   try {
     const body: JobCreate = await request.json();

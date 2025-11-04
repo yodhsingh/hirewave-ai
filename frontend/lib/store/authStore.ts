@@ -14,7 +14,6 @@ interface AuthState {
   updateUser: (user: Partial<User>) => void;
 }
 
-// Mock authentication for development
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
