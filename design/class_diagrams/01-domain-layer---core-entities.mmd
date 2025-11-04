@@ -1,0 +1,145 @@
+classDiagram
+    class User {
+        +UUID id
+        +string email
+        +string passwordHash
+        +UserRole role
+        +UUID organizationId
+        +DateTime createdAt
+        +DateTime updatedAt
+        +boolean isActive
+        +login(password) boolean
+        +resetPassword(token, newPassword) void
+        +hasPermission(permission) boolean
+    }
+
+    class Organization {
+        +UUID id
+        +string name
+        +string domain
+        +SubscriptionTier tier
+        +int maxJobs
+        +int maxCandidates
+        +DateTime createdAt
+        +getActiveJobs() List~Job~
+        +isWithinLimits() boolean
+    }
+
+    class Job {
+        +UUID id
+        +UUID organizationId
+        +string title
+        +string description
+        +List~Question~ questions
+        +JobStatus status
+        +DateTime expiresAt
+        +DateTime createdAt
+        +JobSettings settings
+        +addQuestion(question) void
+        +removeQuestion(questionId) void
+        +close() void
+        +getStats() JobStats
+        +publishInvites(emails) List~Invite~
+    }
+
+    class Question {
+        +UUID id
+        +UUID jobId
+        +QuestionType type
+        +string text
+        +int timeLimit
+        +int maxRetries
+        +boolean required
+        +QuestionSettings settings
+        +validate() boolean
+        +render() QuestionRenderData
+    }
+
+    class Candidate {
+        +UUID id
+        +UUID jobId
+        +string email
+        +string name
+        +CandidateStatus status
+        +UUID inviteId
+        +DateTime invitedAt
+        +DateTime startedAt
+        +DateTime submittedAt
+        +DateTime scoredAt
+        +Map~string, any~ metadata
+        +updateStatus(newStatus) void
+        +getResponses() List~InterviewResponse~
+        +getScore() Score
+        +canRetake() boolean
+    }
+
+    class InterviewResponse {
+        +UUID id
+        +UUID candidateId
+        +UUID questionId
+        +ResponseType type
+        +string content
+        +string videoUrl
+        +string transcriptText
+        +int duration
+        +DateTime submittedAt
+        +Map~string, any~ metadata
+        +hasVideo() boolean
+        +hasTranscript() boolean
+        +validate() boolean
+    }
+
+    class Score {
+        +UUID id
+        +UUID candidateId
+        +float overallScore
+        +Map~string, float~ dimensionScores
+        +string feedback
+        +List~string~ strengths
+        +List~string~ improvements
+        +Map~string, any~ insights
+        +DateTime generatedAt
+        +string aiModel
+        +int aiTokensUsed
+        +getPercentile() float
+        +toDict() dict
+    }
+
+    class Invite {
+        +UUID id
+        +UUID jobId
+        +string email
+        +string token
+        +InviteStatus status
+        +DateTime sentAt
+        +DateTime expiresAt
+        +DateTime openedAt
+        +isValid() boolean
+        +markAsOpened() void
+        +markAsExpired() void
+    }
+
+    class PracticeSession {
+        +UUID id
+        +UUID userId
+        +string topic
+        +List~PracticeResponse~ responses
+        +DateTime startedAt
+        +DateTime completedAt
+        +float averageScore
+        +startSession() void
+        +submitResponse(response) void
+        +complete() void
+        +getFeedback() PracticeFeedback
+    }
+
+    %% Relationships
+    User "1" --> "*" Organization : belongs to
+    Organization "1" --> "*" Job : has
+    Job "1" --> "*" Question : contains
+    Job "1" --> "*" Candidate : has applicants
+    Candidate "1" --> "1" Invite : from
+    Candidate "1" --> "*" InterviewResponse : submits
+    Candidate "1" --> "0..1" Score : receives
+    Question "1" --> "*" InterviewResponse : answered by
+    User "1" --> "*" PracticeSession : practices

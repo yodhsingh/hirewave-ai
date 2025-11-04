@@ -1,0 +1,128 @@
+classDiagram
+    class DomainEvent {
+        <<abstract>>
+        +UUID eventId
+        +DateTime occurredAt
+        +string eventType
+        +UUID aggregateId
+        +int version
+        +toDict()* dict
+    }
+
+    class JobCreated {
+        +UUID jobId
+        +UUID organizationId
+        +string title
+        +DateTime createdAt
+    }
+
+    class CandidateInvited {
+        +UUID candidateId
+        +UUID jobId
+        +string email
+        +string token
+        +DateTime invitedAt
+    }
+
+    class InterviewStarted {
+        +UUID candidateId
+        +UUID jobId
+        +DateTime startedAt
+    }
+
+    class InterviewSubmitted {
+        +UUID candidateId
+        +UUID jobId
+        +int responsesCount
+        +DateTime submittedAt
+    }
+
+    class TranscriptionCompleted {
+        +UUID responseId
+        +UUID candidateId
+        +string transcriptText
+        +int duration
+        +DateTime completedAt
+    }
+
+    class CandidateScored {
+        +UUID candidateId
+        +UUID jobId
+        +UUID scoreId
+        +float overallScore
+        +DateTime scoredAt
+    }
+
+    class CandidateStatusChanged {
+        +UUID candidateId
+        +UUID jobId
+        +CandidateStatus oldStatus
+        +CandidateStatus newStatus
+        +DateTime changedAt
+        +string changedBy
+    }
+
+    class EventHandler {
+        <<interface>>
+        +handle(event)* void
+        +canHandle(eventType)* boolean
+    }
+
+    class EmailNotificationHandler {
+        -EmailService emailService
+        +handle(event) void
+        +canHandle(eventType) boolean
+        -sendCandidateScoredEmail(event) void
+        -sendStatusChangedEmail(event) void
+    }
+
+    class WebSocketNotificationHandler {
+        -WebSocketHandler wsHandler
+        +handle(event) void
+        +canHandle(eventType) boolean
+        -broadcastToHR(event) void
+        -broadcastToCandidate(event) void
+    }
+
+    class AnalyticsHandler {
+        -AnalyticsRepository analyticsRepository
+        +handle(event) void
+        +canHandle(eventType) boolean
+        -updateJobStats(event) void
+        -trackConversion(event) void
+    }
+
+    class CacheInvalidationHandler {
+        -CacheService cache
+        +handle(event) void
+        +canHandle(eventType) boolean
+        -invalidateCandidateCache(candidateId) void
+        -invalidateJobCache(jobId) void
+    }
+
+    class EventBus {
+        -RedisClient redis
+        -Map~string, List~EventHandler~~ handlers
+        +publish(event) void
+        +subscribe(eventType, handler) void
+        +unsubscribe(eventType, handler) void
+        -routeEvent(event) void
+        -notifyHandlers(event, handlers) void
+    }
+
+    %% Relationships
+    DomainEvent <|-- JobCreated : extends
+    DomainEvent <|-- CandidateInvited : extends
+    DomainEvent <|-- InterviewStarted : extends
+    DomainEvent <|-- InterviewSubmitted : extends
+    DomainEvent <|-- TranscriptionCompleted : extends
+    DomainEvent <|-- CandidateScored : extends
+    DomainEvent <|-- CandidateStatusChanged : extends
+
+    EventHandler <|.. EmailNotificationHandler : implements
+    EventHandler <|.. WebSocketNotificationHandler : implements
+    EventHandler <|.. AnalyticsHandler : implements
+    EventHandler <|.. CacheInvalidationHandler : implements
+
+    EventBus --> EventHandler : manages
+    EventBus --> DomainEvent : publishes

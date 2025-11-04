@@ -1,0 +1,108 @@
+classDiagram
+    class AnalyticsService {
+        -JobRepository jobRepository
+        -CandidateRepository candidateRepository
+        -ScoreRepository scoreRepository
+        -AnalyticsRepository analyticsRepository
+        +calculateJobAnalytics(jobId) JobAnalytics
+        +getHiringFunnel(jobId) FunnelData
+        +getTimeToHire(jobId) TimeMetrics
+        +getCandidateSources(jobId) SourceDistribution
+        +getApplicationsOverTime(jobId, period) TimeSeries
+        +getScoreDistribution(jobId) Distribution
+        +getTopCandidates(jobId, limit) List~Candidate~
+    }
+
+    class JobAnalytics {
+        +UUID jobId
+        +int totalInvited
+        +int totalStarted
+        +int totalSubmitted
+        +int totalScored
+        +int totalShortlisted
+        +int totalRejected
+        +float conversionRate
+        +float averageScore
+        +float averageTimeToHire
+        +Map~string, int~ sourceBreakdown
+        +DateTime calculatedAt
+        +getFunnelData() FunnelData
+        +getConversionMetrics() ConversionMetrics
+    }
+
+    class ExportService {
+        -CandidateRepository candidateRepository
+        -ScoreRepository scoreRepository
+        -S3Service s3Service
+        +exportCandidates(jobId, format, fields) ExportFile
+        +generateCSV(data) bytes
+        +generateExcel(data) bytes
+        +generatePDF(data) bytes
+        +uploadExport(file) string
+        +getExportHistory(jobId) List~Export~
+    }
+
+    class ExportFile {
+        +UUID id
+        +ExportFormat format
+        +string filename
+        +string s3Url
+        +int recordCount
+        +DateTime createdAt
+        +DateTime expiresAt
+        +getPresignedUrl(expiry) string
+        +isExpired() boolean
+    }
+
+    class ReportGenerator {
+        -AnalyticsService analyticsService
+        -ExportService exportService
+        -ChartGenerator chartGenerator
+        +generateJobReport(jobId) Report
+        +generateCandidateReport(candidateId) Report
+        +generateExecutiveSummary(orgId, period) Report
+        +scheduleRecurringReport(config) ScheduledReport
+    }
+
+    class ChartGenerator {
+        +generateHiringFunnelChart(data) ChartData
+        +generateTimeToHireChart(data) ChartData
+        +generateSourcesChart(data) ChartData
+        +generateScoreDistribution(data) ChartData
+        +generateApplicationsTrend(data) ChartData
+    }
+
+    class NotificationService {
+        -EmailService emailService
+        -WebSocketHandler wsHandler
+        -NotificationRepository notificationRepository
+        +sendNotification(userId, notification) void
+        +sendBulkNotifications(userIds, notification) void
+        +markAsRead(notificationId) void
+        +getUnreadCount(userId) int
+        +getNotifications(userId, filters) List~Notification~
+    }
+
+    class Notification {
+        +UUID id
+        +UUID userId
+        +NotificationType type
+        +string title
+        +string message
+        +Map~string, any~ data
+        +boolean isRead
+        +DateTime createdAt
+        +DateTime readAt
+        +markAsRead() void
+        +getActionUrl() Optional~string~
+    }
+
+    %% Relationships
+    AnalyticsService --> JobAnalytics : produces
+    ExportService --> ExportFile : creates
+    ReportGenerator --> AnalyticsService : uses
+    ReportGenerator --> ExportService : uses
+    ReportGenerator --> ChartGenerator : uses
+    NotificationService --> Notification : manages
+    NotificationService --> EmailService : uses
+    NotificationService --> WebSocketHandler : uses
