@@ -1,592 +1,468 @@
 'use client';
-
-import { useRouter } from 'next/navigation';
+// Force recompile - color visibility fix
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { FloatingParticles } from '@/components/FloatingParticles';
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
-  ArrowRight,
-  Sparkles,
-  Users,
-  Zap,
-  BarChart3,
-  Video,
-  Clock,
-  Shield,
-  Star,
-  Play,
-  Check,
-  TrendingUp,
-  Award,
-  Globe,
   Briefcase,
-  ChevronRight,
-  Brain,
-  Target,
-  Rocket
+  Users,
+  Calendar,
+  TrendingUp,
+  ArrowRight,
+  Plus,
+  Eye,
+  Edit,
+  Home,
+  LogOut,
+  Sparkles,
+  BarChart,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Search,
+  Filter,
+  MoreVertical,
+  ExternalLink,
+  Building,
+  User,
+  Settings,
+  Bell
 } from 'lucide-react';
-import { useAuthStore } from '@/lib/store/authStore';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { gradients } from '@/lib/theme';
-import LoginModal from '@/components/LoginModal';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { FloatingParticles } from '@/components/FloatingParticles';
+import { apiClient } from '@/lib/api/client';
+import { useQuery } from '@tanstack/react-query';
+import type { Job } from '@/types';
 
-export default function HomePage() {
+export default function HRDashboard() {
   const router = useRouter();
-  const { login } = useAuthStore();
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({ x: e.clientX, y: e.clientY });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const handleLoginClick = () => {
-  setIsLoginModalOpen(true);
-};
-const handleLoginSuccess = (email, role) => {
-  login(email, role);
-  if (role === 'hr') {
-    router.push('/hr/dashboard');
-  } else if (role === 'admin') {
-    router.push('/admin/dashboard');
-  } else if (role === 'candidate') {
-    router.push('/candidate/dashboard');
-  }
-};
-  const handleCandidateDemo = () => {
-    router.push('/i/demo-token-123');
+  // Fetch jobs from mock API
+  const { data: jobsResponse, isLoading: isLoadingJobs } = useQuery({
+    queryKey: ['jobs'],
+    queryFn: () => apiClient.getJobs(),
+  });
+
+  const jobs = jobsResponse?.data || [];
+
+  const stats = {
+    activeJobs: jobs.filter((j: Job) => j.status === 'active').length,
+    totalCandidates: jobs.reduce((sum: number, job: Job) => sum + (job.stats?.total || 0), 0),
+    interviewsToday: 12,
+    avgCompletionRate: 78,
   };
 
-  const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    transition: { duration: 0.6 }
-  };
-
-  const stagger = {
-    animate: {
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const features = [
-    {
-      icon: <Video className="w-6 h-6" />,
-      title: 'AI-Powered Video Screening',
-      description: 'Advanced AI analyzes responses, body language, and communication skills automatically',
-      gradient: gradients.primary,
-      stats: '95% Accuracy'
-    },
-    {
-      icon: <Brain className="w-6 h-6" />,
-      title: 'Smart Scoring Algorithm',
-      description: 'Multi-dimensional evaluation based on technical skills, culture fit, and potential',
-      gradient: gradients.cardHeaderAlt,
-      stats: '10x Faster'
-    },
-    {
-      icon: <Target className="w-6 h-6" />,
-      title: 'Zero Bias Hiring',
-      description: 'Focus on skills and competencies, not resumes. Every candidate gets equal opportunity',
-      gradient: gradients.success,
-      stats: '100% Fair'
-    },
-    {
-      icon: <Rocket className="w-6 h-6" />,
-      title: 'Scale Without Limits',
-      description: 'Handle thousands of interviews simultaneously without adding headcount',
-      gradient: gradients.accent,
-      stats: '∞ Scale'
-    }
-  ];
-
-  const testimonials = [
-    {
-      name: 'Sarah Chen',
-      role: 'VP of Talent, TechCorp',
-      content: 'Reduced our screening time by 85% while improving quality of hires. Game-changing platform.',
-      avatar: '👩‍💼',
-      rating: 5
-    },
-    {
-      name: 'Michael Rodriguez',
-      role: 'HR Director, StartupX',
-      content: 'Finally, a solution that lets candidates showcase their true potential beyond the resume.',
-      avatar: '👨‍💻',
-      rating: 5
-    },
-    {
-      name: 'Emma Watson',
-      role: 'People Ops, ScaleUp Inc',
-      content: 'The AI insights are incredibly accurate. It\'s like having 10 expert recruiters working 24/7.',
-      avatar: '👩‍🦰',
-      rating: 5
-    }
-  ];
-
-  const stats = [
-    { value: '50M+', label: 'Interviews Completed', icon: <Video className="w-5 h-5" /> },
-    { value: '92%', label: 'Satisfaction Rate', icon: <Star className="w-5 h-5" /> },
-    { value: '500+', label: 'Enterprise Clients', icon: <Briefcase className="w-5 h-5" /> },
-    { value: '3hrs', label: 'Avg. Time to Hire', icon: <Clock className="w-5 h-5" /> },
-  ];
+  const filteredJobs = jobs.filter((job: Job) =>
+    job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    job.department.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-black text-white overflow-x-hidden">
-      {/* Animated Background */}
-      <div className="fixed inset-0 z-0 bg-gray-950">
+    <div className="min-h-screen bg-black text-white">
+      {/* Background Effects */}
+      <div className="fixed inset-0">
         <div className={`absolute inset-0 bg-gradient-to-br ${gradients.bgPrimary}`} />
-        <motion.div
-          className="absolute inset-0"
-          animate={{
-            background: [
-              'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.2) 0%, transparent 50%)',
-              'radial-gradient(circle at 80% 50%, rgba(59, 130, 246, 0.2) 0%, transparent 50%)',
-              'radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.2) 0%, transparent 50%)',
-            ]
-          }}
-          transition={{ duration: 10, repeat: Infinity }}
-        />
         <div className={`absolute inset-0 bg-gradient-to-tr ${gradients.bgSecondary}`} />
-        {/* Floating particles */}
         <FloatingParticles />
       </div>
 
-      {/* Navigation */}
-      <motion.nav
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="relative z-50 px-6 py-6"
-      >
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className={`w-10 h-10 bg-gradient-to-br ${gradients.primary} rounded-xl flex items-center justify-center`}>
-              <Brain className="w-6 h-6 text-white" />
+      {/* Navigation Header */}
+      <nav className="relative z-10 border-b border-gray-800 bg-black/50 backdrop-blur-lg">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-6">
+              <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
+                <Home className="w-5 h-5" />
+                <span className="font-semibold">Home</span>
+              </Link>
+              <div className="h-6 w-px bg-gray-700" />
+              <h1 className={`text-xl font-bold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
+                HR Dashboard
+              </h1>
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-              HireAI
-            </span>
-          </div>
-          <div className="flex items-center space-x-6">
-            <button className="text-gray-300 hover:text-white transition-colors">Features</button>
-            <button className="text-gray-300 hover:text-white transition-colors">Pricing</button>
-            <button className="text-gray-300 hover:text-white transition-colors">About</button>
-            <Button
-              onClick={handleLoginClick}
-              className="bg-white/10 backdrop-blur-sm border border-white/20 hover:bg-white/20 transition-all duration-300"
-            >
-              Sign In
-            </Button>
+
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={() => router.push('/hr/jobs/new')}
+                className={`gap-2 bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white`}
+              >
+                <Plus className="w-4 h-4" />
+                Create Job
+              </Button>
+
+              {/* Notifications */}
+              
+
+              {/* User Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-800">
+                    <div className="flex items-center gap-3">
+                      <div className="text-right hidden md:block">
+                        <p className="text-sm font-medium text-white">Dalyodh Singh</p>
+                        <p className="text-xs text-gray-400">HR Manager</p>
+                      </div>
+                      <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${gradients.primary} flex items-center justify-center`}>
+                        <span className="text-white text-sm font-bold">DS</span>
+                      </div>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white w-56" align="end">
+                  <div className="px-3 py-2 border-b border-gray-800">
+                    <p className="text-sm font-medium">Dalyodh Singh</p>
+                    <p className="text-xs text-gray-400">22f3001166@ds.study.iitm.ac.in</p>
+                  </div>
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    <User className="w-4 h-4 mr-2" />
+                    View Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    Team Members
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-gray-800">
+                    Help & Support
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem className="text-red-400 hover:bg-gray-800">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
         </div>
-      </motion.nav>
+      </nav>
 
-      {/* Hero Section */}
-      <section className="relative z-10 container mx-auto px-6 pt-20 pb-32">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1 }}
-          className="text-center max-w-5xl mx-auto"
-        >
-          {/* Badge */}
+      {/* Main Content */}
+      <main className="relative z-10 container mx-auto px-6 py-8">
+        {/* Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r ${gradients.cardHeader} border border-blue-500/30 mb-8`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
           >
-            <Sparkles className="w-4 h-4 text-blue-400" />
-            <span className="text-sm text-blue-300">AI-Powered Hiring Platform</span>
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700 hover:border-blue-500 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm font-medium">Active Jobs</p>
+                    <p className="text-3xl font-bold mt-2 text-white">
+                      {stats.activeJobs}
+                    </p>
+                    <p className="text-green-400 text-sm mt-2 flex items-center gap-1 font-medium">
+                      <TrendingUp className="w-3 h-3" />
+                      +12% from last month
+                    </p>
+                  </div>
+                  <div className="p-3 bg-blue-600/20 rounded-lg border border-blue-500/30">
+                    <Briefcase className="w-6 h-6 text-blue-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </motion.div>
 
-          {/* Main Heading */}
-          <motion.h1
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="text-6xl md:text-7xl font-bold mb-6"
           >
-            <span className={`bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
-              Interview 10,000+
-            </span>
-            <br />
-            <span className="text-white">
-              Candidates at Once
-            </span>
-          </motion.h1>
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700 hover:border-cyan-500 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm font-medium">Total Candidates</p>
+                    <p className="text-3xl font-bold mt-2 text-white">
+                      {stats.totalCandidates}
+                    </p>
+                    <p className="text-green-400 text-sm mt-2 flex items-center gap-1 font-medium">
+                      <TrendingUp className="w-3 h-3" />
+                      +28% from last month
+                    </p>
+                  </div>
+                  <div className="p-3 bg-cyan-600/20 rounded-lg border border-cyan-500/30">
+                    <Users className="w-6 h-6 text-cyan-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          {/* Subtitle */}
-          <motion.p
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-xl text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed"
           >
-            Revolutionary AI screening that eliminates bias, saves 85% of time, and ensures
-            every candidate gets a fair chance to showcase their true potential.
-          </motion.p>
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700 hover:border-orange-500 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm font-medium">Interviews Today</p>
+                    <p className="text-3xl font-bold mt-2 text-white">
+                      {stats.interviewsToday}
+                    </p>
+                    <p className="text-orange-400 text-sm mt-2 flex items-center gap-1 font-medium">
+                      <Clock className="w-3 h-3" />
+                      5 pending review
+                    </p>
+                  </div>
+                  <div className="p-3 bg-orange-600/20 rounded-lg border border-orange-500/30">
+                    <Calendar className="w-6 h-6 text-orange-400" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          {/* CTA Buttons */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <Button
-              onClick={handleLoginClick}
-              size="lg"
-              className={`group bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-6 text-lg rounded-2xl shadow-2xl shadow-blue-500/25 transition-all duration-300 hover:scale-105`}
-            >
-              <Briefcase className="w-5 h-5 mr-2" />
-              Start as HR Manager
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-
-            <Button
-              onClick={handleCandidateDemo}
-              size="lg"
-              variant="outline"
-              className="group border-2 border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white px-8 py-6 text-lg rounded-2xl transition-all duration-300 hover:scale-105"
-            >
-              <Play className="w-5 h-5 mr-2" />
-              Try Demo Interview
-              <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
-          </motion.div>
-
-          {/* Video Preview */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.6 }}
-            className="mt-20 relative"
-          >
-            <div className={`relative rounded-3xl overflow-hidden bg-gradient-to-br ${gradients.cardHeader} backdrop-blur-xl border border-white/10 shadow-2xl`}>
-              <div className="aspect-video relative group cursor-pointer" onClick={() => setIsVideoPlaying(!isVideoPlaying)}>
-                {!isVideoPlaying ? (
-                  <div className={`absolute inset-0 flex items-center justify-center bg-gradient-to-br ${gradients.cardHeader}`}>
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="w-20 h-20 bg-white/90 rounded-full flex items-center justify-center shadow-2xl"
-                    >
-                      <Play className="w-8 h-8 text-blue-600 ml-1" />
-                    </motion.div>
+            <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700 hover:border-green-500 transition-colors">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-gray-400 text-sm font-medium">Completion Rate</p>
+                    <p className="text-3xl font-bold mt-2 text-white">
+                      {stats.avgCompletionRate}%
+                    </p>
+                    <p className="text-green-400 text-sm mt-2 flex items-center gap-1 font-medium">
+                      <CheckCircle className="w-3 h-3" />
+                      Above industry average
+                    </p>
                   </div>
-                ) : (
-                  <div className="absolute inset-0 bg-black flex items-center justify-center">
-                    <span className="text-white text-2xl">Demo Video Playing...</span>
-                  </div>
-                )}
-                {/* Dashboard Preview Image */}
-                <div className="p-8">
-                  <div className="bg-black/50 rounded-xl p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-12 h-12 bg-gradient-to-br ${gradients.primary} rounded-xl`} />
-                        <div>
-                          <div className="h-4 bg-white/20 rounded w-32 mb-2" />
-                          <div className="h-3 bg-white/10 rounded w-24" />
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
-                        <div className="w-8 h-8 bg-green-500/20 rounded-lg" />
-                        <div className="w-8 h-8 bg-blue-500/20 rounded-lg" />
-                        <div className="w-8 h-8 bg-cyan-500/20 rounded-lg" />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-4 gap-4 mb-6">
-                      {[...Array(4)].map((_, i) => (
-                        <div key={i} className="bg-white/5 rounded-lg p-4">
-                          <div className="h-8 bg-white/10 rounded mb-2" />
-                          <div className="h-4 bg-white/5 rounded" />
-                        </div>
-                      ))}
-                    </div>
-                    <div className="bg-white/5 rounded-lg p-4">
-                      <div className={`h-32 bg-gradient-to-r ${gradients.cardHeader} rounded`} />
-                    </div>
+                  <div className="p-3 bg-green-600/20 rounded-lg border border-green-500/30">
+                    <BarChart className="w-6 h-6 text-green-400" />
                   </div>
                 </div>
-              </div>
-            </div>
-
-            {/* Floating badges */}
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 3, repeat: Infinity }}
-              className={`absolute -top-6 -left-6 bg-gradient-to-r ${gradients.success} text-white px-4 py-2 rounded-full text-sm shadow-lg`}
-            >
-              ✨ Live Now
-            </motion.div>
-
-            <motion.div
-              animate={{ y: [0, 10, 0] }}
-              transition={{ duration: 3, repeat: Infinity, delay: 1 }}
-              className={`absolute -bottom-6 -right-6 bg-gradient-to-r ${gradients.accent} text-white px-4 py-2 rounded-full text-sm shadow-lg`}
-            >
-              🚀 10x Faster
-            </motion.div>
-          </motion.div>
-        </motion.div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="relative z-10 py-20 border-y border-white/10">
-        <div className="container mx-auto px-6">
-          <motion.div
-            variants={stagger}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-8"
-          >
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInUp}
-                className="text-center"
-              >
-                <div className={`inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br ${gradients.cardHeader} rounded-xl mb-4`}>
-                  {stat.icon}
-                </div>
-                <div className="text-4xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent mb-2">
-                  {stat.value}
-                </div>
-                <div className="text-gray-400">{stat.label}</div>
-              </motion.div>
-            ))}
+              </CardContent>
+            </Card>
           </motion.div>
         </div>
-      </section>
 
-      {/* Features Section */}
-      <section className="relative z-10 py-32">
-        <div className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30 mb-4">
-              Features
-            </Badge>
-            <h2 className="text-5xl font-bold mb-6">
-              <span className={`bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
-                Next-Gen Hiring Technology
-              </span>
-            </h2>
-            <p className="text-xl text-gray-400 max-w-3xl mx-auto">
-              Powered by advanced AI to transform how companies hire and how candidates showcase their talent
-            </p>
-          </motion.div>
-
-          <motion.div
-            variants={stagger}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6"
-          >
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInUp}
-                whileHover={{ y: -10, scale: 1.02 }}
-                className="relative group"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl blur-xl"
-                     style={{ backgroundImage: `linear-gradient(to right, ${feature.gradient.split(' ')[1]}, ${feature.gradient.split(' ')[3]})` }} />
-
-                <Card className="relative bg-white/5 backdrop-blur-xl border-white/10 p-8 rounded-3xl hover:bg-white/10 transition-all duration-300">
-                  <div className={`inline-flex items-center justify-center w-14 h-14 bg-gradient-to-br ${feature.gradient} rounded-2xl mb-6`}>
-                    {feature.icon}
-                  </div>
-
-                  <h3 className="text-xl font-semibold mb-3 text-white">
-                    {feature.title}
-                  </h3>
-
-                  <p className="text-gray-400 mb-4">
-                    {feature.description}
-                  </p>
-
-                  <div className="flex items-center justify-between">
-                    <span className={`text-sm font-semibold bg-gradient-to-r ${gradients.success} bg-clip-text text-transparent`}>
-                      {feature.stats}
-                    </span>
-                    <ArrowRight className="w-4 h-4 text-gray-500 group-hover:text-white group-hover:translate-x-1 transition-all" />
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className={`relative z-10 py-32 bg-gradient-to-b from-transparent via-blue-900/10 to-transparent`}>
-        <div className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <Badge className="bg-green-500/20 text-green-300 border-green-500/30 mb-4">
-              Testimonials
-            </Badge>
-            <h2 className="text-5xl font-bold mb-6">
-              <span className={`bg-gradient-to-r ${gradients.success} bg-clip-text text-transparent`}>
-                Loved by HR Teams Worldwide
-              </span>
-            </h2>
-          </motion.div>
-
-          <motion.div
-            variants={stagger}
-            initial="initial"
-            whileInView="animate"
-            viewport={{ once: true }}
-            className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto"
-          >
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
-                variants={fadeInUp}
-                whileHover={{ scale: 1.05 }}
-                className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-3xl"
-              >
-                <div className="flex mb-4">
-                  {[...Array(testimonial.rating)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-yellow-500 text-yellow-500" />
-                  ))}
+        {/* Jobs Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+        >
+          <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+            <CardHeader className="border-b border-gray-800">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-xl text-white">
+                    Active Jobs
+                  </CardTitle>
+                  <p className="text-gray-400 text-sm mt-1">Manage your open positions</p>
                 </div>
-
-                <p className="text-gray-300 mb-6 italic">
-                  "{testimonial.content}"
-                </p>
 
                 <div className="flex items-center gap-3">
-                  <div className="text-3xl">{testimonial.avatar}</div>
-                  <div>
-                    <div className="font-semibold text-white">{testimonial.name}</div>
-                    <div className="text-sm text-gray-400">{testimonial.role}</div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                    <Input
+                      placeholder="Search jobs..."
+                      className="pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 w-64"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
                   </div>
+                  <Button variant="outline" className="border-gray-700 bg-gray-900/50 text-white hover:bg-gray-800">
+                    <Filter className="w-4 h-4 mr-2" />
+                    Filter
+                  </Button>
                 </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="relative z-10 py-32">
-        <div className="container mx-auto px-6">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            className="relative"
-          >
-            <div className={`absolute inset-0 bg-gradient-to-r ${gradients.cardHeader} blur-3xl`} />
-
-            <div className={`relative bg-gradient-to-br ${gradients.cardHeader} backdrop-blur-xl border border-white/10 rounded-3xl p-12 md:p-20 text-center`}>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-              >
-                <h2 className="text-5xl font-bold mb-6">
-                  <span className="bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                    Ready to Transform Your Hiring?
-                  </span>
-                </h2>
-
-                <p className="text-xl text-gray-300 mb-12 max-w-2xl mx-auto">
-                  Join 500+ companies already using AI to build better teams faster
-                </p>
-
-                <div className="flex flex-col sm:flex-row gap-6 justify-center">
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      onClick={handleLoginClick}
-                      size="lg"
-                      className="group bg-white text-black hover:bg-gray-100 px-8 py-6 text-lg rounded-2xl font-semibold transition-all duration-300"
-                    >
-                      Get Started Free
-                      <Rocket className="w-5 h-5 ml-2 group-hover:rotate-12 transition-transform" />
-                    </Button>
-                  </motion.div>
-
-                  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="border-2 border-white/20 bg-transparent hover:bg-white/10 text-white px-8 py-6 text-lg rounded-2xl font-semibold transition-all duration-300"
-                    >
-                      Schedule Demo
-                      <ArrowRight className="w-5 h-5 ml-2" />
-                    </Button>
-                  </motion.div>
-                </div>
-
-                <div className="flex items-center justify-center gap-8 mt-12">
-                  <div className="flex items-center gap-2">
-                    <Shield className="w-5 h-5 text-green-400" />
-                    <span className="text-gray-400">SOC2 Compliant</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Award className="w-5 h-5 text-blue-400" />
-                    <span className="text-gray-400">ISO Certified</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-cyan-400" />
-                    <span className="text-gray-400">GDPR Ready</span>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-white/10 py-12">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div className="flex items-center space-x-2 mb-4 md:mb-0">
-              <div className={`w-8 h-8 bg-gradient-to-br ${gradients.primary} rounded-lg flex items-center justify-center`}>
-                <Brain className="w-5 h-5 text-white" />
               </div>
-              <span className="text-xl font-bold text-white">HireAI</span>
-            </div>
+            </CardHeader>
 
-            <div className="flex items-center gap-6 text-gray-400 text-sm">
-              <span>© 2024 HireAI. All rights reserved.</span>
-              <button className="hover:text-white transition-colors">Privacy</button>
-              <button className="hover:text-white transition-colors">Terms</button>
-              <button className="hover:text-white transition-colors">Contact</button>
-            </div>
-          </div>
-        </div>
-      </footer>
-      {/* Login Modal */}
-<LoginModal
-  isOpen={isLoginModalOpen}
-  onClose={() => setIsLoginModalOpen(false)}
-  onLogin={handleLoginSuccess}
-/>
+            <CardContent className="p-0">
+              {isLoadingJobs ? (
+                <div className="p-8 text-center text-gray-300">
+                  <Clock className="w-8 h-8 animate-spin mx-auto mb-4" />
+                  Loading jobs...
+                </div>
+              ) : filteredJobs.length === 0 ? (
+                <div className="p-12 text-center">
+                  <Briefcase className="w-12 h-12 text-gray-600 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2 text-white">No jobs found</h3>
+                  <p className="text-gray-300 mb-4">Create your first job to start interviewing candidates</p>
+                  <Button
+                    onClick={() => router.push('/hr/jobs/new')}
+                    className={`gap-2 bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white`}
+                  >
+                    <Plus className="w-4 h-4" />
+                    Create First Job
+                  </Button>
+                </div>
+              ) : (
+                <div className="divide-y divide-white/5">
+                  {filteredJobs.map((job: Job, index: number) => (
+                    <motion.div
+                      key={job.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="p-8 hover:bg-gray-800/50 transition-all group cursor-pointer"
+                      onClick={() => router.push(`/hr/jobs/${job.id}`)}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <h3 className="font-semibold text-lg text-white group-hover:text-blue-400 transition-colors">
+                              {job.title}
+                            </h3>
+                            <Badge
+                              className={
+                                job.status === 'active'
+                                  ? 'bg-green-500/20 text-green-400 border-green-500/50'
+                                  : 'bg-gray-500/20 text-gray-400 border-gray-500/50'
+                              }
+                            >
+                              {job.status === 'active' ? 'Active' : job.status}
+                            </Badge>
+                            {job.questions && job.questions.length > 0 && (
+                              <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/50">
+                                <Sparkles className="w-3 h-3 mr-1" />
+                                {job.questions.filter(q => q.type === 'phone').length > 0 ? 'AI Phone Interview' : 'AI Questions'}
+                              </Badge>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-6 text-sm mb-4 text-gray-400">
+                            <span className="flex items-center gap-2">
+                              <Building className="w-4 h-4" />
+                              <span>{job.department}</span>
+                            </span>
+                            <span className="flex items-center gap-2">
+                              <Users className="w-4 h-4" />
+                              <span className="text-white font-medium">{job.stats?.total || 0} candidates</span>
+                            </span>
+                            <span className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4" />
+                              <span>{new Date(job.createdAt).toLocaleDateString()}</span>
+                            </span>
+                          </div>
+
+                          {job.questions && job.questions.length > 0 && (
+                            <div className="text-sm text-gray-500">
+                              {job.questions.length} interview questions
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-white hover:bg-gray-700"
+                            onClick={() => router.push(`/hr/jobs/${job.id}`)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-white hover:bg-gray-700"
+                            onClick={() => router.push(`/hr/jobs/${job.id}/candidates`)}
+                          >
+                            <Users className="w-4 h-4 mr-2" />
+                            Candidates
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="hover:bg-gray-800">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white">
+                              <DropdownMenuItem onClick={() => router.push(`/hr/jobs/${job.id}/edit`)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem>
+                                <ExternalLink className="w-4 h-4 mr-2" />
+                                Share Link
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator className="bg-gray-800" />
+                              <DropdownMenuItem className="text-red-400">
+                                Archive Job
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6"
+        >
+          <Card className={`bg-gradient-to-br ${gradients.cardHeader} backdrop-blur border-blue-800 hover:border-blue-600 transition-colors cursor-pointer group`}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <Sparkles className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform" />
+                <ArrowRight className="w-5 h-5 text-blue-400 group-hover:translate-x-1 transition-transform" />
+              </div>
+              <h3 className="font-semibold mb-2 text-white">AI Interview Assistant</h3>
+              <p className="text-sm text-gray-300">Generate interview questions with AI</p>
+            </CardContent>
+          </Card>
+
+          <Card className={`bg-gradient-to-br ${gradients.cardHeaderAlt} backdrop-blur border-blue-800 hover:border-blue-600 transition-colors cursor-pointer group`}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <BarChart className="w-8 h-8 text-cyan-400 group-hover:scale-110 transition-transform" />
+                <ArrowRight className="w-5 h-5 text-cyan-400 group-hover:translate-x-1 transition-transform" />
+              </div>
+              <h3 className="font-semibold mb-2 text-white">Analytics Dashboard</h3>
+              <p className="text-sm text-gray-300">View detailed hiring metrics</p>
+            </CardContent>
+          </Card>
+
+          <Card className={`bg-gradient-to-br ${gradients.success} backdrop-blur border-green-800 hover:border-green-600 transition-colors cursor-pointer group`}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <Users className="w-8 h-8 text-green-400 group-hover:scale-110 transition-transform" />
+                <ArrowRight className="w-5 h-5 text-green-400 group-hover:translate-x-1 transition-transform" />
+              </div>
+              <h3 className="font-semibold mb-2 text-white">Candidate Pipeline</h3>
+              <p className="text-sm text-gray-300">Manage all your candidates</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </main>
     </div>
   );
 }
