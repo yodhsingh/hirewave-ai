@@ -5,6 +5,8 @@ import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Image from 'next/image';
+import Navigation from '@/components/layout/Navigation';
+import Footer from '@/components/layout/Footer';
 import {
   ArrowLeft,
   Users,
@@ -248,49 +250,8 @@ export default function JobDetailsPage() {
           </div>
         </div>
 
-        {/* Navigation - Matching Home Page Exactly */}
-        <nav className="relative z-50 px-6 lg:px-16 py-6">
-          <div className="max-w-[1400px] mx-auto relative flex items-center justify-between">
-            {/* Logo with Brain.svg */}
-            <div className="flex items-center space-x-2">
-              <Image src="/Brain.svg" alt="Logo" width={24} height={24} />
-              <span className="text-xl font-semibold text-black">
-                HireWave.ai
-              </span>
-            </div>
-            {/* Navigation Links - centered absolutely */}
-            <div className="hidden md:flex items-center space-x-10 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
-              <Link href="/hr/dashboard" className="text-black/60 hover:text-black transition-colors text-sm">
-                Dashboard
-              </Link>
-              <button className="text-black/60 hover:text-black transition-colors text-sm">
-                Jobs
-              </button>
-              <button className="text-black font-medium transition-colors text-sm">
-                Job Details
-              </button>
-            </div>
-
-            {/* Right actions */}
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={() => router.push(`/hr/jobs/invite?jobId=${params.id}`)}
-                className="bg-[#2D2D2D] text-white hover:bg-[#1a1a1a] rounded-lg px-6 py-2.5 text-sm font-normal"
-              >
-                Invite Candidates
-              </Button>
-              {/* Mobile hamburger */}
-              <button
-                aria-label="Open navigation menu"
-                className="md:hidden w-10 h-10 rounded-lg border border-black/10 bg-white/80 hover:bg-white transition-colors flex items-center justify-center"
-              >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-black">
-                  <path d="M3 6h18M3 12h18M3 18h18" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </nav>
+        {/* Navigation */}
+        <Navigation />
 
         {/* Hero Section - Matching Home Page Style */}
         <section className="relative z-10 px-6 lg:px-16 pt-12 pb-28 lg:pt-12 lg:pb-32 min-h-[720px] lg:min-h-[780px] xl:min-h-[840px]">
@@ -1444,6 +1405,8 @@ export default function JobDetailsPage() {
         </div>
       </section>
 
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }
