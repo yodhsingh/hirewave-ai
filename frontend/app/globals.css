@@ -108,8 +108,39 @@
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    overflow-x: hidden; /* Prevent horizontal scrollbar globally */
   }
+  html { overflow-x: hidden; }
 }
+
+/* Global scrollbar styling */
+/* Firefox */
+html,
+body {
+  scrollbar-width: thin;                  /* For Firefox */
+  scrollbar-color: #ffffff #0F0F0F;   /* Thumb = white, Track = transparent */
+}
+
+/* Chrome, Edge, Safari */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;                /* Transparent track */
+}
+
+::-webkit-scrollbar-thumb {              /* White thumb */
+  border-radius: 9999px;                  /* Fully rounded */
+  background-clip: padding-box;
+  border: 2px solid transparent;          /* Small spacing around thumb */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.9); /* Slightly dimmer on hover */
+}
+
 
 /* Custom Select Component Styles for Dark Theme */
 [data-radix-popper-content-wrapper] {
