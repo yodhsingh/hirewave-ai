@@ -15,6 +15,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { FloatingParticles } from '@/components/FloatingParticles';
 import { gradients } from '@/lib/theme';
 import Link from 'next/link';
@@ -73,6 +74,8 @@ export default function ApplicantOnboarding() {
     { number: 5, title: 'Review', icon: FileText },
   ];
 
+  const totalSteps = steps.length;
+
   const handleNext = () => {
     if (currentStep < 5) {
       setCurrentStep(currentStep + 1);
@@ -117,74 +120,75 @@ export default function ApplicantOnboarding() {
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-10 border-b border-gray-800 bg-black/50 backdrop-blur-lg">
+      <nav className="relative z-10 border-b border-gray-800 bg-black/50 backdrop-blur-lg sticky top-0">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <Link href="/applicant" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <Home className="w-5 h-5" />
-                <span className="font-semibold">Applicant Home</span>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/applicant"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 rounded-md transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4 text-white" />
+                Back to Home
               </Link>
-              <div className="h-6 w-px bg-gray-700" />
-              <h1 className={`text-xl font-bold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
-                Profile Setup
-              </h1>
+              <div className="h-8 w-px bg-gray-700" />
+              <div>
+                <h1 className={`text-xl font-semibold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
+                  Profile Setup
+                </h1>
+                <p className="text-sm text-gray-300">
+                  Step {currentStep} of {totalSteps}
+                </p>
+              </div>
             </div>
+            <Badge
+              variant="outline"
+              className={`bg-gradient-to-r ${gradients.cardHeader} border-blue-500/50 text-blue-300`}
+            >
+              <Sparkles className="w-3 h-3 mr-1" />
+              AI-Powered Matching
+            </Badge>
           </div>
         </div>
       </nav>
 
       <div className="relative z-10 container mx-auto px-6 py-8 max-w-4xl">
-        {/* Progress Steps */}
+        {/* Progress Bar */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            {steps.map((step, index) => {
+          <Progress
+            value={(currentStep / totalSteps) * 100}
+            className="h-2 bg-gray-800 mb-4"
+          />
+
+          {/* Progress Steps */}
+          <div className="flex justify-between mt-4">
+            {steps.map((step) => {
               const Icon = step.icon;
               const isActive = step.number === currentStep;
               const isCompleted = step.number < currentStep;
 
               return (
-                <motion.div
+                <div
                   key={step.number}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="flex items-center"
+                  className={`flex flex-col items-center gap-2 ${
+                    isActive ? 'text-blue-400' : isCompleted ? 'text-green-400' : 'text-gray-500'
+                  }`}
                 >
-                  <div className="relative">
-                    <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${
-                        isActive
-                          ? `bg-gradient-to-br ${gradients.primary} shadow-lg shadow-blue-500/30`
-                          : isCompleted
-                          ? `bg-gradient-to-br ${gradients.success}`
-                          : 'bg-white/10 border border-white/20'
-                      }`}
-                    >
-                      {isCompleted ? (
-                        <CheckCircle className="h-6 w-6" />
-                      ) : (
-                        <Icon className="h-6 w-6" />
-                      )}
-                    </div>
-                    <div
-                      className={`absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs whitespace-nowrap ${
-                        isActive ? 'text-blue-400 font-semibold' : 'text-gray-400'
-                      }`}
-                    >
-                      {step.title}
-                    </div>
+                  <div className={`
+                    w-10 h-10 rounded-full flex items-center justify-center transition-all
+                    ${isActive ? `bg-gradient-to-r ${gradients.primary} text-white shadow-lg shadow-blue-500/30 scale-110` :
+                      isCompleted ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-gray-800 text-gray-400'}
+                  `}>
+                    {isCompleted ? (
+                      <CheckCircle className="w-5 h-5" />
+                    ) : (
+                      <Icon className="w-5 h-5" />
+                    )}
                   </div>
-                  {index < steps.length - 1 && (
-                    <div
-                      className={`h-1 w-full mx-2 transition-all duration-300 ${
-                        step.number < currentStep
-                          ? `bg-gradient-to-r ${gradients.success}`
-                          : 'bg-white/10'
-                      }`}
-                    />
-                  )}
-                </motion.div>
+                  <div className="text-center hidden sm:block">
+                    <p className="text-sm font-medium">{step.title}</p>
+                  </div>
+                </div>
               );
             })}
           </div>
@@ -197,10 +201,12 @@ export default function ApplicantOnboarding() {
           transition={{ duration: 0.3 }}
           key={currentStep}
         >
-          <Card className="mt-12 bg-white/5 backdrop-blur-xl border-white/10">
-            <CardHeader>
-              <CardTitle className="text-xl">{steps[currentStep - 1].title}</CardTitle>
-              <CardDescription className="text-gray-400">
+          <Card className="mt-12 bg-gray-900/90 backdrop-blur-md border border-gray-700 shadow-xl">
+            <CardHeader className={`bg-gradient-to-r ${gradients.cardHeader} border-b border-gray-700 rounded-t-lg`}>
+              <CardTitle className={`text-2xl font-bold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
+                {steps[currentStep - 1].title}
+              </CardTitle>
+              <CardDescription className="text-gray-200 mt-2">
                 {currentStep === 1 && 'Let\'s start with your basic information'}
                 {currentStep === 2 && 'Tell us about your professional experience'}
                 {currentStep === 3 && 'Select your skills and expertise'}
@@ -254,7 +260,7 @@ export default function ApplicantOnboarding() {
                       id="location"
                       value={profile.location}
                       onChange={(e) => setProfile({ ...profile, location: e.target.value })}
-                      placeholder="San Francisco, CA"
+                      placeholder="Chandigarh, Punjab"
                       className="bg-white/10 border-white/20 text-white placeholder:text-gray-500"
                     />
                   </div>
@@ -356,8 +362,8 @@ export default function ApplicantOnboarding() {
                           variant={profile.skills?.includes(skill) ? 'default' : 'outline'}
                           className={`cursor-pointer transition-all ${
                             profile.skills?.includes(skill)
-                              ? `bg-gradient-to-r ${gradients.primary} border-0`
-                              : 'bg-white/5 border-white/20 hover:bg-white/10'
+                              ? `bg-gradient-to-r ${gradients.primary} border-0 text-white`
+                              : 'bg-white/5 border-white/20 hover:bg-white/10 text-white'
                           }`}
                           onClick={() => toggleSkill(skill)}
                         >
@@ -369,7 +375,7 @@ export default function ApplicantOnboarding() {
                 ))}
 
                 <div>
-                  <Label htmlFor="otherSkills">Other Skills (comma-separated)</Label>
+                  <Label htmlFor="otherSkills" className="text-gray-300">Other Skills (comma-separated)</Label>
                   <Input
                     id="otherSkills"
                     placeholder="Skill 1, Skill 2, Skill 3"
@@ -389,7 +395,7 @@ export default function ApplicantOnboarding() {
             {currentStep === 4 && (
               <>
                 <div>
-                  <Label>Desired Roles</Label>
+                  <Label className="text-white">Desired Roles</Label>
                   <div className="flex flex-wrap gap-2 mt-2">
                     {roleOptions.map(role => (
                       <Badge
@@ -397,8 +403,8 @@ export default function ApplicantOnboarding() {
                         variant={profile.desiredRoles?.includes(role) ? 'default' : 'outline'}
                         className={`cursor-pointer transition-colors ${
                           profile.desiredRoles?.includes(role)
-                            ? 'bg-blue-600 hover:bg-blue-700'
-                            : 'hover:bg-gray-100'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
+                            : 'hover:bg-white/10 text-gray-300 border-white/20'
                         }`}
                         onClick={() => toggleRole(role)}
                       >
@@ -410,7 +416,7 @@ export default function ApplicantOnboarding() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label htmlFor="minSalary">Minimum Salary (USD)</Label>
+                    <Label htmlFor="minSalary" className="text-gray-300">Minimum Salary (USD)</Label>
                     <Input
                       id="minSalary"
                       type="number"
@@ -426,7 +432,7 @@ export default function ApplicantOnboarding() {
                     />
                   </div>
                   <div>
-                    <Label htmlFor="maxSalary">Maximum Salary (USD)</Label>
+                    <Label htmlFor="maxSalary" className="text-gray-300">Maximum Salary (USD)</Label>
                     <Input
                       id="maxSalary"
                       type="number"
@@ -444,7 +450,7 @@ export default function ApplicantOnboarding() {
                 </div>
 
                 <div>
-                  <Label htmlFor="availability">Availability</Label>
+                  <Label htmlFor="availability" className="text-gray-300">Availability</Label>
                   <Select
                     value={profile.availability}
                     onValueChange={(value) => setProfile({ ...profile, availability: value as any })}
@@ -468,7 +474,7 @@ export default function ApplicantOnboarding() {
                     checked={profile.willingToRelocate}
                     onCheckedChange={(checked) => setProfile({ ...profile, willingToRelocate: !!checked })}
                   />
-                  <Label htmlFor="relocate">Willing to relocate</Label>
+                  <Label htmlFor="relocate" className="text-gray-300">Willing to relocate</Label>
                 </div>
               </>
             )}

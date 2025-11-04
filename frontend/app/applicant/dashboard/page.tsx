@@ -47,7 +47,7 @@ export default function ApplicantDashboard() {
         desiredRoles: ['Software Engineer', 'Full Stack Developer'],
         experience: 5,
         currentRole: 'Software Engineer',
-        location: 'San Francisco, CA',
+        location: 'Chandigarh, Punjab',
         createdAt: new Date(),
         updatedAt: new Date(),
         practiceSessions: [],
