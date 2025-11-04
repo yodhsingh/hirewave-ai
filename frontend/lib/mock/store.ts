@@ -2,7 +2,8 @@ import {
   getMockData,
   resetMockData,
   generateCandidate,
-  generateInvite
+  generateInvite,
+  generatePracticeSession
 } from './data';
 import type {
   Job,
