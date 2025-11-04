@@ -1,4 +1,4 @@
-'use client';
+// 'use client';
 
 import { UseFormReturn, Controller } from 'react-hook-form';
 import { motion } from 'framer-motion';
@@ -57,17 +57,17 @@ const EMPLOYMENT_TYPES = [
 ];
 
 const LOCATION_TYPES = [
-  { value: 'remote', label: 'Remote', icon: '🌍' },
-  { value: 'hybrid', label: 'Hybrid', icon: '🏢' },
-  { value: 'onsite', label: 'On-site', icon: '🏛️' },
+  { value: 'remote', label: 'Remote' },
+  { value: 'hybrid', label: 'Hybrid'},
+  { value: 'onsite', label: 'On-site' },
 ];
 
 const EXPERIENCE_LEVELS = [
-  { value: 'entry', label: 'Entry Level (0-2 years)', icon: '🌱' },
-  { value: 'mid', label: 'Mid Level (3-5 years)', icon: '🌿' },
-  { value: 'senior', label: 'Senior Level (6-10 years)', icon: '🌳' },
-  { value: 'lead', label: 'Lead/Principal (10+ years)', icon: '🎯' },
-  { value: 'executive', label: 'Executive', icon: '👔' },
+  { value: 'entry', label: 'Entry Level (0-2 years)' },
+  { value: 'mid', label: 'Mid Level (3-5 years)'},
+  { value: 'senior', label: 'Senior Level (6-10 years)' },
+  { value: 'lead', label: 'Lead/Principal (10+ years)'},
+  { value: 'executive', label: 'Executive' },
 ];
 
 export function JobBasicsForm({ form }: JobBasicsFormProps) {
@@ -97,7 +97,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
         transition={{ delay: 0.1 }}
       >
         <Label htmlFor="title" className="flex items-center gap-2 mb-2 text-gray-200">
-          <Briefcase className="w-4 h-4 text-blue-400" />
+          
           Job Title *
         </Label>
         <Input
@@ -120,7 +120,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
       >
         <div>
           <Label htmlFor="department" className="flex items-center gap-2 mb-2 text-gray-200">
-            <Building className="w-4 h-4 text-purple-400" />
+            
             Department *
           </Label>
           <Controller
@@ -155,7 +155,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
 
         <div>
           <Label htmlFor="roleType" className="flex items-center gap-2 mb-2 text-gray-200">
-            <Clock className="w-4 h-4 text-green-400" />
+            
             Employment Type *
           </Label>
           <Controller
@@ -196,7 +196,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
         transition={{ delay: 0.3 }}
       >
         <Label htmlFor="location" className="flex items-center gap-2 mb-2 text-gray-200">
-          <MapPin className="w-4 h-4 text-pink-400" />
+          
           Location *
         </Label>
         <Input
@@ -222,7 +222,6 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
                 }
               }}
             >
-              <div className="text-2xl mb-1">{type.icon}</div>
               <p className="text-sm font-medium text-gray-200">{type.label}</p>
             </Card>
           ))}
@@ -236,7 +235,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
         transition={{ delay: 0.4 }}
       >
         <Label className="flex items-center gap-2 mb-3 text-gray-200">
-          <Users className="w-4 h-4 text-orange-400" />
+          
           Experience Level
         </Label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -246,7 +245,6 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
               className="p-3 cursor-pointer bg-gray-800 border-gray-600 hover:border-blue-500 transition-colors"
             >
               <div className="flex items-center gap-2">
-                <span className="text-xl">{level.icon}</span>
                 <p className="text-sm font-medium text-gray-200">{level.label}</p>
               </div>
             </Card>
@@ -261,7 +259,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
         transition={{ delay: 0.5 }}
       >
         <Label htmlFor="description" className="flex items-center gap-2 mb-2 text-gray-200">
-          <FileText className="w-4 h-4 text-cyan-400" />
+          
           Job Description *
         </Label>
         <Textarea
@@ -285,7 +283,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
         transition={{ delay: 0.6 }}
       >
         <Label className="flex items-center gap-2 mb-2 text-gray-200">
-          <Type className="w-4 h-4 text-yellow-400" />
+          
           Key Requirements
         </Label>
         <div className="space-y-3">
@@ -306,7 +304,6 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
               type="button"
               onClick={addRequirement}
               size="sm"
-              className="gap-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
             >
               <Plus className="w-4 h-4" />
               Add
@@ -347,7 +344,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
         transition={{ delay: 0.7 }}
       >
         <Label className="flex items-center gap-2 mb-2 text-gray-200">
-          <DollarSign className="w-4 h-4 text-green-400" />
+        
           Salary Range (Optional)
         </Label>
         <div className="grid grid-cols-2 gap-3">
@@ -375,7 +372,6 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
         className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/30 rounded-lg p-4"
       >
         <div className="flex items-start gap-3">
-          <div className="text-2xl">🤖</div>
           <div className="flex-1">
             <p className="font-medium text-sm mb-1 text-blue-300">AI will enhance your job posting</p>
             <p className="text-sm text-gray-300">
