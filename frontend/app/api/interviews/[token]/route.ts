@@ -25,7 +25,7 @@ export async function GET(
       );
     }
 
-    // Return questions and settings for the interview
+    
     return NextResponse.json({
       success: true,
       data: {

@@ -56,8 +56,8 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    // In a real app, this would delete the job
-    // For now, we'll just mark it as closed
+    
+    
     const updatedJob = mockStore.updateJob(id, { status: 'closed' });
 
     if (!updatedJob) {

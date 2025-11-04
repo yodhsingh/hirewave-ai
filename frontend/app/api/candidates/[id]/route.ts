@@ -16,7 +16,7 @@ export async function GET(
       );
     }
 
-    // Get the job details for this candidate
+    
     const job = mockStore.getJobById(candidate.jobId);
 
     const candidateDetail = {

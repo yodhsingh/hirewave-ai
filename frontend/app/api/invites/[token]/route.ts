@@ -25,7 +25,7 @@ export async function GET(
       );
     }
 
-    // Find the candidate
+    
     const candidates = mockStore.getCandidatesByJobId(invite.jobId);
     const candidate = candidates.find(c => c.email === invite.email);
 
@@ -46,7 +46,7 @@ export async function GET(
           department: job.department,
           location: job.location,
           questionCount: job.questions.length,
-          estimatedTime: Math.ceil(job.questions.length * 2.5), // ~2.5 min per question
+          estimatedTime: Math.ceil(job.questions.length * 2.5), 
         },
       },
     });

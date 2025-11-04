@@ -61,7 +61,7 @@ class ApiClient {
     }
   }
 
-  // Job endpoints
+  
   async getJobs() {
     return this.request<Job[]>('/jobs');
   }
@@ -95,7 +95,7 @@ class ApiClient {
     });
   }
 
-  // Candidate endpoints
+  
   async getCandidates(jobId?: string) {
     const endpoint = jobId ? `/jobs/${jobId}/candidates` : '/candidates';
     return this.request<Candidate[]>(endpoint);
@@ -126,7 +126,7 @@ class ApiClient {
     });
   }
 
-  // Invite endpoints
+  
   async createInvites(jobId: string, emails: string[]) {
     return this.request<InviteResult>(`/jobs/${jobId}/invites`, {
       method: 'POST',
@@ -142,7 +142,7 @@ class ApiClient {
     }>(`/invites/${token}`);
   }
 
-  // Interview endpoints
+  
   async getInterviewQuestions(token: string) {
     return this.request<{
       questions: Job['questions'];
@@ -164,7 +164,7 @@ class ApiClient {
     });
   }
 
-  // Analytics endpoints
+  
   async getJobAnalytics(jobId: string) {
     return this.request<Record<string, unknown>>(`/analytics/jobs/${jobId}`);
   }
@@ -178,7 +178,7 @@ class ApiClient {
     }>('/analytics/overview');
   }
 
-  // Auth endpoints
+  
   async login(email: string, password: string) {
     return this.request<{
       user: Record<string, unknown>;
@@ -199,7 +199,7 @@ class ApiClient {
     return this.request<Record<string, unknown>>('/auth/me');
   }
 
-  // Upload endpoints
+  
   async uploadVideo(file: Blob, metadata: Record<string, unknown>) {
     const formData = new FormData();
     formData.append('video', file);
@@ -208,7 +208,7 @@ class ApiClient {
     return this.request<{ url: string }>('/upload/video', {
       method: 'POST',
       body: formData,
-      headers: {}, // Let browser set Content-Type for FormData
+      headers: {}, 
     });
   }
 }

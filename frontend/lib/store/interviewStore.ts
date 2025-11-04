@@ -3,25 +3,25 @@ import { persist } from 'zustand/middleware';
 import type { Question, InterviewResponse, Candidate } from '@/types';
 
 interface InterviewState {
-  // Interview data
+  
   token: string | null;
   candidate: Partial<Candidate> | null;
   questions: Question[];
   currentQuestionIndex: number;
   responses: Map<string, InterviewResponse>;
 
-  // Status flags
+  
   isLoading: boolean;
   isSubmitting: boolean;
   hasConsented: boolean;
   deviceCheckPassed: boolean;
   practiceCompleted: boolean;
 
-  // Timing
+  
   startTime: Date | null;
   lastSaveTime: Date | null;
 
-  // Actions
+  
   initializeInterview: (token: string, candidate: Partial<Candidate>, questions: Question[]) => void;
   setCurrentQuestion: (index: number) => void;
   saveResponse: (questionId: string, response: Partial<InterviewResponse>) => void;
@@ -31,7 +31,7 @@ interface InterviewState {
   submitInterview: () => Promise<void>;
   resetInterview: () => void;
 
-  // Computed values
+  
   getProgress: () => number;
   getCurrentQuestion: () => Question | null;
   isQuestionAnswered: (questionId: string) => boolean;
@@ -41,7 +41,7 @@ interface InterviewState {
 export const useInterviewStore = create<InterviewState>()(
   persist(
     (set, get) => ({
-      // Initial state
+      
       token: null,
       candidate: null,
       questions: [],
@@ -55,7 +55,7 @@ export const useInterviewStore = create<InterviewState>()(
       startTime: null,
       lastSaveTime: null,
 
-      // Initialize interview
+      
       initializeInterview: (token, candidate, questions) => {
         set({
           token,
@@ -70,7 +70,7 @@ export const useInterviewStore = create<InterviewState>()(
         });
       },
 
-      // Navigation
+      
       setCurrentQuestion: (index) => {
         const { questions } = get();
         if (index >= 0 && index < questions.length) {
@@ -78,7 +78,7 @@ export const useInterviewStore = create<InterviewState>()(
         }
       },
 
-      // Save response
+      
       saveResponse: (questionId, response) => {
         const { responses } = get();
         const newResponses = new Map(responses);
@@ -99,21 +99,21 @@ export const useInterviewStore = create<InterviewState>()(
         });
       },
 
-      // Device and practice
+      
       markDeviceCheckPassed: () => set({ deviceCheckPassed: true }),
       markPracticeCompleted: () => set({ practiceCompleted: true }),
       setConsent: (consented) => set({ hasConsented: consented }),
 
-      // Submit interview
+      
       submitInterview: async () => {
         set({ isSubmitting: true });
 
         try {
-          // In a real app, this would call the API
-          // For now, we'll simulate with a delay
+          
+          
           await new Promise(resolve => setTimeout(resolve, 1000));
 
-          // Clear the persisted state after submission
+          
           get().resetInterview();
         } catch (error) {
           console.error('Failed to submit interview:', error);
@@ -123,7 +123,7 @@ export const useInterviewStore = create<InterviewState>()(
         }
       },
 
-      // Reset interview
+      
       resetInterview: () => {
         set({
           token: null,
@@ -141,7 +141,7 @@ export const useInterviewStore = create<InterviewState>()(
         });
       },
 
-      // Computed values
+      
       getProgress: () => {
         const { questions, responses } = get();
         if (questions.length === 0) return 0;
@@ -183,7 +183,7 @@ export const useInterviewStore = create<InterviewState>()(
         lastSaveTime: state.lastSaveTime,
       }),
       onRehydrateStorage: () => (state) => {
-        // Convert responses array back to Map after rehydration
+        
         if (state && Array.isArray(state.responses)) {
           state.responses = new Map(state.responses as any);
         }

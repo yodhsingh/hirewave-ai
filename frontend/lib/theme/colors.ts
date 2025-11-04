@@ -10,14 +10,14 @@
  */
 
 export const colors = {
-  // Primary Brand Colors (Blue)
+  
   primary: {
     50: '#eff6ff',
     100: '#dbeafe',
     200: '#bfdbfe',
     300: '#93c5fd',
     400: '#60a5fa',
-    500: '#3b82f6',  // Main brand blue
+    500: '#3b82f6',  
     600: '#2563eb',
     700: '#1d4ed8',
     800: '#1e40af',
@@ -25,14 +25,14 @@ export const colors = {
     950: '#172554',
   },
 
-  // Secondary Brand Colors (Cyan)
+  
   secondary: {
     50: '#ecfeff',
     100: '#cffafe',
     200: '#a5f3fc',
     300: '#67e8f9',
     400: '#22d3ee',
-    500: '#06b6d4',  // Main brand cyan
+    500: '#06b6d4',  
     600: '#0891b2',
     700: '#0e7490',
     800: '#155e75',
@@ -40,14 +40,14 @@ export const colors = {
     950: '#083344',
   },
 
-  // Accent Colors (Orange)
+  
   accent: {
     50: '#fff7ed',
     100: '#ffedd5',
     200: '#fed7aa',
     300: '#fdba74',
     400: '#fb923c',
-    500: '#f97316',  // Main accent orange
+    500: '#f97316',  
     600: '#ea580c',
     700: '#c2410c',
     800: '#9a3412',
@@ -55,11 +55,11 @@ export const colors = {
     950: '#431407',
   },
 
-  // Semantic Status Colors
+  
   success: {
     50: '#f0fdf4',
     100: '#dcfce7',
-    500: '#10b981',  // Green
+    500: '#10b981',  
     600: '#059669',
     700: '#047857',
     900: '#064e3b',
@@ -68,7 +68,7 @@ export const colors = {
   warning: {
     50: '#fffbeb',
     100: '#fef3c7',
-    500: '#f59e0b',  // Amber
+    500: '#f59e0b',  
     600: '#d97706',
     700: '#b45309',
     900: '#78350f',
@@ -77,7 +77,7 @@ export const colors = {
   error: {
     50: '#fef2f2',
     100: '#fee2e2',
-    500: '#ef4444',  // Red
+    500: '#ef4444',  
     600: '#dc2626',
     700: '#b91c1c',
     900: '#7f1d1d',
@@ -86,7 +86,7 @@ export const colors = {
   info: {
     50: '#eff6ff',
     100: '#dbeafe',
-    500: '#3b82f6',  // Blue
+    500: '#3b82f6',  
     600: '#2563eb',
     700: '#1d4ed8',
     900: '#1e3a8a',
@@ -99,34 +99,34 @@ export const colors = {
  */
 export const themeColors = {
   dark: {
-    // Backgrounds
+    
     bg: {
-      primary: '#000000',      // Main app background
-      secondary: '#0a0a0a',    // Cards and panels
-      tertiary: '#111827',     // Elevated elements
-      elevated: '#1f2937',     // Modals, dropdowns
-      hover: '#374151',        // Hover states
-      active: '#4b5563',       // Active/pressed states
+      primary: '#000000',      
+      secondary: '#0a0a0a',    
+      tertiary: '#111827',     
+      elevated: '#1f2937',     
+      hover: '#374151',        
+      active: '#4b5563',       
     },
 
-    // Text colors
+    
     text: {
-      primary: '#ffffff',      // Headings, important text
-      secondary: '#e5e7eb',    // Body text
-      tertiary: '#9ca3af',     // Muted text
-      quaternary: '#6b7280',   // Disabled text
-      inverse: '#000000',      // Text on colored backgrounds
+      primary: '#ffffff',      
+      secondary: '#e5e7eb',    
+      tertiary: '#9ca3af',     
+      quaternary: '#6b7280',   
+      inverse: '#000000',      
     },
 
-    // Border colors
+    
     border: {
-      primary: '#1f2937',      // Default borders
-      secondary: '#374151',    // Emphasized borders
-      tertiary: '#4b5563',     // Active borders
-      focus: colors.primary[500], // Focus rings
+      primary: '#1f2937',      
+      secondary: '#374151',    
+      tertiary: '#4b5563',     
+      focus: colors.primary[500], 
     },
 
-    // Interactive elements
+    
     interactive: {
       default: colors.primary[600],
       hover: colors.primary[700],
@@ -136,7 +136,7 @@ export const themeColors = {
   },
 
   light: {
-    // Backgrounds
+    
     bg: {
       primary: '#ffffff',
       secondary: '#f9fafb',
@@ -146,7 +146,7 @@ export const themeColors = {
       active: '#e5e7eb',
     },
 
-    // Text colors
+    
     text: {
       primary: '#111827',
       secondary: '#374151',
@@ -155,7 +155,7 @@ export const themeColors = {
       inverse: '#ffffff',
     },
 
-    // Border colors
+    
     border: {
       primary: '#e5e7eb',
       secondary: '#d1d5db',
@@ -163,7 +163,7 @@ export const themeColors = {
       focus: colors.primary[500],
     },
 
-    // Interactive elements
+    
     interactive: {
       default: colors.primary[600],
       hover: colors.primary[700],
@@ -184,11 +184,11 @@ export const gradients = {
   success: 'from-green-500 to-emerald-600',
   error: 'from-red-500 to-rose-600',
 
-  // Background gradients
+  
   bgPrimary: 'from-blue-900/20 via-gray-900/10 to-cyan-900/20',
   bgSecondary: 'from-blue-600/5 via-transparent to-cyan-600/5',
 
-  // Card gradients
+  
   cardHeader: 'from-blue-600/20 to-cyan-600/20',
   cardHeaderAlt: 'from-cyan-600/20 to-blue-600/20',
 } as const;
@@ -203,7 +203,7 @@ export const shadows = {
   xl: '0 20px 25px -5px rgb(0 0 0 / 0.1)',
   '2xl': '0 25px 50px -12px rgb(0 0 0 / 0.25)',
 
-  // Glow effects (for dark mode)
+  
   glowBlue: '0 0 20px rgb(59 130 246 / 0.3)',
   glowCyan: '0 0 20px rgb(6 182 212 / 0.3)',
   glowOrange: '0 0 20px rgb(249 115 22 / 0.3)',

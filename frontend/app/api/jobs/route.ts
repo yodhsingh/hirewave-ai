@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
   try {
     const body: JobCreate = await request.json();
 
-    // Basic validation
+    
     if (!body.title || !body.description || !body.questions || body.questions.length < 3) {
       return NextResponse.json(
         {

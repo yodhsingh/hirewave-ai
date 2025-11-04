@@ -41,7 +41,7 @@ const generateQuestions = (count: number = 5): Question[] => {
         'AI phone interview to assess your problem-solving abilities and technical knowledge',
         'Automated phone screening to discuss your background and project experience',
       ],
-      timeLimit: 900, // 15 minutes for phone interviews
+      timeLimit: 900, 
     },
     {
       type: 'video' as const,
@@ -75,7 +75,7 @@ const generateQuestions = (count: number = 5): Question[] => {
 
   const questions: Question[] = [];
 
-  // Always add a phone interview as the first question
+  
   const phoneTemplate = questionTemplates.find(t => t.type === 'phone')!;
   questions.push({
     id: generateId(),
@@ -88,7 +88,7 @@ const generateQuestions = (count: number = 5): Question[] => {
     scoreWeight: 10,
   });
 
-  // Add remaining questions
+  
   for (let i = 1; i < count; i++) {
     const template = faker.helpers.arrayElement(questionTemplates);
     const prompt = faker.helpers.arrayElement(template.prompts);
@@ -103,7 +103,7 @@ const generateQuestions = (count: number = 5): Question[] => {
       options: template.type === 'multiple_choice'
         ? ['Option A', 'Option B', 'Option C', 'Option D']
         : undefined,
-      required: i <= 3, // First few questions are required
+      required: i <= 3, 
       order: i,
       scoreWeight: faker.number.int({ min: 1, max: 10 }),
     });
@@ -113,7 +113,7 @@ const generateQuestions = (count: number = 5): Question[] => {
 };
 
 const JOB_TITLES = [
-  // Software Engineering
+  
   'Senior Software Engineer',
   'Full Stack Developer',
   'Backend Engineer',
@@ -124,7 +124,7 @@ const JOB_TITLES = [
   'Mobile App Developer',
   'Software Development Manager',
 
-  // Data Science & AI
+  
   'Data Scientist',
   'Senior Data Scientist',
   'Machine Learning Engineer',
@@ -136,14 +136,14 @@ const JOB_TITLES = [
   'Computer Vision Engineer',
   'NLP Engineer',
 
-  // Data & Analytics
+  
   'Data Architect',
   'Big Data Engineer',
   'Analytics Lead',
   'Quantitative Analyst',
   'Data Platform Engineer',
 
-  // Management & Leadership
+  
   'Technical Project Manager',
   'Product Manager - AI/ML',
   'Engineering Manager',
@@ -151,7 +151,7 @@ const JOB_TITLES = [
   'Scrum Master',
   'Agile Coach',
 
-  // Specialized Roles
+  
   'Blockchain Developer',
   'Security Engineer',
   'QA Automation Engineer',
@@ -178,7 +178,7 @@ export const generateJob = (status: JobStatus = 'active'): Job => {
 
   const selectedTitle = faker.helpers.arrayElement(JOB_TITLES);
 
-  // Generate relevant job descriptions based on title
+  
   const jobDescriptions: Record<string, string> = {
     'Data Scientist': 'We are looking for a talented Data Scientist to join our team. You will be responsible for collecting, analyzing, and interpreting large datasets to help drive business decisions. You will work closely with cross-functional teams to implement machine learning models and create data-driven solutions.',
     'Senior Software Engineer': 'Join our engineering team as a Senior Software Engineer where you will design, develop, and maintain scalable software solutions. You will mentor junior developers, participate in architecture decisions, and ensure code quality through best practices.',
@@ -188,7 +188,7 @@ export const generateJob = (status: JobStatus = 'active'): Job => {
     'Product Manager - AI/ML': 'Lead our AI/ML product initiatives as a Product Manager. You will define product strategy, work with data science teams, and drive the development of innovative AI-powered features.',
   };
 
-  // Generate relevant requirements based on role type
+  
   const techRequirements = [
     '3+ years of experience in software development',
     'Strong problem-solving and analytical skills',
@@ -238,7 +238,7 @@ export const generateJob = (status: JobStatus = 'active'): Job => {
 };
 
 const CANDIDATE_NAMES = [
-  // Core team members (IIT Madras students)
+  
   { name: 'Hiya Syal', email: '23f3003216@ds.study.iitm.ac.in' },
   { name: 'Parmeet Singh', email: '22f1000535@ds.study.iitm.ac.in' },
   { name: 'Shubham Tiwari', email: '22f1001934@ds.study.iitm.ac.in' },
@@ -259,7 +259,7 @@ const CANDIDATE_NAMES = [
   { name: 'Suresh Kumar', email: 'suresh.kumar@example.com' },
   { name: 'Anjali Mehta', email: 'anjali.mehta@example.com' },
   { name: 'Rahul Kapoor', email: 'rahul.kapoor@example.com' },
-  // Mix with some international names
+  
   { name: 'Sarah Johnson', email: 'sarah.johnson@example.com' },
   { name: 'Mike Chen', email: 'mike.chen@example.com' },
   { name: 'Emma Wilson', email: 'emma.wilson@example.com' },
@@ -287,7 +287,7 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
     'rejected',
   ]);
 
-  // Generate score if candidate is scored or beyond
+  
   const hasScore = ['scored', 'shortlisted', 'rejected', 'hired'].includes(candidateStatus);
 
   const overallScore = faker.number.int({ min: 40, max: 95 });
@@ -308,7 +308,7 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
     },
     scoredAt: submittedDate,
     scoredBy: generateId(),
-    // AI Insights
+    
     aiInsights: {
       summary: faker.helpers.arrayElement([
         'Strong technical candidate with excellent problem-solving skills and solid communication abilities.',
@@ -350,7 +350,7 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
       ], 2),
       confidenceLevel: faker.number.int({ min: 75, max: 98 }),
     },
-    // Extracted Skills
+    
     skillsExtracted: [
       { name: 'React', category: 'technical', proficiency: 'advanced', yearsOfExperience: 3, matchesJobRequirement: true, mentionedIn: ['q1', 'q3'] },
       { name: 'Node.js', category: 'technical', proficiency: faker.helpers.arrayElement(['intermediate', 'advanced', 'expert']), yearsOfExperience: 2, matchesJobRequirement: true, mentionedIn: ['q2'] },
@@ -360,7 +360,7 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
       { name: 'Team Collaboration', category: 'soft', proficiency: faker.helpers.arrayElement(['intermediate', 'advanced']), matchesJobRequirement: true, mentionedIn: ['q4'] },
       { name: faker.helpers.arrayElement(['Docker', 'Kubernetes', 'GraphQL', 'PostgreSQL']), category: 'technical', proficiency: faker.helpers.arrayElement(['beginner', 'intermediate']), matchesJobRequirement: false, mentionedIn: ['q2'] },
     ],
-    // Competency Ranking
+    
     competencyRanking: {
       percentile: Math.round((overallScore / 95) * 100),
       rank: faker.number.int({ min: 1, max: 20 }),
@@ -380,7 +380,7 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
     },
   } : {};
 
-  // Use predefined names, cycling through them
+  
   const candidateInfo = CANDIDATE_NAMES[candidateIndex % CANDIDATE_NAMES.length];
   candidateIndex++;
 
@@ -535,7 +535,7 @@ export const generatePracticeSession = (applicantId: string, jobId?: string): Pr
   const responses: PracticeResponse[] = [];
   const sessionId = generateId();
 
-  // Generate responses for each question
+  
   questions.forEach(question => {
     responses.push({
       id: generateId(),
@@ -561,7 +561,7 @@ export const generatePracticeSession = (applicantId: string, jobId?: string): Pr
     status: 'completed',
     startedAt: faker.date.recent(),
     completedAt: faker.date.recent(),
-    duration: faker.number.int({ min: 900, max: 2700 }), // 15-45 minutes
+    duration: faker.number.int({ min: 900, max: 2700 }), 
     questions,
     responses,
     feedback: {
@@ -718,10 +718,10 @@ export const generateInvite = (jobId: string, email?: string): Invite => {
 };
 
 export const generateMockData = () => {
-  // Generate HR users
+  
   const hrUsers = Array.from({ length: 3 }, () => generateUser('hr'));
 
-  // Generate jobs
+  
   const jobs: Job[] = [
     generateJob('active'),
     generateJob('active'),
@@ -729,13 +729,13 @@ export const generateMockData = () => {
     generateJob('draft'),
   ];
 
-  // Generate candidates for each job
+  
   const candidates: Candidate[] = [];
   const invites: Invite[] = [];
 
   jobs.forEach(job => {
     if (job.status === 'active' || job.status === 'closed') {
-      // Generate various candidates in different stages
+      
       const statuses: CandidateStatus[] = [
         'invited', 'invited', 'started',
         'in_progress', 'submitted', 'submitted',
@@ -747,30 +747,30 @@ export const generateMockData = () => {
         const candidate = generateCandidate(job.id, status);
         candidates.push(candidate);
 
-        // Generate responses if candidate has submitted
+        
         if (['submitted', 'scored', 'shortlisted', 'rejected'].includes(status)) {
           candidate.responses = generateInterviewResponses(candidate.id, job.questions);
         }
 
-        // Generate invite for candidate
+        
         invites.push(generateInvite(job.id, candidate.email));
       });
     }
   });
 
-  // Generate applicant profiles with practice sessions
+  
   const applicants: ApplicantProfile[] = [];
   const practiceSessions: PracticeSession[] = [];
 
-  // Generate 5 applicants with various practice sessions
+  
   for (let i = 0; i < 5; i++) {
     const applicant = generateApplicantProfile();
     applicants.push(applicant);
 
-    // Generate 1-3 practice sessions per applicant
+    
     const sessionCount = faker.number.int({ min: 1, max: 3 });
     for (let j = 0; j < sessionCount; j++) {
-      // Some sessions are job-specific, others are general practice
+      
       const jobId = faker.datatype.boolean() && jobs.length > 0 ?
         faker.helpers.arrayElement(jobs.filter(j => j.status === 'active')).id :
         undefined;
@@ -780,7 +780,7 @@ export const generateMockData = () => {
       applicant.practiceSessions.push(session);
     }
 
-    // Add some job applications
+    
     if (faker.datatype.boolean() && jobs.length > 0) {
       const appliedJobs = faker.helpers.arrayElements(
         jobs.filter(j => j.status === 'active'),
@@ -801,7 +801,7 @@ export const generateMockData = () => {
     }
   }
 
-  // Generate interview tips
+  
   const interviewTips = generateInterviewTips();
 
   return {
@@ -818,7 +818,7 @@ export const generateMockData = () => {
 let mockDataInstance: ReturnType<typeof generateMockData> | null = null;
 
 export const getMockData = () => {
-  // Use cached data if exists, otherwise generate new
+  
   if (!mockDataInstance) {
     mockDataInstance = generateMockData();
   }

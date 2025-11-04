@@ -405,12 +405,12 @@ function AIVoiceInterviewContent() {
             {/* Progress Card */}
             <Card className="bg-white/5 backdrop-blur-xl border-white/10">
               <CardHeader>
-                <CardTitle>Interview Progress</CardTitle>
+                <CardTitle className="text-white">Interview Progress</CardTitle>
               </CardHeader>
               <CardContent>
                 <Progress value={(currentQuestion / totalQuestions) * 100} className="mb-4" />
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-400">Current Topic:</p>
+                  <p className="text-sm text-gray-300">Current Topic:</p>
                   <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">
                     Technical Experience
                   </Badge>
@@ -420,9 +420,9 @@ function AIVoiceInterviewContent() {
 
             {/* Live Tips */}
             <Alert className="bg-blue-500/10 border-blue-500/30">
-              <Info className="w-4 h-4" />
-              <AlertDescription>
-                <strong>Remember:</strong> Take your time to think before answering. The AI is analyzing your
+              <Info className="w-4 h-4 text-blue-400" />
+              <AlertDescription className="text-gray-200">
+                <strong className="text-white">Remember:</strong> Take your time to think before answering. The AI is analyzing your
                 communication skills, technical knowledge, and problem-solving approach.
               </AlertDescription>
             </Alert>
