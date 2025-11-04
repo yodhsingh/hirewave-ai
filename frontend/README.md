@@ -326,4 +326,4 @@ This project is part of the IIT Madras Software Engineering course.
 
 ---
 
-**Built with ❤️ by the IIT Madras Team**
+**Built with ❤️ by the IIT Madras Team SE 15**

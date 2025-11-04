@@ -1,5 +1,9 @@
-// Mock data store for development - simulates a backend database
-import { getMockData, resetMockData, generateCandidate, generateInvite } from './data';
+import {
+  getMockData,
+  resetMockData,
+  generateCandidate,
+  generateInvite
+} from './data';
 import type {
   Job,
   Candidate,
@@ -9,9 +13,13 @@ import type {
   CandidateStatus,
   JobCreate,
   InviteResult,
+  ApplicantProfile,
+  PracticeSession,
+  InterviewTip,
+  PerformanceStats,
+  JobMatch,
 } from '@/types';
 
-// Use global to persist across hot module reloads in development
 declare global {
   var mockStoreInstance: MockStore | undefined;
   var mockStoreInitialized: boolean | undefined;
@@ -25,6 +33,9 @@ class MockStore {
     candidates: Candidate[];
     invites: Invite[];
     responses: InterviewResponse[];
+    applicants: ApplicantProfile[];
+    practiceSessions: PracticeSession[];
+    interviewTips: InterviewTip[];
   };
 
   private constructor() {
@@ -310,12 +321,235 @@ class MockStore {
         notes: candidate!.notes || '',
       }));
   }
+
+  // Applicant operations
+  getApplicants() {
+    return this.data.applicants;
+  }
+
+  getApplicantByEmail(email: string): ApplicantProfile | undefined {
+    return this.data.applicants.find(a => a.email === email);
+  }
+
+  getApplicantById(id: string): ApplicantProfile | undefined {
+    return this.data.applicants.find(a => a.id === id);
+  }
+
+  createApplicant(profile: Partial<ApplicantProfile>): ApplicantProfile {
+    const newApplicant: ApplicantProfile = {
+      id: generateId(),
+      email: profile.email || '',
+      name: profile.name || '',
+      skills: profile.skills || [],
+      desiredRoles: profile.desiredRoles || [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      practiceSessions: [],
+      applications: [],
+      ...profile,
+    };
+
+    this.data.applicants.push(newApplicant);
+    return newApplicant;
+  }
+
+  updateApplicantProfile(id: string, updates: Partial<ApplicantProfile>): ApplicantProfile | null {
+    const applicantIndex = this.data.applicants.findIndex(a => a.id === id);
+    if (applicantIndex === -1) return null;
+
+    this.data.applicants[applicantIndex] = {
+      ...this.data.applicants[applicantIndex],
+      ...updates,
+      updatedAt: new Date(),
+    };
+
+    return this.data.applicants[applicantIndex];
+  }
+
+  // Practice session operations
+  getPracticeSessions() {
+    return this.data.practiceSessions;
+  }
+
+  getPracticeSessionsByApplicantId(applicantId: string): PracticeSession[] {
+    return this.data.practiceSessions.filter(s => s.applicantId === applicantId);
+  }
+
+  getPracticeSessionById(id: string): PracticeSession | undefined {
+    return this.data.practiceSessions.find(s => s.id === id);
+  }
+
+  createPracticeSession(applicantId: string, jobId?: string): PracticeSession {
+    const session = generatePracticeSession(applicantId, jobId);
+    this.data.practiceSessions.push(session);
+
+    // Update applicant's sessions
+    const applicant = this.getApplicantById(applicantId);
+    if (applicant) {
+      applicant.practiceSessions.push(session);
+      applicant.updatedAt = new Date();
+    }
+
+    return session;
+  }
+
+  // Interview tips operations
+  getInterviewTips() {
+    return this.data.interviewTips;
+  }
+
+  getInterviewTipsByCategory(category?: string) {
+    if (!category) return this.data.interviewTips;
+    return this.data.interviewTips.filter(tip => tip.category === category);
+  }
+
+  // Job matching for applicants
+  getMatchingJobs(applicantId: string): JobMatch[] {
+    const applicant = this.getApplicantById(applicantId);
+    if (!applicant) return [];
+
+    const activeJobs = this.data.jobs.filter(j => j.status === 'active');
+    const matches: JobMatch[] = [];
+
+    activeJobs.forEach(job => {
+      // Calculate match score based on skills overlap
+      const requiredSkills = job.requirements || [];
+      const applicantSkills = applicant.skills || [];
+
+      const matchingSkills = requiredSkills.filter(skill =>
+        applicantSkills.some(s => s.toLowerCase().includes(skill.toLowerCase()))
+      );
+
+      const matchScore = requiredSkills.length > 0
+        ? Math.round((matchingSkills.length / requiredSkills.length) * 100)
+        : 75; // Default score if no requirements specified
+
+      const missingSkills = requiredSkills.filter(skill =>
+        !applicantSkills.some(s => s.toLowerCase().includes(skill.toLowerCase()))
+      );
+
+      matches.push({
+        jobId: job.id,
+        job,
+        matchScore,
+        matchReasons: [
+          `${matchingSkills.length} of ${requiredSkills.length} required skills`,
+          job.location === applicant.location ? 'Location match' : '',
+          applicant.desiredRoles.includes(job.title) ? 'Role preference match' : '',
+        ].filter(Boolean),
+        missingSkills,
+        salary: {
+          min: 70000,
+          max: 150000,
+          currency: 'USD'
+        },
+        benefits: ['Health insurance', '401k', 'Remote work', 'PTO'],
+      });
+    });
+
+    // Sort by match score
+    return matches.sort((a, b) => b.matchScore - a.matchScore);
+  }
+
+  // Performance statistics for applicants
+  getApplicantStats(applicantId: string): PerformanceStats | null {
+    const applicant = this.getApplicantById(applicantId);
+    if (!applicant) return null;
+
+    const sessions = this.getPracticeSessionsByApplicantId(applicantId);
+    if (sessions.length === 0) return null;
+
+    const scores = sessions.map(s => s.score.overall);
+    const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+
+    // Calculate improvement rate
+    const firstScore = sessions[0]?.score.overall || 0;
+    const lastScore = sessions[sessions.length - 1]?.score.overall || 0;
+    const improvementRate = firstScore > 0 ? ((lastScore - firstScore) / firstScore) * 100 : 0;
+
+    // Determine strongest/weakest areas
+    const areaScores: Record<string, number[]> = {};
+    sessions.forEach(session => {
+      Object.entries(session.score.breakdown).forEach(([area, score]) => {
+        if (!areaScores[area]) areaScores[area] = [];
+        areaScores[area].push(score);
+      });
+    });
+
+    const areaAverages = Object.entries(areaScores).map(([area, scores]) => ({
+      area,
+      average: scores.reduce((a, b) => a + b, 0) / scores.length,
+    }));
+
+    areaAverages.sort((a, b) => b.average - a.average);
+
+    return {
+      applicantId,
+      totalSessions: sessions.length,
+      totalPracticeTime: sessions.reduce((total, s) => total + (s.duration || 0), 0) / 60,
+      averageScore,
+      improvementRate,
+      strongestAreas: areaAverages.slice(0, 2).map(a => a.area as any),
+      weakestAreas: areaAverages.slice(-2).map(a => a.area as any),
+      sessionHistory: sessions.map(s => ({
+        sessionId: s.id,
+        date: s.startedAt,
+        jobTitle: s.jobTitle,
+        score: s.score.overall,
+        duration: (s.duration || 0) / 60,
+        questionsAnswered: s.questions.length,
+        improvement: 0, // Would calculate from previous session
+      })),
+      skillProgression: [],
+      readinessScore: averageScore,
+      comparisonToOthers: {
+        percentile: Math.round((averageScore / 95) * 100),
+        averageScore: 75, // Mock average
+        yourScore: averageScore,
+      },
+    };
+  }
+
+  // Apply for job
+  applyForJob(applicantId: string, jobId: string, coverLetter?: string): boolean {
+    const applicant = this.getApplicantById(applicantId);
+    const job = this.getJobById(jobId);
+
+    if (!applicant || !job) return false;
+
+    // Check if already applied
+    const existingApplication = applicant.applications.find(a => a.jobId === jobId);
+    if (existingApplication) return false;
+
+    // Create application
+    const application = {
+      id: generateId(),
+      applicantId,
+      jobId,
+      appliedAt: new Date(),
+      status: 'applied' as const,
+      coverLetter,
+      source: 'direct' as const,
+    };
+
+    applicant.applications.push(application);
+
+    // Also create a candidate record for HR view
+    const candidate = generateCandidate(jobId, 'invited');
+    candidate.email = applicant.email;
+    candidate.name = applicant.name;
+    candidate.resumeUrl = applicant.resumeUrl;
+    this.data.candidates.push(candidate);
+
+    // Update job stats
+    this.updateJobStats(jobId);
+
+    return true;
+  }
 }
 
-// Helper function to generate unique IDs
 function generateId(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
-// Export singleton instance
 export const mockStore = MockStore.getInstance();

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 
-// GET /api/jobs/[id]/candidates - Get candidates for a specific job
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

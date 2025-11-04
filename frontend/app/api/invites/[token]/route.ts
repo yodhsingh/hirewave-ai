@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 
-// GET /api/invites/[token] - Get invite details
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }

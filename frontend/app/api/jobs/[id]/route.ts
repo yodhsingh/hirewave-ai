@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 
-// GET /api/jobs/[id] - Get a specific job
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -26,7 +25,6 @@ export async function GET(
   }
 }
 
-// PATCH /api/jobs/[id] - Update a job
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -52,7 +50,6 @@ export async function PATCH(
   }
 }
 
-// DELETE /api/jobs/[id] - Delete a job
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
