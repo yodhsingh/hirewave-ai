@@ -1,7 +1,5 @@
 # Software Engineering Project - IIT Madras
 
-## 🚀 Live Application
-
 **View the running application:** [https://segenai.vercel.app](https://segenai.vercel.app)
 
 > **For TAs and evaluators:** The frontend is deployed on Vercel with dummy/mock data for demonstration purposes. The application is not yet fully functional as the backend is still under development. You can explore the UI/UX including the HR dashboard, job creation flow, candidate management interface, and AI-powered practice interviews.
@@ -12,8 +10,35 @@ GenAI-First Interview Platform - An AI-powered asynchronous interview platform t
 ## Project Structure
 *TBD*
 ```
-.
-├── README.md           # Project documentation
+frontend/
+├── app/
+│   ├── (applicant)/        # Routes for the candidate-facing interview process
+│   ├── (hr)/               # Routes for the HR administrative dashboard
+│   ├── (public)/           # Routes for public-facing pages (home, about)
+│   │   ├── contact/
+│   │   ├── pricing/
+│   │   └── page.tsx        # Public homepage
+│   ├── api/                # Backend API routes (serverless functions)
+│   │   ├── candidates/
+│   │   ├── interviews/
+│   │   ├── invites/
+│   │   └── jobs/
+│   ├── layout.tsx          # Root layout for the entire application
+│   └── page.tsx            # Entry page (often redirects or serves homepage)
+├── components/
+│   ├── hr/                 # Domain-specific: HR dashboard components
+│   ├── layout/             # Reusable layout components (Header, Sidebar)
+│   └── ui/                 # Generic, reusable UI atoms (Button, Card)
+├── lib/
+│   ├── api-client.ts       # Centralized API fetching logic (e.g., fetch wrapper)
+│   ├── stores.ts           # Client-side state management (e.g., Zustand/Jotai)
+│   ├── theme.ts            # Theming and design token definitions
+│   └── validation.ts       # Zod schemas for form validation
+├── public/                 # Static assets (images, fonts, SVGs)
+├── types/                  # Global TypeScript type definitions
+├── globals.css             # Global stylesheet (Tailwind base styles)
+├── next.config.ts          # Next.js configuration file
+└── tailwind.config.ts      # Tailwind CSS configuration and theming
 ```
 
 ## Technology Stack
