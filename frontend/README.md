@@ -34,75 +34,40 @@ frontend/
 ├── globals.css             # Global stylesheet (Tailwind base styles)
 ├── next.config.ts          # Next.js configuration file
 └── tailwind.config.ts      # Tailwind CSS configuration and theming
+
 ```
 ## Key File Explanations
-/frontend/app: This is the core of the Next.js App Router. Each folder represents a URL segment.
 
-layout.tsx: Defines the root HTML shell, loading global providers and styles.
+### /frontend/app
+- **Core of Next.js App Router**: Each folder represents a URL segment.
+- **layout.tsx**: Defines root HTML shell, loads global providers and styles.
+- **page.tsx**: Main component for a specific route.
+- **(folder_name)**: Route groups for organization (e.g., (hr)) without URL path change.
 
-page.tsx: The main component rendered for a specific route.
+### /frontend/lib
+- **Business Logic & Core Utilities**: Separates logic from UI for cleaner code.
 
-(folder_name): Route groups used to organize routes (e.g., (hr)) without affecting the URL path.
+### /frontend/public
+- **Static Files**: Served at root URL (e.g., /logo.svg).
 
-/frontend/lib: This directory holds the frontend's "business logic" and core utilities. It separates logic from the UI (components), enabling cleaner code.
+## Design Documentation
 
-/frontend/public: All files in this directory are served statically at the root URL (e.g., /logo.svg).
-4. Design Documentation
-The /design directory serves as the single source of truth for the system's architecture and visual flow.
+### /design
+- **Single Source of Truth**: System architecture and visual flow.
 
-/design/class_diagrams/: This folder contains the formal architectural blueprints.
+#### /design/class_diagrams/
+- **Architectural Blueprints**: 
+  - .mmd files for version control and updates.
+  - Define boundaries and responsibilities in Clean Architecture model.
+- **class_diagrams.pdf**: Consolidated view of architectural layers.
+- **genai_design_flow.excalidraw**: High-level flowchart of user journey and system interactions, focusing on GenAI processes.
 
-The .mmd (Mermaid) files are the source code for the diagrams, allowing for easy version control and updates.
+## Component Documentation
 
-They collectively define the boundaries and responsibilities of each layer in our Clean Architecture model.
+### /frontend/components
+- **Organized by Domain & Reusability**: Modular design principle.
 
-class_diagrams.pdf provides a consolidated, viewable version of all architectural layers.
-
-genai_design_flow.excalidraw: This is a high-level flowchart or visualization (editable with Excalidraw) that illustrates the end-to-end user journey and system interactions, particularly focusing on the GenAI processes.
-
-## 5. Component Documentation
-The /frontend/components directory is organized by domain and reusability, following a modular design principle.
-
-### components/ui/
-This directory contains the primitive, reusable UI components that form the application's design system. They are "headless" or style-agnostic where possible, with styling applied via Tailwind CSS.
-
-Examples: Button.tsx, Card.tsx, Input.tsx, Dialog.tsx.
-
-Purpose: To ensure a consistent look and feel across the entire application and accelerate development.
-
-### components/layout/
-These components are responsible for the structural layout and navigation of the application.
-
-Examples: Header.tsx, Footer.tsx, Sidebar.tsx, PageWrapper.tsx.
-
-Purpose: To provide a consistent navigational experience for different user roles (e.g., a candidate vs. an HR admin).
-
-### components/hr/
-These are domain-specific, composite components used exclusively within the HR dashboard. They are built by combining smaller ui and layout components.
-
-Examples: HRDashboardAnalytics.tsx, JobCreationForm.tsx, CandidateListing.tsx.
-
-Purpose: To encapsulate complex features for the HR user persona.
-
-### components/LoginModal.tsx
-This is a key entry-point component that likely handles user authentication (login/signup) for all user roles. It manages authentication state and interfaces with the authentication API endpoints.
-
-## 6. Libraries and Configurations
-The project's root contains several key configuration files that define the development environment, dependencies, and build processes.
-
-package.json: Lists all project dependencies (e.g., next, react, tailwindcss) and scripts (e.g., npm run dev, npm run build).
-
-tailwind.config.ts: Configures the Tailwind CSS utility-first framework, including custom themes, colors, and plugins.
-
-tsconfig.json: The TypeScript compiler configuration file, defining strictness rules, path aliases, and target JavaScript version.
-
-eslint.config.mjs: Configuration for the ESLint linter, enforcing code quality and style consistency.
-
-restart.sh: A utility shell script, likely used for forcefully restarting the development server or a deployment environment.
-
-## 7. API and Integration
-The application uses Next.js API Routes (located in /frontend/app/api/) to function as its backend, providing serverless endpoints for the frontend to consume.
-TBD 
+#### components/ui/
 
 ## Technology Stack
 
@@ -120,7 +85,6 @@ TBD
 
 ### Prerequisites
 - Node.js (v22 latest LTS) + npm or npx
-- Git
 - UV for python backend
 
 ### Installation
@@ -132,7 +96,6 @@ cd soft-engg-project-sept-2025-se-SEP-15
 ```
 
 #### Frontend Setup
-*TBD*
 ```bash
 cd frontend
 npm install
@@ -140,7 +103,6 @@ npm run dev
 ```
 
 #### Backend Setup
-*TBD*
 ```bash
 cd backend
 uv synch
@@ -155,7 +117,7 @@ Branch: sidhaarth-frontend
 App: Next.js (App Router) + React + TypeScript
 Styling: Tailwind CSS 3.x, Framer Motion
 
-## 1) Brand, Theme, and Typography
+### 1) Brand, Theme, and Typography
 
 - Brand name: HireWave.ai
 - Visual Theme: Dark-on-light contrast with glass overlays
@@ -171,7 +133,7 @@ Styling: Tailwind CSS 3.x, Framer Motion
     - Subheads: 24–32px
   - Body text: 14–16px (regular) with relaxed line height
 
-## 2) Color System
+### 2) Color System
 
 - Neutrals
   - Background base: `#0F0F0F`
@@ -188,7 +150,7 @@ Styling: Tailwind CSS 3.x, Framer Motion
   - Thumb: white, rounded
   - Firefox: `scrollbar-color: white transparent; scrollbar-width: thin;`
 
-## 3) Imagery, Backgrounds, and Decorative Vectors
+### 3) Imagery, Backgrounds, and Decorative Vectors
 
 - Global background image: `/Background.svg` pinned to bottom (object‑bottom) with a top crop mask beyond 1400px to preserve composition.
 - Hero decorative vector: `/Vector 1.svg` full‑width curve, placed behind the heading.
@@ -197,7 +159,7 @@ Styling: Tailwind CSS 3.x, Framer Motion
 - Highlight ellipse for hero metric: `/Ellipse 1.svg` positioned over the “10K+” span using absolute + transforms (no structural changes to the span).
 - Robot imagery: `/image16.png` (formerly `/image13.png` in drafts). Responsive sizing with absolute placement on large screens and scaled widths for smaller widths.
 
-## 4) Components and Patterns
+### 4) Components and Patterns
 
 - Buttons
   - Primary (dark surfaces): `bg-[#2D2D2D]` → hover `#1A1A1A`, white text, rounded 12–14px, medium weight.
@@ -218,9 +180,8 @@ Styling: Tailwind CSS 3.x, Framer Motion
 - Pills/Tags
   - Rounded full, thin border; used in Demo Video section (Digital / Reality / Next).
 
-## 5) Iconography
+### 5) Iconography
 - Icon pack: iOS 17 Glyph (system-style glyphs)
-
 
 
 ## Team Members
@@ -233,12 +194,6 @@ Styling: Tailwind CSS 3.x, Framer Motion
 - Sidhaarth Shree - 22f3001480@ds.study.iitm.ac.in
 - Akash Kumar - 22f2000946@ds.study.iitm.ac.in
 
-## Project Requirements
-*TBD*
-
-## Features
-*TBD*
-
 ## API Documentation
 *TBD*
 
@@ -247,8 +202,3 @@ Styling: Tailwind CSS 3.x, Framer Motion
 
 ## Deployment
 *TBD*
-
-
-## License
-*TBD*
-Should be MIT, or as per IIT Madras Software Engineering course.
