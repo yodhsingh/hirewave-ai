@@ -1,19 +1,6 @@
 'use client';
 
 import { UseFormReturn, Controller } from 'react-hook-form';
-import { motion } from 'framer-motion';
-import {
-  Briefcase,
-  MapPin,
-  Building,
-  Type,
-  FileText,
-  Users,
-  Clock,
-  DollarSign,
-  Plus,
-  X
-} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -57,17 +44,17 @@ const EMPLOYMENT_TYPES = [
 ];
 
 const LOCATION_TYPES = [
-  { value: 'remote', label: 'Remote', icon: '🌍' },
-  { value: 'hybrid', label: 'Hybrid', icon: '🏢' },
-  { value: 'onsite', label: 'On-site', icon: '🏛️' },
+  { value: 'remote', label: 'Remote' },
+  { value: 'hybrid', label: 'Hybrid'},
+  { value: 'onsite', label: 'On-site' },
 ];
 
 const EXPERIENCE_LEVELS = [
-  { value: 'entry', label: 'Entry Level (0-2 years)', icon: '🌱' },
-  { value: 'mid', label: 'Mid Level (3-5 years)', icon: '🌿' },
-  { value: 'senior', label: 'Senior Level (6-10 years)', icon: '🌳' },
-  { value: 'lead', label: 'Lead/Principal (10+ years)', icon: '🎯' },
-  { value: 'executive', label: 'Executive', icon: '👔' },
+  { value: 'entry', label: 'Entry Level (0-2 years)' },
+  { value: 'mid', label: 'Mid Level (3-5 years)'},
+  { value: 'senior', label: 'Senior Level (6-10 years)' },
+  { value: 'lead', label: 'Lead/Principal (10+ years)'},
+  { value: 'executive', label: 'Executive' },
 ];
 
 export function JobBasicsForm({ form }: JobBasicsFormProps) {
@@ -91,37 +78,26 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
   return (
     <div className="space-y-6">
       {/* Job Title */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-      >
-        <Label htmlFor="title" className="flex items-center gap-2 mb-2 text-gray-200">
-          <Briefcase className="w-4 h-4 text-blue-400" />
-          Job Title *
+      <div>
+        <Label htmlFor="title" className="flex items-center gap-2 mb-2 font-bold text-white text-lg">
+          Job Title
         </Label>
         <Input
           id="title"
           {...form.register('title')}
           placeholder="e.g., Senior Frontend Developer"
-          className="w-full bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+          className="w-full bg-white border-black text-black placeholder:text-black focus:border-blue-500"
         />
         {errors.title && (
           <p className="text-sm text-red-400 mt-1">{errors.title.message}</p>
         )}
-      </motion.div>
+      </div>
 
       {/* Department and Employment Type */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="grid grid-cols-1 md:grid-cols-2 gap-4"
-      >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="department" className="flex items-center gap-2 mb-2 text-gray-200">
-            <Building className="w-4 h-4 text-purple-400" />
-            Department *
+          <Label htmlFor="department" className="flex items-center gap-2 mb-2 font-bold text-white text-lg">
+            Department
           </Label>
           <Controller
             name="department"
@@ -129,17 +105,17 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
             render={({ field }) => (
               <Select
                 value={field.value || ''}
-                onValueChange={field.onChange}
+                onValueChange={field.onChange} 
               >
-                <SelectTrigger className="w-full bg-gray-800 border-gray-600 text-white hover:bg-gray-700 focus:ring-2 focus:ring-blue-500 data-[state=open]:ring-2 data-[state=open]:ring-blue-500">
-                  <SelectValue placeholder="Select department" className="text-white" />
+                <SelectTrigger className="w-full bg-white border-black text-black">
+                  <SelectValue placeholder="Select department"/>
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                <SelectContent className="bg-white text-black ">
                   {DEPARTMENTS.map((dept) => (
                     <SelectItem
                       key={dept}
                       value={dept}
-                      className="text-white hover:bg-gray-700 focus:bg-gray-700 focus:text-white cursor-pointer"
+                      className="text-black cursor-pointer hover:bg-gray-100 data-[state=checked]:bg-black data-[state=checked]:text-white"
                     >
                       {dept}
                     </SelectItem>
@@ -154,9 +130,8 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
         </div>
 
         <div>
-          <Label htmlFor="roleType" className="flex items-center gap-2 mb-2 text-gray-200">
-            <Clock className="w-4 h-4 text-green-400" />
-            Employment Type *
+          <Label htmlFor="roleType" className="flex items-center gap-2 mb-2 font-bold text-white text-lg">
+            Employment Type
           </Label>
           <Controller
             name="roleType"
@@ -166,15 +141,15 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
                 value={field.value || ''}
                 onValueChange={field.onChange}
               >
-                <SelectTrigger className="w-full bg-gray-800 border-gray-600 text-white hover:bg-gray-700 focus:ring-2 focus:ring-blue-500 data-[state=open]:ring-2 data-[state=open]:ring-blue-500">
-                  <SelectValue placeholder="Select employment type" className="text-white" />
+                <SelectTrigger className="w-full bg-white border-black text-black">
+                  <SelectValue placeholder="Select employment type" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 text-white">
+                <SelectContent className="bg-white text-black">
                   {EMPLOYMENT_TYPES.map((type) => (
                     <SelectItem
                       key={type}
                       value={type}
-                      className="text-white hover:bg-gray-700 focus:bg-gray-700 focus:text-white cursor-pointer"
+                      className="text-black cursor-pointer hover:bg-gray-100"
                     >
                       {type}
                     </SelectItem>
@@ -187,23 +162,18 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
             <p className="text-sm text-red-400 mt-1">{errors.roleType.message}</p>
           )}
         </div>
-      </motion.div>
+      </div>
 
       {/* Location */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
-        <Label htmlFor="location" className="flex items-center gap-2 mb-2 text-gray-200">
-          <MapPin className="w-4 h-4 text-pink-400" />
-          Location *
+      <div>
+        <Label htmlFor="location" className="flex items-center gap-2 mb-2 font-bold text-white text-lg">
+          Location
         </Label>
         <Input
           id="location"
           {...form.register('location')}
           placeholder="e.g., New Delhi or Remote"
-          className="w-full bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+          className="w-full bg-white border-black text-black placeholder:text-black focus:border-blue-500"
         />
         {errors.location && (
           <p className="text-sm text-red-400 mt-1">{errors.location.message}</p>
@@ -214,7 +184,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
           {LOCATION_TYPES.map((type) => (
             <Card
               key={type.value}
-              className="p-3 cursor-pointer bg-gray-800 border-gray-600 hover:border-blue-500 transition-colors text-center"
+              className="p-3 cursor-pointer bg-white border-black text-center hover:bg-gray-100 transition-colors"
               onClick={() => {
                 const currentLocation = form.getValues('location');
                 if (!currentLocation.includes(type.label)) {
@@ -222,70 +192,53 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
                 }
               }}
             >
-              <div className="text-2xl mb-1">{type.icon}</div>
-              <p className="text-sm font-medium text-gray-200">{type.label}</p>
+              <p className="text-sm font-medium text-black">{type.label}</p>
             </Card>
           ))}
         </div>
-      </motion.div>
+      </div>
 
       {/* Experience Level */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-      >
-        <Label className="flex items-center gap-2 mb-3 text-gray-200">
-          <Users className="w-4 h-4 text-orange-400" />
+      <div>
+        <Label className="flex items-center gap-2 mb-3 font-bold text-white text-lg">
           Experience Level
         </Label>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           {EXPERIENCE_LEVELS.map((level) => (
             <Card
               key={level.value}
-              className="p-3 cursor-pointer bg-gray-800 border-gray-600 hover:border-blue-500 transition-colors"
+              className="p-3 cursor-pointer bg-white border-black hover:bg-gray-100 transition-colors"
             >
               <div className="flex items-center gap-2">
-                <span className="text-xl">{level.icon}</span>
-                <p className="text-sm font-medium text-gray-200">{level.label}</p>
+                <p className="text-sm font-medium text-black">{level.label}</p>
               </div>
             </Card>
           ))}
         </div>
-      </motion.div>
+      </div>
 
       {/* Job Description */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-      >
-        <Label htmlFor="description" className="flex items-center gap-2 mb-2 text-gray-200">
-          <FileText className="w-4 h-4 text-cyan-400" />
-          Job Description *
+      <div>
+        <Label htmlFor="description" className="flex items-center gap-2 mb-2 font-bold text-white text-lg">
+          Job Description
         </Label>
         <Textarea
           id="description"
           {...form.register('description')}
           placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..."
-          className="min-h-[150px] bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+          className="min-h-[150px] bg-white border-black text-black placeholder:text-black focus:border-blue-500"
         />
         {errors.description && (
           <p className="text-sm text-red-400 mt-1">{errors.description.message}</p>
         )}
-        <p className="text-sm text-gray-400 mt-1">
+        <p className="text-sm text-gray-300 mt-1">
           Tip: A clear, engaging description helps attract the right candidates
         </p>
-      </motion.div>
+      </div>
 
       {/* Key Requirements */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-      >
-        <Label className="flex items-center gap-2 mb-2 text-gray-200">
-          <Type className="w-4 h-4 text-yellow-400" />
+      <div>
+        <Label className="flex items-center gap-2 mb-2 font-bold text-white text-lg">
           Key Requirements
         </Label>
         <div className="space-y-3">
@@ -300,15 +253,14 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
                   addRequirement();
                 }
               }}
-              className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+              className="bg-white border-black text-black placeholder:text-black focus:border-blue-500"
             />
             <Button
               type="button"
               onClick={addRequirement}
               size="sm"
-              className="gap-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white"
+              className="bg-gray-900 text-white hover:bg-gray-800 font-medium"
             >
-              <Plus className="w-4 h-4" />
               Add
             </Button>
           </div>
@@ -319,72 +271,48 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
                 <Badge
                   key={index}
                   variant="secondary"
-                  className="py-1.5 px-3 flex items-center gap-2 bg-gray-700 text-gray-200 border-gray-600"
+                  className="py-1.5 px-3 flex items-center gap-2 bg-white text-black border-black"
                 >
                   {req}
                   <button
                     type="button"
                     onClick={() => removeRequirement(index)}
-                    className="hover:text-red-400 transition-colors"
+                    className="hover:text-red-500 transition-colors font-bold"
                   >
-                    <X className="w-3 h-3" />
+                    ×
                   </button>
                 </Badge>
               ))}
             </div>
           )}
 
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-300">
             Add key skills, qualifications, and experience requirements
           </p>
         </div>
-      </motion.div>
+      </div>
 
       {/* Salary Range (Optional) */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-      >
-        <Label className="flex items-center gap-2 mb-2 text-gray-200">
-          <DollarSign className="w-4 h-4 text-green-400" />
-          Salary Range (Optional)
+      <div>
+        <Label className="flex items-center gap-2 mb-2 font-bold text-white text-lg">
+          Salary Range
         </Label>
         <div className="grid grid-cols-2 gap-3">
           <Input
             placeholder="Min (e.g., ₹12,00,000)"
             type="text"
-            className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+            className="bg-white border-black text-black placeholder:text-black focus:border-blue-500"
           />
           <Input
             placeholder="Max (e.g., ₹18,00,000)"
             type="text"
-            className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+            className="bg-white border-black text-black placeholder:text-black focus:border-blue-500"
           />
         </div>
-        <p className="text-sm text-gray-400 mt-1">
+        <p className="text-sm text-gray-300 mt-1">
           Adding salary information can increase application rates by 30%
         </p>
-      </motion.div>
-
-      {/* AI Enhancement Notice */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8 }}
-        className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-500/30 rounded-lg p-4"
-      >
-        <div className="flex items-start gap-3">
-          <div className="text-2xl">🤖</div>
-          <div className="flex-1">
-            <p className="font-medium text-sm mb-1 text-blue-300">AI will enhance your job posting</p>
-            <p className="text-sm text-gray-300">
-              Our AI will automatically optimize your job description for better visibility
-              and suggest relevant screening questions based on the role requirements.
-            </p>
-          </div>
-        </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

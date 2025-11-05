@@ -199,7 +199,7 @@ class ApiClient {
     return this.request<Record<string, unknown>>('/auth/me');
   }
 
-  
+  // Upload endpoints
   async uploadVideo(file: Blob, metadata: Record<string, unknown>) {
     const formData = new FormData();
     formData.append('video', file);

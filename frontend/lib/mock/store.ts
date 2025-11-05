@@ -323,7 +323,7 @@ class MockStore {
       }));
   }
 
-  
+  // Applicant operations
   getApplicants() {
     return this.data.applicants;
   }

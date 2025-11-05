@@ -535,7 +535,7 @@ export const generatePracticeSession = (applicantId: string, jobId?: string): Pr
   const responses: PracticeResponse[] = [];
   const sessionId = generateId();
 
-  
+  // Generate responses for each question
   questions.forEach(question => {
     responses.push({
       id: generateId(),
@@ -561,7 +561,7 @@ export const generatePracticeSession = (applicantId: string, jobId?: string): Pr
     status: 'completed',
     startedAt: faker.date.recent(),
     completedAt: faker.date.recent(),
-    duration: faker.number.int({ min: 900, max: 2700 }), 
+    duration: faker.number.int({ min: 900, max: 2700 }), // 15-45 minutes
     questions,
     responses,
     feedback: {
@@ -758,19 +758,19 @@ export const generateMockData = () => {
     }
   });
 
-  
+  // Generate applicant profiles with practice sessions
   const applicants: ApplicantProfile[] = [];
   const practiceSessions: PracticeSession[] = [];
 
-  
+  // Generate 5 applicants with various practice sessions
   for (let i = 0; i < 5; i++) {
     const applicant = generateApplicantProfile();
     applicants.push(applicant);
 
-    
+    // Generate 1-3 practice sessions per applicant
     const sessionCount = faker.number.int({ min: 1, max: 3 });
     for (let j = 0; j < sessionCount; j++) {
-      
+      // Some sessions are job-specific, others are general practice
       const jobId = faker.datatype.boolean() && jobs.length > 0 ?
         faker.helpers.arrayElement(jobs.filter(j => j.status === 'active')).id :
         undefined;

@@ -272,11 +272,11 @@ export default function NewJobPage() {
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
               <motion.div key="step1" {...fadeInUp}>
-                <Card className="bg-gray-900/90 backdrop-blur-md border border-gray-700 shadow-xl">
-                  <CardHeader className={`bg-gradient-to-r ${gradients.cardHeader} border-b border-gray-700 rounded-t-lg`}>
+                <Card className="bg-white/[0.04] backdrop-blur-xl border border-white/10">
+                  <CardHeader className={`border-b border-gray-700 rounded-t-lg`}>
                     <CardTitle className={`text-2xl font-bold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>Job Details</CardTitle>
                     <CardDescription className="text-gray-200 mt-2">
-                      Provide basic information about the position you're hiring for
+                      Provide basic information about the position you're hiring for FEW INSIGHTS
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="p-6">
