@@ -1,6 +1,3 @@
-// API client for making requests to the backend
-// In development, this will use the mock store
-// In production, this will make real API calls
 
 import type {
   ApiResponse,
@@ -64,13 +61,18 @@ class ApiClient {
     }
   }
 
-  // Job endpoints
+  
   async getJobs() {
     return this.request<Job[]>('/jobs');
   }
 
   async getJob(id: string) {
     return this.request<Job>(`/jobs/${id}`);
+  }
+
+  
+  async getJobById(id: string) {
+    return this.getJob(id);
   }
 
   async createJob(job: JobCreate) {
@@ -93,7 +95,7 @@ class ApiClient {
     });
   }
 
-  // Candidate endpoints
+  
   async getCandidates(jobId?: string) {
     const endpoint = jobId ? `/jobs/${jobId}/candidates` : '/candidates';
     return this.request<Candidate[]>(endpoint);
@@ -124,7 +126,7 @@ class ApiClient {
     });
   }
 
-  // Invite endpoints
+  
   async createInvites(jobId: string, emails: string[]) {
     return this.request<InviteResult>(`/jobs/${jobId}/invites`, {
       method: 'POST',
@@ -140,11 +142,11 @@ class ApiClient {
     }>(`/invites/${token}`);
   }
 
-  // Interview endpoints
+  
   async getInterviewQuestions(token: string) {
     return this.request<{
       questions: Job['questions'];
-      settings: any;
+      settings: Record<string, unknown>;
     }>(`/interviews/${token}`);
   }
 
@@ -162,9 +164,9 @@ class ApiClient {
     });
   }
 
-  // Analytics endpoints
+  
   async getJobAnalytics(jobId: string) {
-    return this.request<any>(`/analytics/jobs/${jobId}`);
+    return this.request<Record<string, unknown>>(`/analytics/jobs/${jobId}`);
   }
 
   async getDashboardAnalytics() {
@@ -172,14 +174,14 @@ class ApiClient {
       totalJobs: number;
       totalCandidates: number;
       averageCompletionRate: number;
-      recentActivity: any[];
+      recentActivity: Array<Record<string, unknown>>;
     }>('/analytics/overview');
   }
 
-  // Auth endpoints
+  
   async login(email: string, password: string) {
     return this.request<{
-      user: any;
+      user: Record<string, unknown>;
       token: string;
     }>('/auth/login', {
       method: 'POST',
@@ -194,11 +196,11 @@ class ApiClient {
   }
 
   async getCurrentUser() {
-    return this.request<any>('/auth/me');
+    return this.request<Record<string, unknown>>('/auth/me');
   }
 
   // Upload endpoints
-  async uploadVideo(file: Blob, metadata: any) {
+  async uploadVideo(file: Blob, metadata: Record<string, unknown>) {
     const formData = new FormData();
     formData.append('video', file);
     formData.append('metadata', JSON.stringify(metadata));
@@ -206,20 +208,18 @@ class ApiClient {
     return this.request<{ url: string }>('/upload/video', {
       method: 'POST',
       body: formData,
-      headers: {}, // Let browser set Content-Type for FormData
+      headers: {}, 
     });
   }
 }
 
-// Export singleton instance
 export const apiClient = new ApiClient();
 
-// Export hooks for React Query
 export const apiKeys = {
   jobs: {
     all: ['jobs'] as const,
     lists: () => [...apiKeys.jobs.all, 'list'] as const,
-    list: (filters?: any) => [...apiKeys.jobs.lists(), filters] as const,
+    list: (filters?: Record<string, unknown>) => [...apiKeys.jobs.lists(), filters] as const,
     details: () => [...apiKeys.jobs.all, 'detail'] as const,
     detail: (id: string) => [...apiKeys.jobs.details(), id] as const,
   },

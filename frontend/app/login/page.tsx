@@ -7,12 +7,14 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useAuthStore } from '@/lib/store/authStore';
 
 import Navigation from '@/components/layout/Navigation';
 import Footer from '@/components/layout/Footer';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login } = useAuthStore();
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState('hr');
   const [formData, setFormData] = useState({
@@ -27,6 +29,9 @@ export default function LoginPage() {
     
     // Dummy validation - accept any email/password
     if (formData.email && formData.password) {
+      // Login using auth store
+      login(formData.email, userType as 'hr' | 'candidate');
+      
       // Redirect based on user type
       if (userType === 'hr') {
         router.push('/hr/dashboard');

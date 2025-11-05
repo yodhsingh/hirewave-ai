@@ -130,19 +130,19 @@ export default function HRDashboard() {
                     <p className="text-sm font-medium">Dalyodh Singh</p>
                     <p className="text-xs text-gray-400">22f3001166@ds.study.iitm.ac.in</p>
                   </div>
-                  <DropdownMenuItem className="hover:bg-gray-800">
+                  <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/hr/profile')}>
                     <User className="w-4 h-4 mr-2" />
                     View Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-gray-800">
+                  <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/hr/settings')}>
                     <Settings className="w-4 h-4 mr-2" />
                     Settings
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-800" />
-                  <DropdownMenuItem className="hover:bg-gray-800">
+                  <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/hr/team')}>
                     Team Members
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="hover:bg-gray-800">
+                  <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/hr/help')}>
                     Help & Support
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-800" />

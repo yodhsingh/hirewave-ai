@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 
-// GET /api/jobs/[id]/candidates - Get candidates for a specific job
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -10,7 +9,7 @@ export async function GET(
     const { id } = await params;
     const candidates = mockStore.getCandidatesByJobId(id);
 
-    // Transform candidates to row format for the table
+    
     const candidateRows = candidates.map(candidate => ({
       id: candidate.id,
       name: candidate.name,

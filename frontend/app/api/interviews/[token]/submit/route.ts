@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 
-// POST /api/interviews/[token]/submit - Submit interview responses
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
@@ -27,7 +26,7 @@ export async function POST(
       );
     }
 
-    // Find the candidate associated with this invite
+    
     const candidates = mockStore.getCandidatesByJobId(invite.jobId);
     const candidate = candidates.find(c => c.email === invite.email);
 
@@ -38,7 +37,7 @@ export async function POST(
       );
     }
 
-    // Save responses and mark interview as submitted
+    
     responses.forEach((response: any) => {
       mockStore.saveResponse({
         ...response,

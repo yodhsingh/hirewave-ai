@@ -8,13 +8,12 @@ interface AuthState {
   isAuthenticated: boolean;
   role: Role | null;
 
-  // Actions
+  
   login: (email: string, role: Role) => void;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
 }
 
-// Mock authentication for development
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({

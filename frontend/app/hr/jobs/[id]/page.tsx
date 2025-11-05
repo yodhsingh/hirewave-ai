@@ -40,7 +40,9 @@ import {
   Settings,
   LogOut,
   Home,
-  User
+  User,
+  HelpCircle,
+  UserCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -75,6 +77,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockStore } from '@/lib/mock/store';
 import type { Job, Candidate } from '@/types';
 import { gradients } from '@/lib/theme';
+import { useAuthStore } from '@/lib/store/authStore';
 import {
   HiringFunnelChart,
   TimeToHireChart,
@@ -104,6 +107,7 @@ const QUESTION_TYPE_ICONS = {
 export default function JobDetailsPage() {
   const params = useParams();
   const router = useRouter();
+  const { user, isAuthenticated, logout } = useAuthStore();
   const [job, setJob] = useState<Job | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
@@ -250,8 +254,104 @@ export default function JobDetailsPage() {
           </div>
         </div>
 
-        {/* Navigation */}
-        <Navigation />
+        {/* Custom Navigation with Profile Dropdown */}
+        <nav className="relative z-50 px-6 lg:px-16 py-6">
+          <div className="max-w-[1400px] mx-auto relative flex items-center justify-between">
+            {/* Logo */}
+            <Link href="/" className="flex items-center space-x-2">
+              <Image src="/Brain.svg" alt="Logo" width={24} height={24} />
+              <span className="text-xl font-semibold text-black">
+                HireWave.ai
+              </span>
+            </Link>
+
+            {/* Navigation Links - centered */}
+            <div className="hidden md:flex items-center space-x-10 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
+              <Link href="/about" className="transition-colors text-sm text-black/60 hover:text-black">
+                About
+              </Link>
+              <Link href="/pricing" className="transition-colors text-sm text-black/60 hover:text-black">
+                Pricing
+              </Link>
+              <Link href="/features" className="transition-colors text-sm text-black/60 hover:text-black">
+                Features
+              </Link>
+            </div>
+
+            {/* Right actions - Profile Dropdown for HR users */}
+            <div className="flex items-center gap-3">
+              {isAuthenticated && user?.role === 'hr' ? (
+                <>
+                  {/* Notifications */}
+                  <Button variant="ghost" className="relative p-2 hover:bg-black/5">
+                    <Bell className="w-5 h-5 text-black/60" />
+                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                  </Button>
+
+                  {/* User Profile Dropdown */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="flex items-center gap-2 hover:bg-black/5">
+                        <div className="flex items-center gap-3">
+                          <div className="text-right hidden md:block">
+                            <p className="text-sm font-medium text-black">{user.name || 'HR Manager'}</p>
+                            <p className="text-xs text-black/60">HR Manager</p>
+                          </div>
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">
+                              {(user.name || user.email || 'HR').charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        </div>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent className="bg-white border-black/10 text-black w-56 shadow-lg" align="end">
+                      <div className="px-3 py-2 border-b border-black/10">
+                        <p className="text-sm font-medium text-black">{user.name || 'HR Manager'}</p>
+                        <p className="text-xs text-black/60">{user.email}</p>
+                      </div>
+                      <DropdownMenuItem className="text-black hover:bg-black/5 focus:bg-black/5" onClick={() => router.push('/hr/profile')}>
+                        <User className="w-4 h-4 mr-2 text-black" />
+                        View Profile
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-black hover:bg-black/5 focus:bg-black/5" onClick={() => router.push('/hr/settings')}>
+                        <Settings className="w-4 h-4 mr-2 text-black" />
+                        Settings
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-black/10" />
+                      <DropdownMenuItem className="text-black hover:bg-black/5 focus:bg-black/5" onClick={() => router.push('/hr/team')}>
+                        <UserCheck className="w-4 h-4 mr-2 text-black" />
+                        Team Members
+                      </DropdownMenuItem>
+                      <DropdownMenuItem className="text-black hover:bg-black/5 focus:bg-black/5" onClick={() => router.push('/hr/help')}>
+                        <HelpCircle className="w-4 h-4 mr-2 text-black" />
+                        Help & Support
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator className="bg-black/10" />
+                      <DropdownMenuItem
+                        className="text-red-600 hover:bg-red-50 focus:bg-red-50"
+                        onClick={() => {
+                          logout();
+                          router.push('/');
+                        }}
+                      >
+                        <LogOut className="w-4 h-4 mr-2 text-red-600" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <Button
+                  onClick={() => router.push('/login')}
+                  className="bg-[#2D2D2D] text-white hover:bg-[#1a1a1a] rounded-lg px-6 py-2.5 text-sm font-normal"
+                >
+                  Sign in
+                </Button>
+              )}
+            </div>
+          </div>
+        </nav>
 
         {/* Hero Section - Matching Home Page Style */}
         <section className="relative z-10 px-6 lg:px-16 pt-12 pb-28 lg:pt-12 lg:pb-32 min-h-[720px] lg:min-h-[780px] xl:min-h-[840px]">

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 
-// GET /api/invites/[token] - Get invite details
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
@@ -26,7 +25,7 @@ export async function GET(
       );
     }
 
-    // Find the candidate
+    
     const candidates = mockStore.getCandidatesByJobId(invite.jobId);
     const candidate = candidates.find(c => c.email === invite.email);
 
@@ -47,7 +46,7 @@ export async function GET(
           department: job.department,
           location: job.location,
           questionCount: job.questions.length,
-          estimatedTime: Math.ceil(job.questions.length * 2.5), // ~2.5 min per question
+          estimatedTime: Math.ceil(job.questions.length * 2.5), 
         },
       },
     });

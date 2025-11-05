@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 
-// GET /api/interviews/[token] - Get interview questions for a candidate
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ token: string }> }
@@ -26,7 +25,7 @@ export async function GET(
       );
     }
 
-    // Return questions and settings for the interview
+    
     return NextResponse.json({
       success: true,
       data: {

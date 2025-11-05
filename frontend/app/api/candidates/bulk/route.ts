@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 import type { CandidateStatus } from '@/types';
 
-// PATCH /api/candidates/bulk - Bulk update candidates
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
