@@ -202,24 +202,8 @@ export default function HRDashboard() {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
-            <DropdownMenuItem className="hover:bg-white/10">
-              <User className="w-4 h-4 mr-2" />
-              View Profile
-            </DropdownMenuItem>
-            <DropdownMenuItem className="hover:bg-white/10">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </DropdownMenuItem>
-            <DropdownMenuSeparator className="bg-white/10" />
-            <DropdownMenuItem className="text-red-400 hover:bg-white/10">
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-    </div>
-  </div>
+          </div>
+        </div>
       </nav>
 
       {/* Main Content */}
