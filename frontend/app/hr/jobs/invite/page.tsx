@@ -16,7 +16,10 @@ import {
   Users,
   Briefcase,
   Home,
-  Bell
+  Bell,
+  QrCode,
+  Copy,
+  Download
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -32,7 +35,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { mockStore } from '@/lib/mock/store';
 import Link from 'next/link';
-import { gradients } from '@/lib/theme';
 import { EmailTemplateEditor } from '@/components/hr/EmailTemplateEditor';
 
 function InviteCandidatesContent() {
@@ -52,12 +54,19 @@ function InviteCandidatesContent() {
     failed: string[];
     invites: unknown[];
   } | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState('');
+  const [applicationLink, setApplicationLink] = useState('');
 
   useEffect(() => {
     if (jobId) {
       const job = mockStore.getJobById(jobId);
       if (job) {
         setJobTitle(job.title);
+        // Generate application link and QR code
+        const link = `https://hirewave.ai/apply/${jobId}`;
+        setApplicationLink(link);
+        // In a real app, you'd generate a QR code from the link
+        setQrCodeUrl(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`);
       } else {
         toast.error('Job not found');
         router.push('/hr/dashboard');
@@ -121,10 +130,6 @@ function InviteCandidatesContent() {
         if (result.duplicates > 0) {
           toast.warning(`${result.duplicates} candidate${result.duplicates > 1 ? 's' : ''} already invited`);
         }
-        // Navigate back after short delay
-        setTimeout(() => {
-          router.push(`/hr/jobs/${jobId}`);
-        }, 2000);
       } else {
         toast.error('Failed to send invitations. Please try again.');
       }
@@ -141,7 +146,6 @@ function InviteCandidatesContent() {
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
-        // Simple CSV parsing - in production, use a proper CSV parser
         const emails = content
           .split(/[,\n\r]+/)
           .map(email => email.trim())
@@ -153,72 +157,78 @@ function InviteCandidatesContent() {
     }
   };
 
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Link copied to clipboard!');
+  };
+
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.3 }
   };
 
+  const cardClass = 'bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl hover:border-white/30 transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.1)]';
+
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-black text-white overflow-hidden">
       {/* Background Effects */}
-      <div className="fixed inset-0">
-        <div className={`absolute inset-0 bg-gradient-to-br ${gradients.bgPrimary}`} />
-        <div className={`absolute inset-0 bg-gradient-to-tr ${gradients.bgSecondary}`} />
+      <div className="fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-black opacity-90" />
       </div>
 
-      {/* Navigation Header */}
-      <nav className="relative z-10 border-b border-gray-800 bg-black/50 backdrop-blur-lg sticky top-0">
+      {/* Navigation Header - Inverted Colors */}
+      <nav className="relative z-20 border-b border-gray-700 bg-white/95 backdrop-blur-lg sticky top-0">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-6">
               <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <Home className="w-5 h-5" />
-                <span className="font-semibold">Home</span>
+                <Home className="w-5 h-5 text-black" />
+                <span className="font-semibold text-black">Home</span>
               </Link>
-              <div className="h-6 w-px bg-gray-700" />
+              <div className="h-6 w-px bg-gray-400" />
               <Link href="/hr/dashboard" className="hover:opacity-80 transition-opacity">
-                <span className="text-gray-300 hover:text-white">Dashboard</span>
+                <span className="text-gray-700 hover:text-black">Dashboard</span>
               </Link>
-              <div className="h-6 w-px bg-gray-700" />
-              <span className="text-white font-semibold">Invite Candidates</span>
+              <div className="h-6 w-px bg-gray-400" />
+              <span className="text-black font-semibold">Invite Candidates</span>
             </div>
             <div className="flex items-center gap-4">
-              <Button variant="ghost" className="relative p-2 hover:bg-gray-800">
-                <Bell className="w-5 h-5 text-gray-400" />
+              <Button variant="ghost" className="relative p-2 hover:bg-gray-200">
+                <Bell className="w-5 h-5 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-800">
-                    <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${gradients.primary} flex items-center justify-center text-white font-semibold`}>
+                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-200">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center text-white font-semibold">
                       DS
                     </div>
                     <div className="text-left hidden md:block">
-                      <p className="text-sm font-medium text-white">Dalyodh Singh</p>
-                      <p className="text-xs text-gray-400">22f3001166@ds.study.iitm.ac.in</p>
+                      <p className="text-sm font-medium text-black">Dalyodh Singh</p>
+                      <p className="text-xs text-gray-600">22f3001166@ds.study.iitm.ac.in</p>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white w-56" align="end">
-                  <div className="px-3 py-2 border-b border-gray-800">
+                <DropdownMenuContent className="bg-white border-gray-300 text-black w-56" align="end">
+                  <div className="px-3 py-2 border-b border-gray-200">
                     <p className="text-sm font-medium">Dalyodh Singh</p>
-                    <p className="text-xs text-gray-400">22f3001166@ds.study.iitm.ac.in</p>
+                    <p className="text-xs text-gray-600">22f3001166@ds.study.iitm.ac.in</p>
                   </div>
-                  <DropdownMenuItem className="focus:bg-gray-800 focus:text-white cursor-pointer">
+                  <DropdownMenuItem className="focus:bg-gray-100 focus:text-black cursor-pointer">
                     View Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="focus:bg-gray-800 focus:text-white cursor-pointer">
+                  <DropdownMenuItem className="focus:bg-gray-100 focus:text-black cursor-pointer">
                     Settings
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="focus:bg-gray-800 focus:text-white cursor-pointer">
+                  <DropdownMenuItem className="focus:bg-gray-100 focus:text-black cursor-pointer">
                     Team Members
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator className="bg-gray-800" />
-                  <DropdownMenuItem className="focus:bg-gray-800 focus:text-white cursor-pointer">
+                  <DropdownMenuSeparator className="bg-gray-200" />
+                  <DropdownMenuItem className="focus:bg-gray-100 focus:text-black cursor-pointer">
                     Help & Support
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="focus:bg-gray-800 focus:text-white cursor-pointer text-red-400">
+                  <DropdownMenuItem className="focus:bg-gray-100 focus:text-black cursor-pointer text-red-500">
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -240,7 +250,7 @@ function InviteCandidatesContent() {
               </p>
               <Badge
                 variant="outline"
-                className={`bg-gradient-to-r ${gradients.cardHeader} border-blue-500/50 text-blue-300`}
+                className="bg-white/10 text-white border-white/20"
               >
                 <Sparkles className="w-3 h-3 mr-1" />
                 AI-Powered Screening
@@ -249,35 +259,41 @@ function InviteCandidatesContent() {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Card className="bg-gray-900/90 border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <Card className={cardClass}>
               <CardContent className="p-6 text-center">
-                <Users className="w-8 h-8 mx-auto mb-2 text-blue-400" />
-                <p className="text-sm text-gray-400">Valid Emails</p>
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl mb-3">
+                  <Users className="w-6 h-6 text-blue-400" />
+                </div>
+                <p className="text-sm text-gray-300">Valid Emails</p>
                 <p className="text-3xl font-bold text-white mt-1">{validEmails.length}</p>
               </CardContent>
             </Card>
-            <Card className="bg-gray-900/90 border-gray-700">
+            <Card className={cardClass}>
               <CardContent className="p-6 text-center">
-                <AlertCircle className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
-                <p className="text-sm text-gray-400">Invalid</p>
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl mb-3">
+                  <AlertCircle className="w-6 h-6 text-yellow-400" />
+                </div>
+                <p className="text-sm text-gray-300">Invalid</p>
                 <p className="text-3xl font-bold text-white mt-1">{invalidEmails.length}</p>
               </CardContent>
             </Card>
-            <Card className="bg-gray-900/90 border-gray-700">
+            <Card className={cardClass}>
               <CardContent className="p-6 text-center">
-                <CheckCircle className="w-8 h-8 mx-auto mb-2 text-green-400" />
-                <p className="text-sm text-gray-400">Sent</p>
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-white/20 rounded-xl mb-3">
+                  <CheckCircle className="w-6 h-6 text-green-400" />
+                </div>
+                <p className="text-sm text-gray-300">Sent</p>
                 <p className="text-3xl font-bold text-white mt-1">{inviteResult?.created || 0}</p>
               </CardContent>
             </Card>
           </div>
 
           {/* Email Input Card */}
-          <Card className="bg-gray-900/90 backdrop-blur-md border border-gray-700 shadow-xl mb-6">
+          <Card className={cardClass}>
             <CardContent className="p-6 space-y-6">
               <div className="space-y-2">
-                <Label className="text-gray-200 text-lg">Email Addresses</Label>
+                <Label className="text-white text-lg font-bold">Email Addresses</Label>
                 <Textarea
                   placeholder="Enter email addresses separated by commas or new lines...
 
@@ -286,7 +302,7 @@ candidate1@email.com
 candidate2@email.com"
                   value={emails}
                   onChange={(e) => handleEmailInput(e.target.value)}
-                  className="min-h-[200px] bg-gray-800 border-gray-600 text-white placeholder:text-gray-500 text-base"
+                  className="min-h-[200px] bg-white/5 border-white/20 text-white placeholder:text-gray-500 text-base rounded-xl"
                   disabled={isProcessing}
                 />
                 <div className="flex items-center justify-between">
@@ -304,7 +320,7 @@ candidate2@email.com"
                     <Button
                       variant="outline"
                       size="sm"
-                      className="gap-2 bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
+                      className="gap-2 bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl"
                       disabled={isProcessing}
                     >
                       <Upload className="w-4 h-4" />
@@ -316,7 +332,7 @@ candidate2@email.com"
 
               {/* Invalid Emails Warning */}
               {invalidEmails.length > 0 && (
-                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4">
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4">
                   <div className="flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 text-yellow-400 mt-0.5" />
                     <div className="flex-1">
@@ -352,7 +368,7 @@ candidate2@email.com"
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-green-500/10 border border-green-500/30 rounded-lg p-4"
+                  className="bg-green-500/10 border border-green-500/30 rounded-xl p-4"
                 >
                   <div className="flex items-center gap-3">
                     <CheckCircle className="w-5 h-5 text-green-400" />
@@ -371,11 +387,11 @@ candidate2@email.com"
               )}
 
               {/* AI Suggestion */}
-              <div className={`bg-gradient-to-r ${gradients.cardHeader} border border-blue-500/30 rounded-lg p-4`}>
+              <div className="bg-white/10 border border-purple-500/30 rounded-xl p-4">
                 <div className="flex items-start gap-3">
-                  <Sparkles className="w-5 h-5 text-blue-400 mt-0.5" />
+                  <Sparkles className="w-5 h-5 text-purple-400 mt-0.5" />
                   <div className="text-sm">
-                    <p className="text-blue-300 font-medium mb-1">Pro Tip</p>
+                    <p className="text-purple-300 font-medium mb-1">Pro Tip</p>
                     <p className="text-gray-400">
                       Our AI-powered phone screening will automatically call each candidate and conduct a
                       technical interview based on your job requirements. Candidates typically complete
@@ -388,10 +404,126 @@ candidate2@email.com"
           </Card>
 
           {/* Email Template Editor */}
-          <EmailTemplateEditor />
+          <div className="mt-6">
+            <EmailTemplateEditor />
+          </div>
+
+          {/* QR Box Section */}
+          <Card className={`${cardClass} mt-6`}>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="inline-flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl">
+                  <QrCode className="w-5 h-5 text-purple-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white">Quick Apply QR Code</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* QR Code Display */}
+                <div className="space-y-4">
+                  <div className="bg-white p-4 rounded-xl border border-white/20 flex items-center justify-center">
+                    {qrCodeUrl ? (
+                      <img 
+                        src={qrCodeUrl} 
+                        alt="QR Code for Job Application"
+                        className="w-48 h-48 object-contain"
+                      />
+                    ) : (
+                      <div className="w-48 h-48 bg-gray-700 rounded-xl flex items-center justify-center">
+                        <QrCode className="w-12 h-12 text-gray-500" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl"
+                      onClick={() => copyToClipboard(applicationLink)}
+                    >
+                      <Copy className="w-4 h-4 mr-2" />
+                      Copy Link
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl"
+                      onClick={() => {
+                        const link = document.createElement('a');
+                        link.href = qrCodeUrl;
+                        link.download = `hirewave-qr-${jobId}.png`;
+                        link.click();
+                      }}
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      Download QR
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Application Link & Instructions */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-white font-bold mb-2 block">Application Link</Label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={applicationLink}
+                        readOnly
+                        className="flex-1 bg-white/5 border border-white/20 rounded-xl px-3 py-2 text-sm text-gray-300"
+                      />
+                      <Button
+                        size="sm"
+                        className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl"
+                        onClick={() => copyToClipboard(applicationLink)}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h4 className="text-white font-semibold">How to use:</h4>
+                    <div className="space-y-2 text-sm text-gray-400">
+                      <div className="flex items-start gap-2">
+                        <div className="w-5 h-5 bg-purple-500/20 rounded-full flex items-center justify-center mt-0.5">
+                          <span className="text-purple-400 text-xs">1</span>
+                        </div>
+                        <span>Print the QR code and display it at career fairs or office locations</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-5 h-5 bg-purple-500/20 rounded-full flex items-center justify-center mt-0.5">
+                          <span className="text-purple-400 text-xs">2</span>
+                        </div>
+                        <span>Share the application link on social media and job boards</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-5 h-5 bg-purple-500/20 rounded-full flex items-center justify-center mt-0.5">
+                          <span className="text-purple-400 text-xs">3</span>
+                        </div>
+                        <span>Candidates can scan the QR code to apply instantly from their phones</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/10 border border-purple-500/30 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <Sparkles className="w-4 h-4 text-purple-400 mt-0.5" />
+                      <div className="text-sm">
+                        <p className="text-purple-300 font-medium mb-1">Mobile-Optimized</p>
+                        <p className="text-gray-400">
+                          The application process is fully optimized for mobile devices, 
+                          making it easy for candidates to apply on the go.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between bg-gray-900/90 border border-gray-700 rounded-lg p-6">
+          <div className="flex items-center justify-between bg-white/10 border border-white/20 rounded-2xl p-6 mt-6 backdrop-blur-sm">
             <div className="text-sm text-gray-400">
               {validEmails.length > 0 && (
                 <span>
@@ -404,14 +536,14 @@ candidate2@email.com"
                 variant="outline"
                 onClick={() => router.push(jobId ? `/hr/jobs/${jobId}` : '/hr/dashboard')}
                 disabled={isProcessing}
-                className="bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700"
+                className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSendInvites}
                 disabled={validEmails.length === 0 || isProcessing}
-                className={`gap-2 bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 disabled:opacity-50`}
+                className="gap-2 bg-white text-black hover:opacity-90 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {isProcessing ? (
                   <>

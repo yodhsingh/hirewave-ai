@@ -171,7 +171,7 @@ export default function ApplicantOnboarding() {
                 <div
                   key={step.number}
                   className={`flex flex-col items-center gap-2 ${
-                    isActive ? 'text-blue-400' : isCompleted ? 'text-green-400' : 'text-gray-500'
+                    isActive ? 'text-white' : isCompleted ? 'text-gray-300' : 'text-gray-500'
                   }`}
                 >
                   <div className={`

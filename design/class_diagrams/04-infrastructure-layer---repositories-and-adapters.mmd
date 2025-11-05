@@ -1,0 +1,127 @@
+classDiagram
+    class BaseRepository~T~ {
+        <<abstract>>
+        -Session db
+        +get(id)* Optional~T~
+        +getAll()* List~T~
+        +create(entity)* T
+        +update(entity)* T
+        +delete(id)* boolean
+        +exists(id)* boolean
+    }
+
+    class JobRepository {
+        +getByOrganization(orgId) List~Job~
+        +getActiveJobs() List~Job~
+        +getWithQuestions(jobId) Job
+        +updateStats(jobId, stats) void
+        +searchJobs(query, filters) List~Job~
+    }
+
+    class CandidateRepository {
+        +getByJobId(jobId) List~Candidate~
+        +getByStatus(jobId, status) List~Candidate~
+        +getWithResponses(candidateId) Candidate
+        +getWithScore(candidateId) Candidate
+        +bulkUpdateStatus(candidateIds, status) void
+        +getTopCandidates(jobId, limit) List~Candidate~
+    }
+
+    class ResponseRepository {
+        +getByCandidateId(candidateId) List~InterviewResponse~
+        +getByQuestionId(questionId) List~InterviewResponse~
+        +saveWithTranscript(response, transcript) InterviewResponse
+        +getWithTranscripts(candidateId) List~InterviewResponse~
+    }
+
+    class ScoreRepository {
+        +getByCandidateId(candidateId) Optional~Score~
+        +getByJobId(jobId) List~Score~
+        +getAverageScore(jobId) float
+        +getScoreDistribution(jobId) Map~string, int~
+        +getPercentile(score, jobId) float
+    }
+
+    class S3Service {
+        -S3Client client
+        -string bucketName
+        +uploadVideo(file, candidateId) string
+        +uploadAudio(file, candidateId) string
+        +uploadTranscript(text, candidateId) string
+        +getPresignedUrl(key, expiry) string
+        +deleteFile(key) boolean
+        +listFiles(prefix) List~string~
+    }
+
+    class CacheService {
+        -Redis client
+        +get(key) Optional~Any~
+        +set(key, value, ttl) void
+        +delete(key) void
+        +exists(key) boolean
+        +setWithExpiry(key, value, seconds) void
+        +getOrSet(key, factory, ttl) Any
+    }
+
+    class EmailService {
+        -SendGridClient client
+        -TemplateManager templates
+        +sendInvite(email, inviteUrl) boolean
+        +sendReminder(email, inviteUrl) boolean
+        +sendResultNotification(email, result) boolean
+        +sendBulkEmails(emails, template, data) List~boolean~
+    }
+
+    class TaskQueue {
+        -Celery celery
+        +enqueueTranscription(candidateId, videoUrl) TaskId
+        +enqueueScoring(candidateId) TaskId
+        +enqueueBatchScoring(candidateIds) TaskId
+        +enqueueEmailSend(email, template) TaskId
+        +getTaskStatus(taskId) TaskStatus
+        +cancelTask(taskId) boolean
+    }
+
+    class EventPublisher {
+        -RedisClient redis
+        -string channelPrefix
+        +publish(eventName, data) void
+        +publishDomainEvent(event) void
+        +publishBatch(events) void
+    }
+
+    class VectorStore {
+        <<interface>>
+        +storeEmbedding(id, embedding, metadata)*
+        +searchSimilar(embedding, topK)* List~SearchResult~
+        +deleteEmbedding(id)* boolean
+        +updateMetadata(id, metadata)* void
+    }
+
+    class PineconeVectorStore {
+        -PineconeClient client
+        -string indexName
+        +storeEmbedding(id, embedding, metadata) void
+        +searchSimilar(embedding, topK) List~SearchResult~
+        +deleteEmbedding(id) boolean
+        +createIndex(dimension) void
+    }
+
+    class PgVectorStore {
+        -Session db
+        +storeEmbedding(id, embedding, metadata) void
+        +searchSimilar(embedding, topK) List~SearchResult~
+        +deleteEmbedding(id) boolean
+    }
+
+    %% Relationships
+    BaseRepository <|-- JobRepository : extends
+    BaseRepository <|-- CandidateRepository : extends
+    BaseRepository <|-- ResponseRepository : extends
+    BaseRepository <|-- ScoreRepository : extends
+
+    VectorStore <|.. PineconeVectorStore : implements
+    VectorStore <|.. PgVectorStore : implements
+
+    JobMatchingService --> VectorStore : uses
+    EmbeddingService --> VectorStore : uses

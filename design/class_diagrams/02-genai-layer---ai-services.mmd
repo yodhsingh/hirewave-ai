@@ -1,0 +1,138 @@
+classDiagram
+    class AIOrchestrator {
+        -Map~AICapability, List~AIProvider~~ providers
+        -PromptManager promptManager
+        -CostTracker costTracker
+        -CacheManager cache
+        +execute(capability, operation, kwargs) Any
+        +executeWithFallback(providers, operation) Any
+        +trackCost(provider, operation, tokens) void
+        +getCachedResult(cacheKey) Optional~Any~
+        +registerProvider(capability, provider) void
+    }
+
+    class BaseLLMProvider {
+        <<abstract>>
+        +string name
+        +string model
+        +float costPerToken
+        +generate(prompt, kwargs)* string
+        +generateStructured(prompt, schema)* dict
+        +streamGenerate(prompt, kwargs)* Generator
+        +countTokens(text) int
+        +estimateCost(tokens) float
+    }
+
+    class OpenAIProvider {
+        -OpenAI client
+        +string apiKey
+        +generate(prompt, kwargs) string
+        +generateStructured(prompt, schema) dict
+        +createEmbedding(text) List~float~
+        +transcribe(audioFile) string
+        +analyzeImage(imageUrl) dict
+    }
+
+    class AnthropicProvider {
+        -Anthropic client
+        +string apiKey
+        +generate(prompt, kwargs) string
+        +generateStructured(prompt, schema) dict
+        +streamGenerate(prompt, kwargs) Generator
+    }
+
+    class LocalLlamaProvider {
+        -OllamaClient client
+        +string modelName
+        +generate(prompt, kwargs) string
+        +generateStructured(prompt, schema) dict
+        +isAvailable() boolean
+    }
+
+    class TranscriptionService {
+        -BaseLLMProvider provider
+        -S3Client s3Client
+        +transcribeVideo(videoUrl) Transcript
+        +transcribeAudio(audioUrl) Transcript
+        +transcribeFromS3(s3Key) Transcript
+        +detectLanguage(audioUrl) string
+        +getSpeakerDiarization(audioUrl) List~Speaker~
+    }
+
+    class ScoringService {
+        -BaseLLMProvider llm
+        -PromptManager promptManager
+        -VectorStore vectorStore
+        +scoreResponse(transcript, question) Score
+        +scoreBatch(responses) List~Score~
+        +generateFeedback(score) Feedback
+        +extractSkills(transcript) List~Skill~
+        +detectFillerWords(transcript) FillerWordAnalysis
+        +analyzePace(transcript, duration) PaceAnalysis
+        +detectSTARMethod(transcript) boolean
+    }
+
+    class FeedbackGenerationService {
+        -BaseLLMProvider llm
+        -PromptManager promptManager
+        +generateDetailedFeedback(score, transcript) Feedback
+        +generatePracticeFeedback(response) PracticeFeedback
+        +suggestImprovements(score) List~Improvement~
+        +generateComparison(currentScore, previousScore) Comparison
+        +generateCoachingTips(weaknesses) List~CoachingTip~
+    }
+
+    class JobMatchingService {
+        -BaseLLMProvider llm
+        -VectorStore vectorStore
+        -EmbeddingService embeddingService
+        +matchCandidateToJobs(candidateProfile) List~JobMatch~
+        +matchJobToCandidates(job) List~CandidateMatch~
+        +explainMatch(candidate, job) MatchExplanation
+        +getSemanticSimilarity(text1, text2) float
+    }
+
+    class EmbeddingService {
+        -BaseLLMProvider provider
+        -VectorStore vectorStore
+        +createEmbedding(text) List~float~
+        +createBatchEmbeddings(texts) List~List~float~~
+        +storeEmbedding(id, embedding, metadata) void
+        +searchSimilar(embedding, topK) List~SearchResult~
+    }
+
+    class PromptManager {
+        -PromptRepository repository
+        -Map~string, Prompt~ cache
+        +getPrompt(name, version) Prompt
+        +renderPrompt(name, variables) string
+        +createPromptVersion(name, template) PromptVersion
+        +trackPromptUsage(name, version, result) void
+        +comparePromptVersions(name, versions) PromptComparison
+    }
+
+    class CostTracker {
+        -CostRepository repository
+        +recordUsage(provider, model, tokens, cost) void
+        +getTotalCost(startDate, endDate) float
+        +getCostByProvider() Map~string, float~
+        +getCostPerCandidate() float
+        +predictMonthlyCost() float
+    }
+
+    %% Relationships
+    AIOrchestrator --> BaseLLMProvider : manages
+    BaseLLMProvider <|-- OpenAIProvider : implements
+    BaseLLMProvider <|-- AnthropicProvider : implements
+    BaseLLMProvider <|-- LocalLlamaProvider : implements
+
+    TranscriptionService --> BaseLLMProvider : uses
+    ScoringService --> BaseLLMProvider : uses
+    FeedbackGenerationService --> BaseLLMProvider : uses
+    JobMatchingService --> BaseLLMProvider : uses
+    JobMatchingService --> EmbeddingService : uses
+
+    AIOrchestrator --> PromptManager : uses
+    AIOrchestrator --> CostTracker : uses
+    ScoringService --> PromptManager : uses
+    FeedbackGenerationService --> PromptManager : uses

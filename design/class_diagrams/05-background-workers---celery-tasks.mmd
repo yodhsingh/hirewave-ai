@@ -1,0 +1,87 @@
+classDiagram
+    class BaseTask {
+        <<abstract>>
+        +string name
+        +int maxRetries
+        +int timeoutSeconds
+        +run(args, kwargs)* Any
+        +onSuccess(result) void
+        +onFailure(exception) void
+        +onRetry(exception) void
+    }
+
+    class TranscriptionTask {
+        -TranscriptionService transcriptionService
+        -ResponseRepository responseRepository
+        -EventPublisher eventPublisher
+        +run(responseId) Transcript
+        -downloadVideo(videoUrl) bytes
+        -transcribe(videoBytes) string
+        -saveTranscript(responseId, transcript) void
+        -publishTranscriptionCompletedEvent(responseId) void
+    }
+
+    class ScoringTask {
+        -ScoreCandidateUseCase useCase
+        -CandidateRepository candidateRepository
+        +run(candidateId) Score
+        -checkPrerequisites(candidateId) boolean
+        -scoreCandidate(candidateId) Score
+        -handleScoringFailure(candidateId, error) void
+    }
+
+    class BatchScoringTask {
+        -ScoringTask scoringTask
+        -CandidateRepository candidateRepository
+        +run(jobId) List~Score~
+        -getCandidatesForScoring(jobId) List~Candidate~
+        -scoreInBatch(candidateIds) List~Score~
+        -aggregateResults(scores) BatchScoringResult
+    }
+
+    class EmailTask {
+        -EmailService emailService
+        +run(emailType, recipient, data) boolean
+        -renderTemplate(emailType, data) EmailContent
+        -sendEmail(recipient, content) boolean
+        -handleBounce(recipient) void
+    }
+
+    class AnalyticsAggregationTask {
+        -AnalyticsRepository analyticsRepository
+        -JobRepository jobRepository
+        +run(jobId) JobAnalytics
+        -calculateMetrics(jobId) Metrics
+        -saveAnalytics(jobId, analytics) void
+    }
+
+    class CleanupTask {
+        -S3Service s3Service
+        -CandidateRepository candidateRepository
+        +run() CleanupResult
+        -deleteExpiredInvites() int
+        -deleteOldVideos() int
+        -archiveCompletedJobs() int
+    }
+
+    class ReminderTask {
+        -InviteRepository inviteRepository
+        -EmailService emailService
+        +run() int
+        -getPendingInvites() List~Invite~
+        -sendReminders(invites) void
+        -markRemindersSent(invites) void
+    }
+
+    %% Relationships
+    BaseTask <|-- TranscriptionTask : extends
+    BaseTask <|-- ScoringTask : extends
+    BaseTask <|-- BatchScoringTask : extends
+    BaseTask <|-- EmailTask : extends
+    BaseTask <|-- AnalyticsAggregationTask : extends
+    BaseTask <|-- CleanupTask : extends
+    BaseTask <|-- ReminderTask : extends
+
+    BatchScoringTask --> ScoringTask : delegates to
+    TranscriptionTask --> TranscriptionService : uses
+    ScoringTask --> ScoreCandidateUseCase : uses

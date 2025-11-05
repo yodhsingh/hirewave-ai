@@ -1,0 +1,80 @@
+classDiagram
+    class TwilioService {
+        -TwilioClient client
+        -string accountSid
+        -string authToken
+        -string phoneNumber
+        +makeOutboundCall(to, callbackUrl) CallSid
+        +handleIncomingCall(request) TwiML
+        +recordCall(callSid) RecordingSid
+        +getRecording(recordingSid) RecordingData
+        +getCallStatus(callSid) CallStatus
+        +endCall(callSid) boolean
+        +sendSMS(to, message) MessageSid
+    }
+
+    class PhoneInterviewService {
+        -TwilioService twilioService
+        -S3Service s3Service
+        -TranscriptionService transcriptionService
+        -CandidateRepository candidateRepository
+        +initiatePhoneInterview(candidateId, phoneNumber) PhoneSession
+        +handleCallConnected(callSid, candidateId) void
+        +handleCallEnded(callSid, duration) void
+        +processRecording(recordingSid) Transcript
+        +getPhoneInterviewStatus(sessionId) PhoneSessionStatus
+    }
+
+    class PhoneSession {
+        +UUID id
+        +UUID candidateId
+        +string phoneNumber
+        +string callSid
+        +PhoneSessionStatus status
+        +DateTime initiatedAt
+        +DateTime startedAt
+        +DateTime endedAt
+        +int duration
+        +string recordingUrl
+        +string transcriptUrl
+        +updateStatus(status) void
+        +markAsCompleted(duration) void
+        +getTranscript() Optional~Transcript~
+    }
+
+    class TwiMLGenerator {
+        +generateWelcomeMessage() TwiML
+        +generateQuestionPrompt(question) TwiML
+        +generateGoodbyeMessage() TwiML
+        +generateErrorMessage() TwiML
+        +enableRecording() TwiML
+        +addGatherForResponse(timeout) TwiML
+    }
+
+    class CallWebhookHandler {
+        -PhoneInterviewService phoneService
+        -EventPublisher eventPublisher
+        +handleStatusCallback(request) Response
+        +handleRecordingCallback(request) Response
+        +handleCallConnected(request) Response
+        +handleCallCompleted(request) Response
+        -publishCallEvent(event) void
+    }
+
+    class PhoneInterviewController {
+        -PhoneInterviewService phoneService
+        -CandidateRepository candidateRepository
+        +schedulePhoneInterview(candidateId, request) Response
+        +getPhoneSessionStatus(sessionId) Response
+        +cancelPhoneInterview(sessionId) Response
+        +retryPhoneInterview(sessionId) Response
+    }
+
+    %% Relationships
+    PhoneInterviewService --> TwilioService : uses
+    PhoneInterviewService --> S3Service : stores recordings
+    PhoneInterviewService --> TranscriptionService : transcribes calls
+    PhoneInterviewService --> PhoneSession : manages
+    TwilioService --> TwiMLGenerator : generates responses
+    CallWebhookHandler --> PhoneInterviewService : delegates to
+    PhoneInterviewController --> PhoneInterviewService : uses

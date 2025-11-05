@@ -1,0 +1,95 @@
+classDiagram
+    class BaseController {
+        <<abstract>>
+        #getCurrentUser() User
+        #validateRequest(schema) void
+        #handleError(exception) Response
+        #jsonResponse(data, status) Response
+    }
+
+    class JobController {
+        -CreateJobUseCase createJobUseCase
+        -JobRepository jobRepository
+        +createJob(request) Response
+        +getJob(jobId) Response
+        +listJobs(filters) Response
+        +updateJob(jobId, request) Response
+        +deleteJob(jobId) Response
+        +getJobStats(jobId) Response
+        +closeJob(jobId) Response
+    }
+
+    class CandidateController {
+        -InviteCandidatesUseCase inviteUseCase
+        -CandidateRepository candidateRepository
+        -BulkUpdateCandidatesUseCase bulkUpdateUseCase
+        -ExportCandidatesUseCase exportUseCase
+        +inviteCandidates(jobId, request) Response
+        +getCandidates(jobId, filters) Response
+        +getCandidate(candidateId) Response
+        +bulkUpdate(request) Response
+        +exportCandidates(jobId, format) Response
+    }
+
+    class InterviewController {
+        -SubmitInterviewUseCase submitUseCase
+        -ResponseRepository responseRepository
+        -InviteRepository inviteRepository
+        +getInterviewByToken(token) Response
+        +submitInterview(token, request) Response
+        +getProgress(token) Response
+        +saveProgress(token, request) Response
+    }
+
+    class PracticeController {
+        -GeneratePracticeFeedbackUseCase feedbackUseCase
+        -PracticeSessionRepository sessionRepository
+        +startSession(request) Response
+        +submitResponse(sessionId, request) Response
+        +getSession(sessionId) Response
+        +listSessions(userId) Response
+        +getImprovement(userId) Response
+    }
+
+    class ScoreController {
+        -ScoreRepository scoreRepository
+        -CandidateRepository candidateRepository
+        +getScore(candidateId) Response
+        +getScores(jobId) Response
+        +getScoreDistribution(jobId) Response
+        +getTopCandidates(jobId, limit) Response
+        +regenerateScore(candidateId) Response
+    }
+
+    class MatchingController {
+        -MatchJobsToApplicantUseCase matchUseCase
+        -JobMatchingService matchingService
+        +matchJobs(userId) Response
+        +matchCandidates(jobId) Response
+        +explainMatch(candidateId, jobId) Response
+    }
+
+    class WebSocketHandler {
+        -EventPublisher eventPublisher
+        -CacheService cache
+        +connect(userId) void
+        +disconnect(userId) void
+        +subscribe(userId, channels) void
+        +handleMessage(userId, message) void
+        +broadcast(channel, message) void
+    }
+
+    %% Relationships
+    BaseController <|-- JobController : extends
+    BaseController <|-- CandidateController : extends
+    BaseController <|-- InterviewController : extends
+    BaseController <|-- PracticeController : extends
+    BaseController <|-- ScoreController : extends
+    BaseController <|-- MatchingController : extends
+
+    JobController --> CreateJobUseCase : uses
+    CandidateController --> InviteCandidatesUseCase : uses
+    CandidateController --> BulkUpdateCandidatesUseCase : uses
+    InterviewController --> SubmitInterviewUseCase : uses
+    PracticeController --> GeneratePracticeFeedbackUseCase : uses
+    MatchingController --> MatchJobsToApplicantUseCase : uses
