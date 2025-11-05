@@ -5,7 +5,9 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
-import { useAuthStore } from '@/lib/store/authStore';
+
+import Navigation from '@/components/layout/Navigation';
+import Footer from '@/components/layout/Footer';
 
 const NG_FEATURES = [
   {
@@ -33,20 +35,14 @@ const NG_FEATURES = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { login } = useAuthStore();
-  const [navOpen, setNavOpen] = useState(false);
+
 
   useEffect(() => {
     // Removed unused mouse tracking
   }, []);
 
-  const handleHRLogin = () => {
-    login('hr@company.com', 'hr');
-    router.push('/hr/dashboard');
-  };
-
   const handleCandidateDemo = () => {
-    router.push('/i/demo-token-123');
+    router.push('/applicant');
   };
 
   const fadeInUp = {
@@ -91,67 +87,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Navigation - Matching the layout exactly */}
-      <nav className="relative z-50 px-6 lg:px-16 py-6">
-        <div className="max-w-[1400px] mx-auto relative flex items-center justify-between">
-          {/* Logo with Brain.svg */}
-          <div className="flex items-center space-x-2">
-            <Image src="/Brain.svg" alt="Logo" width={24} height={24} />
-            <span className="text-xl font-semibold text-black">
-              HireWave.ai
-            </span>
-          </div>
-          {/* Navigation Links - centered absolutely */}
-          <div className="hidden md:flex items-center space-x-10 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
-            <button className="text-black/60 hover:text-black transition-colors text-sm">
-              Home
-            </button>
-            <button className="text-black/60 hover:text-black transition-colors text-sm">
-              About
-            </button>
-            <button className="text-black/60 hover:text-black transition-colors text-sm">
-              Pricing
-            </button>
-            <button className="text-black/60 hover:text-black transition-colors text-sm">
-              Features
-            </button>
-          </div>
-
-          {/* Right actions */}
-          <div className="flex items-center gap-3">
-            <Button
-              onClick={handleHRLogin}
-              className="bg-[#2D2D2D] text-white hover:bg-[#1a1a1a] rounded-lg px-6 py-2.5 text-sm font-normal"
-            >
-              Sign in
-            </Button>
-            {/* Mobile hamburger */}
-            <button
-              aria-label="Open navigation menu"
-              onClick={() => setNavOpen((v) => !v)}
-              className="md:hidden w-10 h-10 rounded-lg border border-black/10 bg-white/80 hover:bg-white transition-colors flex items-center justify-center"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-black">
-                <path d="M3 6h18M3 12h18M3 18h18" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            </button>
-          </div>
-          {/* Mobile dropdown */}
-          {navOpen && (
-            <div className="md:hidden absolute right-6 top-[64px] bg-white text-black rounded-xl shadow-xl border border-black/10 w-44 py-2">
-              {['Home', 'About', 'Pricing', 'Features'].map((label) => (
-                <button
-                  key={label}
-                  className="block w-full text-left px-4 py-2 text-sm hover:bg-black/5"
-                  onClick={() => setNavOpen(false)}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </nav>
+      {/* Navigation */}
+      <Navigation />
 
       {/* Hero Section */}
       <section className="relative z-10 px-6 lg:px-16 pt-12 pb-28 lg:pt-12 lg:pb-32 min-h-[720px] lg:min-h-[780px] xl:min-h-[840px]">
@@ -225,9 +162,17 @@ export default function HomePage() {
                   </h1>
                 </div>
 
-
-
-              </motion.div>
+            {/* <Button
+              onClick={handleCandidateDemo}
+              size="lg"
+              variant="outline"
+              className="group border-2 border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white px-8 py-6 text-lg rounded-2xl transition-all duration-300 hover:scale-105"
+            >
+              <Target className="w-5 h-5 mr-2" />
+              I'm an Applicant
+              <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button> */}
+          </motion.div>
 
               {/* CTA Buttons */}
               <motion.div
@@ -237,19 +182,19 @@ export default function HomePage() {
                 className="flex flex-col sm:flex-row gap-4 pt-8"
               >
                 <Button
-                  onClick={handleHRLogin}
+                  onClick={() => router.push('/login')}
                   className="bg-[#2D2D2D] text-white hover:bg-[#1a1a1a] rounded-lg px-8 py-3 text-sm font-normal inline-flex items-center gap-2"
                 >
-                  <span>Start as HR Manager</span>
+                  <span>Get Started</span>
                   <Image src="/Forward.svg" alt="" width={16} height={16} className="opacity-90" />
                 </Button>
 
                 <Button
                   onClick={handleCandidateDemo}
                   variant="outline"
-                  className="border border-black/20 bg-transparent hover:bg-black/5 text-black rounded-lg px-8 py-3 text-sm font-normal transition-all inline-flex items-center gap-2"
+                  className="bg-[#2D2D2D] text-white hover:bg-[#1a1a1a] rounded-lg px-8 py-3 text-sm font-normal inline-flex items-center gap-2"
                 >
-                  <span>Try Demo Interview</span>
+                  <span>I'm an Applicant</span>
                   <Image src="/Double Right.svg" alt="" width={18} height={18} className="opacity-90" />
                 </Button>
               </motion.div>
@@ -672,7 +617,7 @@ export default function HomePage() {
 
                 <div className="flex flex-col sm:flex-row gap-4">
                   <Button
-                    onClick={handleHRLogin}
+                    onClick={() => router.push('/login')}
                     className="bg-black text-white hover:bg-black/90 rounded-[14px] px-8 py-6 text-base font-medium"
                   >
                     Get Started
@@ -698,23 +643,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="relative bg-[#0F0F0F] py-12 border-t border-white/10">
-        <div className="max-w-[1400px] mx-auto px-6 lg:px-16">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center space-x-2">
-              <Image src="/Brain.svg" alt="HireWave Logo" width={20} height={20} className="invert" />
-              <span className="text-lg font-semibold text-white">HireWave.ai</span>
-            </div>
-
-            <div className="flex items-center gap-6 text-gray-500 text-sm">
-              <span>© 2025 HireWave. All rights reserved.</span>
-              <button className="hover:text-white transition-colors">Privacy</button>
-              <button className="hover:text-white transition-colors">Terms</button>
-              <button className="hover:text-white transition-colors">Contact</button>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

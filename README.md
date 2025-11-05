@@ -1,7 +1,13 @@
 # Software Engineering Project - IIT Madras
 
+## 🚀 Live Application
+
+**View the running application:** [https://segenai.vercel.app](https://segenai.vercel.app)
+
+> **For TAs and evaluators:** The frontend is deployed on Vercel with dummy/mock data for demonstration purposes. The application is not yet fully functional as the backend is still under development. You can explore the UI/UX including the HR dashboard, job creation flow, candidate management interface, and AI-powered practice interviews.
+
 ## Project Overview
-Application project for the Software Engineering course.
+GenAI-First Interview Platform - An AI-powered asynchronous interview platform that enables HR teams to efficiently screen thousands of candidates while giving applicants fair opportunities to showcase their skills beyond traditional resumes.
 
 ## Project Structure
 *TBD*

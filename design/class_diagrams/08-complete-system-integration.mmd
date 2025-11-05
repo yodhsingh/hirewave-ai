@@ -1,0 +1,54 @@
+classDiagram
+    %% Presentation Layer
+    class FastAPIApp {
+        +JobController jobController
+        +CandidateController candidateController
+        +InterviewController interviewController
+        +WebSocketHandler wsHandler
+        +initialize() void
+        +registerRoutes() void
+        +registerMiddleware() void
+    }
+
+    %% Application Layer
+    class ApplicationServices {
+        +CreateJobUseCase createJob
+        +SubmitInterviewUseCase submitInterview
+        +ScoreCandidateUseCase scoreCandidate
+        +GeneratePracticeFeedbackUseCase practiceFeedback
+        +MatchJobsToApplicantUseCase matchJobs
+    }
+
+    %% Domain Layer
+    class DomainModel {
+        +User user
+        +Organization organization
+        +Job job
+        +Candidate candidate
+        +Score score
+    }
+
+    %% GenAI Layer
+    class GenAIServices {
+        +AIOrchestrator orchestrator
+        +TranscriptionService transcription
+        +ScoringService scoring
+        +FeedbackGenerationService feedback
+        +JobMatchingService matching
+    }
+
+    %% Infrastructure Layer
+    class Infrastructure {
+        +PostgreSQL database
+        +Redis cache
+        +S3 storage
+        +Celery taskQueue
+        +EventBus eventBus
+    }
+
+    %% Relationships
+    FastAPIApp --> ApplicationServices : uses
+    ApplicationServices --> DomainModel : operates on
+    ApplicationServices --> GenAIServices : delegates to
+    ApplicationServices --> Infrastructure : persists via
+    GenAIServices --> Infrastructure : stores in

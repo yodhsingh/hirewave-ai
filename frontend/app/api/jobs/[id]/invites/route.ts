@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 
-// POST /api/jobs/[id]/invites - Create invites for a job
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

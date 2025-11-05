@@ -11,15 +11,17 @@ import type {
   Invite,
   User,
   Role,
+  ApplicantProfile,
+  PracticeSession,
+  PracticeQuestion,
+  PracticeResponse,
+  InterviewTip,
 } from '@/types';
 
-// Set seed for consistent data during development
 faker.seed(123);
 
-// Helper function to generate IDs
 const generateId = () => faker.string.uuid();
 
-// Generate mock users
 export const generateUser = (role: Role = 'hr'): User => ({
   id: generateId(),
   email: faker.internet.email(),
@@ -30,7 +32,6 @@ export const generateUser = (role: Role = 'hr'): User => ({
   updatedAt: faker.date.recent(),
 });
 
-// Generate mock questions
 const generateQuestions = (count: number = 5): Question[] => {
   const questionTemplates = [
     {
@@ -40,7 +41,7 @@ const generateQuestions = (count: number = 5): Question[] => {
         'AI phone interview to assess your problem-solving abilities and technical knowledge',
         'Automated phone screening to discuss your background and project experience',
       ],
-      timeLimit: 900, // 15 minutes for phone interviews
+      timeLimit: 900, 
     },
     {
       type: 'video' as const,
@@ -74,7 +75,7 @@ const generateQuestions = (count: number = 5): Question[] => {
 
   const questions: Question[] = [];
 
-  // Always add a phone interview as the first question
+  
   const phoneTemplate = questionTemplates.find(t => t.type === 'phone')!;
   questions.push({
     id: generateId(),
@@ -87,7 +88,7 @@ const generateQuestions = (count: number = 5): Question[] => {
     scoreWeight: 10,
   });
 
-  // Add remaining questions
+  
   for (let i = 1; i < count; i++) {
     const template = faker.helpers.arrayElement(questionTemplates);
     const prompt = faker.helpers.arrayElement(template.prompts);
@@ -102,7 +103,7 @@ const generateQuestions = (count: number = 5): Question[] => {
       options: template.type === 'multiple_choice'
         ? ['Option A', 'Option B', 'Option C', 'Option D']
         : undefined,
-      required: i <= 3, // First few questions are required
+      required: i <= 3, 
       order: i,
       scoreWeight: faker.number.int({ min: 1, max: 10 }),
     });
@@ -111,9 +112,8 @@ const generateQuestions = (count: number = 5): Question[] => {
   return questions;
 };
 
-// Tech job titles relevant to data science and software engineering
 const JOB_TITLES = [
-  // Software Engineering
+  
   'Senior Software Engineer',
   'Full Stack Developer',
   'Backend Engineer',
@@ -124,7 +124,7 @@ const JOB_TITLES = [
   'Mobile App Developer',
   'Software Development Manager',
 
-  // Data Science & AI
+  
   'Data Scientist',
   'Senior Data Scientist',
   'Machine Learning Engineer',
@@ -136,14 +136,14 @@ const JOB_TITLES = [
   'Computer Vision Engineer',
   'NLP Engineer',
 
-  // Data & Analytics
+  
   'Data Architect',
   'Big Data Engineer',
   'Analytics Lead',
   'Quantitative Analyst',
   'Data Platform Engineer',
 
-  // Management & Leadership
+  
   'Technical Project Manager',
   'Product Manager - AI/ML',
   'Engineering Manager',
@@ -151,7 +151,7 @@ const JOB_TITLES = [
   'Scrum Master',
   'Agile Coach',
 
-  // Specialized Roles
+  
   'Blockchain Developer',
   'Security Engineer',
   'QA Automation Engineer',
@@ -159,7 +159,6 @@ const JOB_TITLES = [
   'Research Scientist',
 ];
 
-// Generate mock jobs
 export const generateJob = (status: JobStatus = 'active'): Job => {
   const createdDate = faker.date.past({ years: 1 });
   const totalCandidates = faker.number.int({ min: 50, max: 500 });
@@ -179,7 +178,7 @@ export const generateJob = (status: JobStatus = 'active'): Job => {
 
   const selectedTitle = faker.helpers.arrayElement(JOB_TITLES);
 
-  // Generate relevant job descriptions based on title
+  
   const jobDescriptions: Record<string, string> = {
     'Data Scientist': 'We are looking for a talented Data Scientist to join our team. You will be responsible for collecting, analyzing, and interpreting large datasets to help drive business decisions. You will work closely with cross-functional teams to implement machine learning models and create data-driven solutions.',
     'Senior Software Engineer': 'Join our engineering team as a Senior Software Engineer where you will design, develop, and maintain scalable software solutions. You will mentor junior developers, participate in architecture decisions, and ensure code quality through best practices.',
@@ -189,7 +188,7 @@ export const generateJob = (status: JobStatus = 'active'): Job => {
     'Product Manager - AI/ML': 'Lead our AI/ML product initiatives as a Product Manager. You will define product strategy, work with data science teams, and drive the development of innovative AI-powered features.',
   };
 
-  // Generate relevant requirements based on role type
+  
   const techRequirements = [
     '3+ years of experience in software development',
     'Strong problem-solving and analytical skills',
@@ -238,9 +237,8 @@ export const generateJob = (status: JobStatus = 'active'): Job => {
   };
 };
 
-// Core team members and additional Indian names
 const CANDIDATE_NAMES = [
-  // Core team members (IIT Madras students)
+  
   { name: 'Hiya Syal', email: '23f3003216@ds.study.iitm.ac.in' },
   { name: 'Parmeet Singh', email: '22f1000535@ds.study.iitm.ac.in' },
   { name: 'Shubham Tiwari', email: '22f1001934@ds.study.iitm.ac.in' },
@@ -261,7 +259,7 @@ const CANDIDATE_NAMES = [
   { name: 'Suresh Kumar', email: 'suresh.kumar@example.com' },
   { name: 'Anjali Mehta', email: 'anjali.mehta@example.com' },
   { name: 'Rahul Kapoor', email: 'rahul.kapoor@example.com' },
-  // Mix with some international names
+  
   { name: 'Sarah Johnson', email: 'sarah.johnson@example.com' },
   { name: 'Mike Chen', email: 'mike.chen@example.com' },
   { name: 'Emma Wilson', email: 'emma.wilson@example.com' },
@@ -270,7 +268,6 @@ const CANDIDATE_NAMES = [
 
 let candidateIndex = 0;
 
-// Generate mock candidates
 export const generateCandidate = (jobId: string, status?: CandidateStatus): Candidate => {
   const invitedDate = faker.date.past({ years: 0.5 });
   const startedDate = status && status !== 'invited'
@@ -290,7 +287,7 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
     'rejected',
   ]);
 
-  // Generate score if candidate is scored or beyond
+  
   const hasScore = ['scored', 'shortlisted', 'rejected', 'hired'].includes(candidateStatus);
 
   const overallScore = faker.number.int({ min: 40, max: 95 });
@@ -311,7 +308,7 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
     },
     scoredAt: submittedDate,
     scoredBy: generateId(),
-    // AI Insights
+    
     aiInsights: {
       summary: faker.helpers.arrayElement([
         'Strong technical candidate with excellent problem-solving skills and solid communication abilities.',
@@ -353,7 +350,7 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
       ], 2),
       confidenceLevel: faker.number.int({ min: 75, max: 98 }),
     },
-    // Extracted Skills
+    
     skillsExtracted: [
       { name: 'React', category: 'technical', proficiency: 'advanced', yearsOfExperience: 3, matchesJobRequirement: true, mentionedIn: ['q1', 'q3'] },
       { name: 'Node.js', category: 'technical', proficiency: faker.helpers.arrayElement(['intermediate', 'advanced', 'expert']), yearsOfExperience: 2, matchesJobRequirement: true, mentionedIn: ['q2'] },
@@ -363,7 +360,7 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
       { name: 'Team Collaboration', category: 'soft', proficiency: faker.helpers.arrayElement(['intermediate', 'advanced']), matchesJobRequirement: true, mentionedIn: ['q4'] },
       { name: faker.helpers.arrayElement(['Docker', 'Kubernetes', 'GraphQL', 'PostgreSQL']), category: 'technical', proficiency: faker.helpers.arrayElement(['beginner', 'intermediate']), matchesJobRequirement: false, mentionedIn: ['q2'] },
     ],
-    // Competency Ranking
+    
     competencyRanking: {
       percentile: Math.round((overallScore / 95) * 100),
       rank: faker.number.int({ min: 1, max: 20 }),
@@ -383,7 +380,7 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
     },
   } : {};
 
-  // Use predefined names, cycling through them
+  
   const candidateInfo = CANDIDATE_NAMES[candidateIndex % CANDIDATE_NAMES.length];
   candidateIndex++;
 
@@ -408,7 +405,6 @@ export const generateCandidate = (jobId: string, status?: CandidateStatus): Cand
   };
 };
 
-// Generate mock interview responses
 export const generateInterviewResponses = (candidateId: string, questions: Question[]): InterviewResponse[] => {
   return questions.map(question => ({
     id: generateId(),
@@ -433,7 +429,274 @@ export const generateInterviewResponses = (candidateId: string, questions: Quest
   }));
 };
 
-// Generate mock invites
+export const generateApplicantProfile = (): ApplicantProfile => {
+  const skills = faker.helpers.arrayElements([
+    'JavaScript', 'TypeScript', 'React', 'Node.js', 'Python', 'Java', 'AWS', 'Docker',
+    'Kubernetes', 'GraphQL', 'PostgreSQL', 'MongoDB', 'Redis', 'Git', 'CI/CD',
+    'Agile', 'Scrum', 'Problem Solving', 'Communication', 'Leadership'
+  ], faker.number.int({ min: 5, max: 12 }));
+
+  return {
+    id: generateId(),
+    email: '22f2000946@ds.study.iitm.ac.in',
+    name: 'Akash Kumar',
+    phone: faker.phone.number(),
+    resumeUrl: faker.internet.url(),
+    resumeText: faker.lorem.paragraphs(3),
+    linkedinUrl: `https://linkedin.com/in/${faker.internet.username()}`,
+    githubUrl: `https://github.com/${faker.internet.username()}`,
+    portfolioUrl: faker.internet.url(),
+    skills,
+    experience: faker.number.int({ min: 0, max: 15 }),
+    currentRole: faker.person.jobTitle(),
+    desiredRoles: faker.helpers.arrayElements([
+      'Software Engineer', 'Senior Developer', 'Full Stack Engineer', 'Frontend Developer',
+      'Backend Developer', 'DevOps Engineer', 'Data Scientist', 'Product Manager'
+    ], faker.number.int({ min: 1, max: 3 })),
+    location: faker.location.city(),
+    willingToRelocate: faker.datatype.boolean(),
+    expectedSalary: {
+      min: faker.number.int({ min: 60000, max: 120000 }),
+      max: faker.number.int({ min: 120000, max: 200000 }),
+      currency: 'USD'
+    },
+    availability: faker.helpers.arrayElement(['immediate', '2_weeks', '1_month', '2_months', 'other']),
+    createdAt: faker.date.past(),
+    updatedAt: faker.date.recent(),
+    practiceSessions: [],
+    applications: []
+  };
+};
+
+export const generatePracticeQuestions = (count: number = 5): PracticeQuestion[] => {
+  const behavioralQuestions = [
+    'Tell me about yourself and your background',
+    'Why are you interested in this position?',
+    'Describe a time you faced a challenging situation',
+    'How do you handle conflicts with team members?',
+    'What are your greatest strengths and weaknesses?'
+  ];
+
+  const technicalQuestions = [
+    'Explain the concept of closure in JavaScript',
+    'What is the difference between REST and GraphQL?',
+    'How would you optimize a slow database query?',
+    'Describe your experience with cloud platforms',
+    'Walk me through your approach to debugging'
+  ];
+
+  const situationalQuestions = [
+    'How would you handle a tight deadline?',
+    'What would you do if you disagreed with your manager?',
+    'How do you prioritize multiple tasks?',
+    'Describe how you would onboard to a new codebase',
+    'How would you mentor a junior developer?'
+  ];
+
+  const questions: PracticeQuestion[] = [];
+  const sessionId = generateId();
+
+  for (let i = 0; i < count; i++) {
+    const category = faker.helpers.arrayElement(['behavioral', 'technical', 'situational', 'competency'] as const);
+    let questionText = '';
+
+    if (category === 'behavioral') {
+      questionText = faker.helpers.arrayElement(behavioralQuestions);
+    } else if (category === 'technical') {
+      questionText = faker.helpers.arrayElement(technicalQuestions);
+    } else {
+      questionText = faker.helpers.arrayElement(situationalQuestions);
+    }
+
+    questions.push({
+      id: generateId(),
+      sessionId,
+      question: questionText,
+      category,
+      difficulty: faker.helpers.arrayElement(['easy', 'medium', 'hard']),
+      expectedAnswerPoints: faker.helpers.arrayElements([
+        'Clear communication', 'Specific examples', 'Technical accuracy',
+        'Problem-solving approach', 'Results-oriented', 'Team collaboration'
+      ], 3),
+      timeLimit: faker.number.int({ min: 60, max: 180 }),
+      order: i,
+      tips: faker.helpers.arrayElements([
+        'Use the STAR method', 'Be specific', 'Stay focused',
+        'Provide examples', 'Keep it concise'
+      ], 2)
+    });
+  }
+
+  return questions;
+};
+
+export const generatePracticeSession = (applicantId: string, jobId?: string): PracticeSession => {
+  const questions = generatePracticeQuestions();
+  const responses: PracticeResponse[] = [];
+  const sessionId = generateId();
+
+  // Generate responses for each question
+  questions.forEach(question => {
+    responses.push({
+      id: generateId(),
+      sessionId,
+      questionId: question.id,
+      content: faker.lorem.paragraphs(2),
+      duration: faker.number.int({ min: 30, max: question.timeLimit || 120 }),
+      retries: 0,
+      confidence: faker.number.int({ min: 60, max: 95 }),
+      pace: faker.helpers.arrayElement(['too_slow', 'good', 'too_fast']),
+      fillerWords: faker.helpers.arrayElements(['um', 'uh', 'like', 'you know'], faker.number.int({ min: 0, max: 4 })),
+      timestamp: faker.date.recent()
+    });
+  });
+
+  const overallScore = faker.number.int({ min: 65, max: 95 });
+
+  return {
+    id: sessionId,
+    applicantId,
+    jobId,
+    sessionType: jobId ? 'job_specific' : 'general',
+    status: 'completed',
+    startedAt: faker.date.recent(),
+    completedAt: faker.date.recent(),
+    duration: faker.number.int({ min: 900, max: 2700 }), // 15-45 minutes
+    questions,
+    responses,
+    feedback: {
+      id: generateId(),
+      sessionId,
+      overall: 'Good performance overall with strong technical knowledge and communication skills. Areas for improvement include reducing filler words and providing more structured responses.',
+      strengths: [
+        {
+          category: 'technical',
+          title: 'Strong Technical Knowledge',
+          description: 'Demonstrated solid understanding of core concepts',
+          priority: 'low',
+          examples: ['Clear explanation of closure', 'Good database optimization approach']
+        },
+        {
+          category: 'communication',
+          title: 'Clear Communication',
+          description: 'Articulated thoughts clearly and logically',
+          priority: 'low',
+          examples: undefined
+        }
+      ],
+      improvements: [
+        {
+          category: 'communication',
+          title: 'Reduce Filler Words',
+          description: 'Work on eliminating "um", "uh" from responses',
+          priority: 'medium',
+          examples: ['Used "um" 8 times in technical explanation']
+        },
+        {
+          category: 'behavioral',
+          title: 'Use STAR Method',
+          description: 'Structure behavioral responses with Situation, Task, Action, Result',
+          priority: 'high',
+          examples: undefined
+        }
+      ],
+      specificFeedback: questions.map(q => ({
+        questionId: q.id,
+        score: faker.number.int({ min: 60, max: 95 }),
+        maxScore: 100,
+        feedback: 'Good response with clear examples. Could be more concise.',
+        keyPointsCovered: faker.helpers.arrayElements(q.expectedAnswerPoints || [], 2),
+        keyPointsMissed: faker.helpers.arrayElements(q.expectedAnswerPoints || [], 1),
+        improvement: 'Focus on being more concise while maintaining clarity',
+        modelAnswer: faker.lorem.paragraph()
+      })),
+      communicationAnalysis: {
+        clarity: faker.number.int({ min: 70, max: 95 }),
+        pace: faker.helpers.arrayElement(['too_slow', 'good', 'too_fast']),
+        volume: 'good',
+        fillerWordCount: faker.number.int({ min: 0, max: 15 }),
+        vocabularyLevel: faker.helpers.arrayElement(['basic', 'intermediate', 'advanced']),
+        sentenceStructure: faker.helpers.arrayElement(['simple', 'varied', 'complex'])
+      },
+      technicalAnalysis: {
+        accuracy: faker.number.int({ min: 75, max: 95 }),
+        depth: faker.helpers.arrayElement(['surface', 'moderate', 'deep']),
+        problemSolvingApproach: faker.helpers.arrayElement(['unclear', 'structured', 'excellent']),
+        technicalTermsUsed: ['closure', 'REST', 'GraphQL', 'optimization', 'debugging'],
+        conceptsExplained: ['JavaScript closures', 'API design', 'Database optimization'],
+        examplesProvided: true
+      },
+      behavioralAnalysis: {
+        starMethodUsed: faker.datatype.boolean(),
+        specificityLevel: faker.helpers.arrayElement(['vague', 'moderate', 'specific']),
+        outcomesFocused: faker.datatype.boolean(),
+        leadershipShown: faker.datatype.boolean(),
+        teamworkShown: true,
+        conflictResolution: faker.datatype.boolean()
+      },
+      aiCoachTips: [
+        'Practice the STAR method for behavioral questions',
+        'Work on eliminating filler words through mock interviews',
+        'Prepare 2-3 strong examples for common scenarios',
+        'Time yourself to ensure concise responses'
+      ],
+      nextSteps: [
+        'Complete practice exercises for behavioral questions',
+        'Review technical concepts mentioned in the session',
+        'Schedule another practice session in 2-3 days'
+      ]
+    },
+    score: {
+      overall: overallScore,
+      breakdown: {
+        communication: faker.number.int({ min: 65, max: 95 }),
+        content: faker.number.int({ min: 70, max: 95 }),
+        confidence: faker.number.int({ min: 60, max: 90 }),
+        structure: faker.number.int({ min: 65, max: 90 }),
+        relevance: faker.number.int({ min: 75, max: 95 })
+      },
+      percentile: Math.round((overallScore / 95) * 100),
+      grade: overallScore >= 90 ? 'A' : overallScore >= 80 ? 'B' : overallScore >= 70 ? 'C' : 'D',
+      readinessLevel: overallScore >= 85 ? 'interview_ready' : overallScore >= 75 ? 'almost_ready' : 'needs_practice'
+    },
+    improvementPlan: undefined,
+    recordingUrls: undefined
+  };
+};
+
+export const generateInterviewTips = (): InterviewTip[] => [
+  {
+    id: generateId(),
+    category: 'general',
+    title: 'First Impressions Matter',
+    content: 'The first 30 seconds set the tone for the entire interview. Make eye contact, smile, and give a firm handshake.',
+    examples: ['Start with a warm greeting', 'Thank the interviewer for their time'],
+    doList: ['Dress appropriately', 'Arrive 10 minutes early', 'Bring multiple copies of resume'],
+    dontList: ['Check your phone', 'Arrive late', 'Forget interviewer names'],
+    relatedQuestions: ['Tell me about yourself']
+  },
+  {
+    id: generateId(),
+    category: 'behavioral',
+    title: 'Master the STAR Method',
+    content: 'Structure your behavioral responses using Situation, Task, Action, and Result for clear, impactful answers.',
+    examples: ['When describing a project challenge, explain the situation, your specific task, actions taken, and measurable results'],
+    doList: ['Be specific with numbers and outcomes', 'Keep it under 2 minutes', 'Practice common scenarios'],
+    dontList: ['Be vague about your role', 'Blame others for failures', 'Ramble without structure'],
+    relatedQuestions: ['Describe a challenging situation', 'Tell me about a time you failed']
+  },
+  {
+    id: generateId(),
+    category: 'technical',
+    title: 'Think Out Loud',
+    content: 'When solving technical problems, verbalize your thought process. Interviewers value your approach as much as the solution.',
+    examples: ['Explain your reasoning for choosing an algorithm', 'Discuss trade-offs between different approaches'],
+    doList: ['Ask clarifying questions', 'Consider edge cases', 'Optimize after getting a working solution'],
+    dontList: ['Jump to coding immediately', 'Ignore hints from interviewer', 'Give up without trying'],
+    relatedQuestions: ['Implement a binary search', 'Design a system']
+  }
+];
+
 export const generateInvite = (jobId: string, email?: string): Invite => {
   const sentDate = faker.date.recent({ days: 7 });
   const status = faker.helpers.arrayElement<Invite['status']>(['pending', 'sent', 'opened', 'started', 'completed']);
@@ -454,12 +717,11 @@ export const generateInvite = (jobId: string, email?: string): Invite => {
   };
 };
 
-// Generate complete mock data set
 export const generateMockData = () => {
-  // Generate HR users
+  
   const hrUsers = Array.from({ length: 3 }, () => generateUser('hr'));
 
-  // Generate jobs
+  
   const jobs: Job[] = [
     generateJob('active'),
     generateJob('active'),
@@ -467,13 +729,13 @@ export const generateMockData = () => {
     generateJob('draft'),
   ];
 
-  // Generate candidates for each job
+  
   const candidates: Candidate[] = [];
   const invites: Invite[] = [];
 
   jobs.forEach(job => {
     if (job.status === 'active' || job.status === 'closed') {
-      // Generate various candidates in different stages
+      
       const statuses: CandidateStatus[] = [
         'invited', 'invited', 'started',
         'in_progress', 'submitted', 'submitted',
@@ -485,43 +747,89 @@ export const generateMockData = () => {
         const candidate = generateCandidate(job.id, status);
         candidates.push(candidate);
 
-        // Generate responses if candidate has submitted
+        
         if (['submitted', 'scored', 'shortlisted', 'rejected'].includes(status)) {
           candidate.responses = generateInterviewResponses(candidate.id, job.questions);
         }
 
-        // Generate invite for candidate
+        
         invites.push(generateInvite(job.id, candidate.email));
       });
     }
   });
+
+  // Generate applicant profiles with practice sessions
+  const applicants: ApplicantProfile[] = [];
+  const practiceSessions: PracticeSession[] = [];
+
+  // Generate 5 applicants with various practice sessions
+  for (let i = 0; i < 5; i++) {
+    const applicant = generateApplicantProfile();
+    applicants.push(applicant);
+
+    // Generate 1-3 practice sessions per applicant
+    const sessionCount = faker.number.int({ min: 1, max: 3 });
+    for (let j = 0; j < sessionCount; j++) {
+      // Some sessions are job-specific, others are general practice
+      const jobId = faker.datatype.boolean() && jobs.length > 0 ?
+        faker.helpers.arrayElement(jobs.filter(j => j.status === 'active')).id :
+        undefined;
+
+      const session = generatePracticeSession(applicant.id, jobId);
+      practiceSessions.push(session);
+      applicant.practiceSessions.push(session);
+    }
+
+    
+    if (faker.datatype.boolean() && jobs.length > 0) {
+      const appliedJobs = faker.helpers.arrayElements(
+        jobs.filter(j => j.status === 'active'),
+        faker.number.int({ min: 1, max: 2 })
+      );
+
+      appliedJobs.forEach(job => {
+        applicant.applications.push({
+          id: generateId(),
+          applicantId: applicant.id,
+          jobId: job.id,
+          appliedAt: faker.date.recent(),
+          status: faker.helpers.arrayElement(['applied', 'screening', 'interview']),
+          coverLetter: faker.lorem.paragraphs(2),
+          source: faker.helpers.arrayElement(['direct', 'linkedin', 'indeed'])
+        });
+      });
+    }
+  }
+
+  
+  const interviewTips = generateInterviewTips();
 
   return {
     users: hrUsers,
     jobs,
     candidates,
     invites,
+    applicants,
+    practiceSessions,
+    interviewTips,
   };
 };
 
-// Singleton mock data instance
 let mockDataInstance: ReturnType<typeof generateMockData> | null = null;
 
 export const getMockData = () => {
-  // Use cached data if exists, otherwise generate new
+  
   if (!mockDataInstance) {
     mockDataInstance = generateMockData();
   }
   return mockDataInstance;
 };
 
-// Force reset mock data (useful for development)
 export const resetMockData = () => {
   mockDataInstance = null;
   return getMockData();
 };
 
-// Helper functions for filtering and searching
 export const filterCandidatesByStatus = (candidates: Candidate[], status?: CandidateStatus) => {
   if (!status) return candidates;
   return candidates.filter(c => c.status === status);

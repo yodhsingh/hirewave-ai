@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { mockStore } from '@/lib/mock/store';
 
-// GET /api/candidates/[id] - Get a specific candidate
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -17,7 +16,7 @@ export async function GET(
       );
     }
 
-    // Get the job details for this candidate
+    
     const job = mockStore.getJobById(candidate.jobId);
 
     const candidateDetail = {
@@ -34,7 +33,6 @@ export async function GET(
   }
 }
 
-// PATCH /api/candidates/[id] - Update a candidate
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

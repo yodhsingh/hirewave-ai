@@ -37,7 +37,7 @@ const timeToHireData = [
   { month: 'Jun', days: 24 },
 ];
 
-// Sample data for candidate sources
+// Sample data for candidate sources with theme-consistent colors
 const sourceData = [
   { name: 'LinkedIn', value: 45, color: '#3b82f6' },
   { name: 'Indeed', value: 28, color: '#06b6d4' },
@@ -57,7 +57,7 @@ const applicationsData = [
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-gray-900 border border-gray-700 rounded-lg p-3 shadow-xl">
+      <div className="bg-white/[0.08] backdrop-blur-md border border-white/20 rounded-lg p-3 shadow-xl">
         <p className="text-white font-medium mb-1">{label}</p>
         {payload.map((entry: any, index: number) => (
           <p key={index} className="text-sm" style={{ color: entry.color }}>
@@ -72,21 +72,27 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export function HiringFunnelChart() {
   return (
-    <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
-      <CardHeader className="border-b border-gray-800">
+    <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
+      <CardHeader className="border-b border-white/10">
         <CardTitle className="text-white">Hiring Funnel</CardTitle>
         <p className="text-sm text-gray-400">Conversion rates through hiring stages</p>
       </CardHeader>
-      <CardContent className="p-6">
-        <ResponsiveContainer width="100%" height={300}>
+      <CardContent className="p-4 md:p-6">
+        <ResponsiveContainer width="100%" height={280}>
           <BarChart data={funnelData} layout="vertical">
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis type="number" stroke="#9ca3af" />
-            <YAxis dataKey="stage" type="category" stroke="#9ca3af" width={80} />
+            <defs>
+              <linearGradient id="funnelGradient" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#06b6d4" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+            <XAxis type="number" stroke="#9ca3af" fontSize={12} />
+            <YAxis dataKey="stage" type="category" stroke="#9ca3af" width={80} fontSize={12} />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="count" fill="#3b82f6" radius={[0, 8, 8, 0]}>
+            <Bar dataKey="count" fill="url(#funnelGradient)" radius={[0, 8, 8, 0]}>
               {funnelData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={`hsl(${220 - index * 20}, 70%, ${60 - index * 5}%)`} />
+                <Cell key={`cell-${index}`} fill={`hsl(${220 - index * 15}, 70%, ${65 - index * 3}%)`} />
               ))}
             </Bar>
           </BarChart>
@@ -106,13 +112,13 @@ export function HiringFunnelChart() {
 
 export function TimeToHireChart() {
   return (
-    <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
-      <CardHeader className="border-b border-gray-800">
+    <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
+      <CardHeader className="border-b border-white/10">
         <CardTitle className="text-white">Time to Hire Trend</CardTitle>
         <p className="text-sm text-gray-400">Average days to complete hiring</p>
       </CardHeader>
-      <CardContent className="p-6">
-        <ResponsiveContainer width="100%" height={300}>
+      <CardContent className="p-4 md:p-6">
+        <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={timeToHireData}>
             <defs>
               <linearGradient id="colorDays" x1="0" y1="0" x2="0" y2="1">
@@ -120,9 +126,9 @@ export function TimeToHireChart() {
                 <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis dataKey="month" stroke="#9ca3af" />
-            <YAxis stroke="#9ca3af" label={{ value: 'Days', angle: -90, position: 'insideLeft', fill: '#9ca3af' }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+            <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
+            <YAxis stroke="#9ca3af" fontSize={12} label={{ value: 'Days', angle: -90, position: 'insideLeft', fill: '#9ca3af' }} />
             <Tooltip content={<CustomTooltip />} />
             <Area
               type="monotone"
@@ -154,7 +160,7 @@ export function CandidateSourcesChart() {
   const renderLabel = (props: any) => {
     const { cx, cy, midAngle, innerRadius, outerRadius, percent, name } = props;
     const RADIAN = Math.PI / 180;
-    const radius = outerRadius + 25;
+    const radius = outerRadius + 20;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
 
@@ -165,7 +171,7 @@ export function CandidateSourcesChart() {
         fill="#e5e7eb"
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
-        className="text-sm font-medium"
+        className="text-xs md:text-sm font-medium"
       >
         {`${name} ${(percent * 100).toFixed(0)}%`}
       </text>
@@ -173,13 +179,13 @@ export function CandidateSourcesChart() {
   };
 
   return (
-    <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
-      <CardHeader className="border-b border-gray-800">
+    <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
+      <CardHeader className="border-b border-white/10">
         <CardTitle className="text-white">Candidate Sources</CardTitle>
         <p className="text-sm text-gray-400">Where candidates are coming from</p>
       </CardHeader>
-      <CardContent className="p-6">
-        <ResponsiveContainer width="100%" height={300}>
+      <CardContent className="p-4 md:p-6">
+        <ResponsiveContainer width="100%" height={280}>
           <PieChart>
             <Pie
               data={sourceData}
@@ -187,7 +193,7 @@ export function CandidateSourcesChart() {
               cy="50%"
               labelLine={false}
               label={renderLabel}
-              outerRadius={100}
+              outerRadius={90}
               fill="#8884d8"
               dataKey="value"
             >
@@ -216,19 +222,25 @@ export function CandidateSourcesChart() {
 
 export function ApplicationsOverTimeChart() {
   return (
-    <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
-      <CardHeader className="border-b border-gray-800">
+    <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
+      <CardHeader className="border-b border-white/10">
         <CardTitle className="text-white">Applications Over Time</CardTitle>
         <p className="text-sm text-gray-400">Weekly application volume</p>
       </CardHeader>
-      <CardContent className="p-6">
-        <ResponsiveContainer width="100%" height={300}>
+      <CardContent className="p-4 md:p-6">
+        <ResponsiveContainer width="100%" height={280}>
           <BarChart data={applicationsData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-            <XAxis dataKey="date" stroke="#9ca3af" />
-            <YAxis stroke="#9ca3af" />
+            <defs>
+              <linearGradient id="applicationsGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#06b6d4" />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+            <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
+            <YAxis stroke="#9ca3af" fontSize={12} />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="applications" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+            <Bar dataKey="applications" fill="url(#applicationsGradient)" radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </CardContent>
