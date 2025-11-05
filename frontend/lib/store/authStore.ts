@@ -8,7 +8,7 @@ interface AuthState {
   isAuthenticated: boolean;
   role: Role | null;
 
-  // Actions
+  
   login: (email: string, role: Role) => void;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;

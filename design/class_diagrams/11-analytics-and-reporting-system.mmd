@@ -1,0 +1,104 @@
+classDiagram
+    class InterviewSessionService {
+        -InviteRepository inviteRepository
+        -QuestionRepository questionRepository
+        -ResponseRepository responseRepository
+        -CandidateRepository candidateRepository
+        +validateToken(token) Optional~InterviewSession~
+        +startInterview(token) InterviewSession
+        +getCurrentQuestion(sessionId) Question
+        +submitResponse(sessionId, response) InterviewResponse
+        +getProgress(sessionId) InterviewProgress
+        +saveProgress(sessionId, progress) void
+        +completeInterview(sessionId) Candidate
+    }
+
+    class InterviewSession {
+        +UUID id
+        +UUID candidateId
+        +UUID jobId
+        +string token
+        +SessionStatus status
+        +int currentQuestionIndex
+        +DateTime startedAt
+        +DateTime lastActivityAt
+        +Map~string, any~ progress
+        +boolean isExpired() boolean
+        +getCurrentQuestion() Question
+        +canSubmit() boolean
+        +recordActivity() void
+    }
+
+    class DeviceCheckService {
+        +checkCameraPermission() PermissionStatus
+        +checkMicrophonePermission() PermissionStatus
+        +testCamera() CameraTestResult
+        +testMicrophone() MicTestResult
+        +testNetwork() NetworkTestResult
+        +recordTestVideo() VideoTestResult
+        +validateBrowser() BrowserCompatibility
+    }
+
+    class MediaRecordingService {
+        -S3Service s3Service
+        +startRecording(sessionId) RecordingSession
+        +stopRecording(recordingId) Recording
+        +uploadRecording(recordingId, blob) string
+        +saveToIndexedDB(recordingId, blob) void
+        +getRecording(recordingId) Recording
+        +deleteRecording(recordingId) boolean
+    }
+
+    class Recording {
+        +UUID id
+        +UUID sessionId
+        +UUID questionId
+        +RecordingType type
+        +string localBlobUrl
+        +string s3Url
+        +int duration
+        +int fileSize
+        +RecordingStatus status
+        +DateTime recordedAt
+        +isUploaded() boolean
+        +getPlaybackUrl() string
+    }
+
+    class InterviewProgress {
+        +UUID sessionId
+        +int totalQuestions
+        +int answeredQuestions
+        +int requiredQuestions
+        +float completionPercentage
+        +List~UUID~ completedQuestionIds
+        +DateTime lastSaveAt
+        +canComplete() boolean
+        +getNextQuestion() Optional~Question~
+    }
+
+    class ConsentService {
+        +recordConsent(candidateId, consentData) Consent
+        +validateConsent(candidateId) boolean
+        +getConsentDocument(jobId) ConsentDocument
+        +revokeConsent(candidateId) void
+    }
+
+    class Consent {
+        +UUID id
+        +UUID candidateId
+        +ConsentType type
+        +boolean videoRecording
+        +boolean dataProcessing
+        +boolean aiAnalysis
+        +string ipAddress
+        +DateTime consentedAt
+        +isValid() boolean
+    }
+
+    %% Relationships
+    InterviewSessionService --> InterviewSession : manages
+    InterviewSessionService --> InterviewProgress : tracks
+    InterviewSession --> DeviceCheckService : validates setup
+    InterviewSession --> MediaRecordingService : records responses
+    MediaRecordingService --> Recording : creates
+    ConsentService --> Consent : manages

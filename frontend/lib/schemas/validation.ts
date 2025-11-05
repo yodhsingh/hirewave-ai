@@ -10,9 +10,9 @@ export const jobCreateSchema = z.object({
     type: z.enum(['phone', 'video', 'text', 'multiple_choice', 'code']),
     question: z.string().min(10, 'Question must be at least 10 characters'),
     description: z.string().optional(),
-    timeLimit: z.number().min(30).max(1800).optional(), // 30s to 30min (phone interviews can be longer)
-    maxLength: z.number().min(100).max(2000).optional(), // for text questions
-    options: z.array(z.string()).min(2).max(6).optional(), // for multiple choice
+    timeLimit: z.number().min(30).max(1800).optional(), 
+    maxLength: z.number().min(100).max(2000).optional(), 
+    options: z.array(z.string()).min(2).max(6).optional(), 
     required: z.boolean(),
     order: z.number().min(0).optional(),
     scoreWeight: z.number().min(0).max(10).optional(),
@@ -34,7 +34,7 @@ export const questionSchema = z.object({
 
 export const candidateInviteSchema = z.object({
   emails: z.array(z.string().email('Invalid email address')).min(1).max(200),
-  expiresIn: z.number().min(1).max(30).default(7), // days
+  expiresIn: z.number().min(1).max(30).default(7), 
   sendReminders: z.boolean().default(true),
 });
 
@@ -73,7 +73,7 @@ export const interviewSettingsSchema = z.object({
   showTimer: z.boolean(),
   allowPause: z.boolean(),
   autoSave: z.boolean(),
-  autoSaveInterval: z.number().min(10).max(300), // 10s to 5min
+  autoSaveInterval: z.number().min(10).max(300), 
   practiceQuestion: z.boolean(),
   requireConsent: z.boolean(),
   consentText: z.string().max(2000).optional(),

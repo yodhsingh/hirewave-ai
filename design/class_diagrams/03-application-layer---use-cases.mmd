@@ -1,0 +1,104 @@
+classDiagram
+    class CreateJobUseCase {
+        -JobRepository jobRepository
+        -QuestionRepository questionRepository
+        -EventPublisher eventPublisher
+        +execute(jobData) Job
+        -validateJobData(jobData) void
+        -createQuestions(job, questions) void
+        -publishJobCreatedEvent(job) void
+    }
+
+    class InviteCandidatesUseCase {
+        -JobRepository jobRepository
+        -CandidateRepository candidateRepository
+        -InviteRepository inviteRepository
+        -EmailService emailService
+        -EventPublisher eventPublisher
+        +execute(jobId, emails) List~Invite~
+        -validateEmails(emails) void
+        -generateTokens(emails) Map~string, string~
+        -sendInviteEmails(invites) void
+        -publishCandidateInvitedEvents(invites) void
+    }
+
+    class SubmitInterviewUseCase {
+        -CandidateRepository candidateRepository
+        -ResponseRepository responseRepository
+        -S3Service s3Service
+        -TaskQueue taskQueue
+        -EventPublisher eventPublisher
+        +execute(token, responses) Candidate
+        -validateResponses(responses) void
+        -uploadVideos(responses) void
+        -saveResponses(candidateId, responses) void
+        -enqueueTranscription(candidateId) void
+        -updateCandidateStatus(candidateId, status) void
+        -publishInterviewSubmittedEvent(candidateId) void
+    }
+
+    class ScoreCandidateUseCase {
+        -CandidateRepository candidateRepository
+        -ResponseRepository responseRepository
+        -ScoringService scoringService
+        -ScoreRepository scoreRepository
+        -EventPublisher eventPublisher
+        +execute(candidateId) Score
+        -getResponses(candidateId) List~InterviewResponse~
+        -scoreResponses(responses) Score
+        -saveScore(candidateId, score) void
+        -updateCandidateStatus(candidateId) void
+        -publishCandidateScoredEvent(candidateId, score) void
+    }
+
+    class GeneratePracticeFeedbackUseCase {
+        -PracticeSessionRepository sessionRepository
+        -FeedbackGenerationService feedbackService
+        -TranscriptionService transcriptionService
+        +execute(sessionId, response) PracticeFeedback
+        -transcribeResponse(response) string
+        -generateFeedback(transcript) PracticeFeedback
+        -saveFeedback(sessionId, feedback) void
+        -trackImprovement(userId) ImprovementMetrics
+    }
+
+    class MatchJobsToApplicantUseCase {
+        -UserRepository userRepository
+        -JobRepository jobRepository
+        -JobMatchingService matchingService
+        +execute(userId) List~JobMatch~
+        -getCandidateProfile(userId) CandidateProfile
+        -getActiveJobs() List~Job~
+        -matchJobs(profile, jobs) List~JobMatch~
+        -rankMatches(matches) List~JobMatch~
+    }
+
+    class BulkUpdateCandidatesUseCase {
+        -CandidateRepository candidateRepository
+        -EventPublisher eventPublisher
+        -EmailService emailService
+        +execute(candidateIds, newStatus) void
+        -validateCandidates(candidateIds) void
+        -updateStatuses(candidateIds, newStatus) void
+        -sendStatusEmails(candidates, newStatus) void
+        -publishBulkUpdateEvent(candidateIds, newStatus) void
+    }
+
+    class ExportCandidatesUseCase {
+        -CandidateRepository candidateRepository
+        -ScoreRepository scoreRepository
+        -ExportService exportService
+        +execute(jobId, format) ExportFile
+        -getCandidatesWithScores(jobId) List~CandidateWithScore~
+        -formatData(candidates, format) bytes
+        -uploadToS3(file) string
+    }
+
+    %% Dependencies (simplified)
+    CreateJobUseCase --> Job : creates
+    InviteCandidatesUseCase --> Invite : creates
+    SubmitInterviewUseCase --> InterviewResponse : creates
+    ScoreCandidateUseCase --> Score : creates
+    ScoreCandidateUseCase --> ScoringService : uses
+    GeneratePracticeFeedbackUseCase --> FeedbackGenerationService : uses
+    MatchJobsToApplicantUseCase --> JobMatchingService : uses

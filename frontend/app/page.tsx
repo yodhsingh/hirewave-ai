@@ -227,7 +227,17 @@ export default function HomePage() {
 
 
 
-              </motion.div>
+            <Button
+              onClick={handleCandidateDemo}
+              size="lg"
+              variant="outline"
+              className="group border-2 border-white/20 bg-white/5 hover:bg-white/10 backdrop-blur-sm text-white px-8 py-6 text-lg rounded-2xl transition-all duration-300 hover:scale-105"
+            >
+              <Target className="w-5 h-5 mr-2" />
+              I'm an Applicant
+              <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+            </Button>
+          </motion.div>
 
               {/* CTA Buttons */}
               <motion.div

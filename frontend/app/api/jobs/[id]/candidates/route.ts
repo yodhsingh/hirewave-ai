@@ -9,7 +9,7 @@ export async function GET(
     const { id } = await params;
     const candidates = mockStore.getCandidatesByJobId(id);
 
-    // Transform candidates to row format for the table
+    
     const candidateRows = candidates.map(candidate => ({
       id: candidate.id,
       name: candidate.name,
