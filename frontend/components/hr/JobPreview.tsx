@@ -65,9 +65,8 @@ export function JobPreview({ jobData }: JobPreviewProps) {
   const readinessLabel = readinessScore >= 80 ? 'Ready to Publish' : readinessScore >= 60 ? 'Almost Ready' : 'Needs More Info';
 
   return (
-    <div className="space-y-6">
-      {/* Readiness Score */}
-      <Card className="border-2 border-gray-700 bg-gray-800">
+  <div className="min-h-screen text-white relative">      {/* Readiness Score */}
+      <Card className="bg-white/[0.04] backdrop-blur-2xl border border-white/10 rounded-2xl hover:border-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.04)] mb-4">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-white">
@@ -88,8 +87,7 @@ export function JobPreview({ jobData }: JobPreviewProps) {
             <Progress value={readinessScore} className="h-3 bg-gray-700" />
 
             {readinessScore < 100 && (
-              <Alert className="mt-4 border-amber-500/30 bg-amber-900/20">
-                <AlertCircle className="h-4 w-4 text-amber-400" />
+              <Alert className="bg-white/[0.04] backdrop-blur-2xl border border-white/10 rounded-2xl hover:border-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.04)]">
                 <AlertDescription className="text-gray-200">
                   <p className="font-medium mb-2">Suggestions to improve:</p>
                   <ul className="text-sm space-y-1 text-gray-300">
@@ -107,48 +105,48 @@ export function JobPreview({ jobData }: JobPreviewProps) {
       </Card>
 
       {/* Job Details Preview */}
-      <Card className="bg-gray-800 border-gray-700">
-        <CardHeader>
+      <Card className="bg-white/[0.04] backdrop-blur-2xl border border-white/10 rounded-2xl hover:border-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.04)]">
+        <CardHeader className='border-b border-white/10'>
           <CardTitle className="flex items-center gap-2 text-white">
-            <Eye className="w-5 h-5 text-purple-400" />
+            <Eye className="w-5 h-5 text-gray-100" />
             How Candidates Will See Your Job
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Header */}
           <div>
-            <h2 className="text-2xl font-bold mb-2 text-white">{jobData.title || 'Untitled Position'}</h2>
+            <h2 className="text-2xl font-medium mb-2 text-white">{jobData.title || 'Untitled Position'}</h2>
             <div className="flex flex-wrap gap-4 text-sm text-gray-400">
               {jobData.department && (
                 <div className="flex items-center gap-1">
-                  <Building className="w-4 h-4 text-purple-400" />
+                  <Building className="w-4 h-4 text-gray-100" />
                   {jobData.department}
                 </div>
               )}
               {jobData.location && (
                 <div className="flex items-center gap-1">
-                  <MapPin className="w-4 h-4 text-pink-400" />
+                  <MapPin className="w-4 h-4 text-gray-100" />
                   {jobData.location}
                 </div>
               )}
               {jobData.roleType && (
                 <div className="flex items-center gap-1">
-                  <Users className="w-4 h-4 text-orange-400" />
+                  <Users className="w-4 h-4 text-gray-100" />
                   {jobData.roleType}
                 </div>
               )}
             </div>
           </div>
 
-          <Separator className="bg-gray-700" />
+          <Separator className="bg-white/10" />
 
           {/* Description */}
           <div>
             <h3 className="font-semibold mb-2 flex items-center gap-2 text-gray-200">
-              <FileText className="w-4 h-4 text-cyan-400" />
+              {/* <FileText className="w-4 h-4 text-cyan-400" /> */}
               About the Role
             </h3>
-            <p className="text-sm text-gray-400 whitespace-pre-wrap">
+            <p className="text-sm text-gray-400 whitespace-pre-wrap break-words">
               {jobData.description || 'No description provided yet.'}
             </p>
           </div>
@@ -156,7 +154,7 @@ export function JobPreview({ jobData }: JobPreviewProps) {
           {/* Requirements */}
           {jobData.requirements && jobData.requirements.length > 0 && (
             <div>
-              <h3 className="font-semibold mb-2 text-gray-200">Key Requirements</h3>
+              <h3 className="font-semibold mb-2 text-gray-400">Key Requirements</h3>
               <div className="flex flex-wrap gap-2">
                 {jobData.requirements.map((req, index) => (
                   <Badge key={index} variant="secondary" className="bg-gray-700 text-gray-200 border-gray-600">
@@ -167,17 +165,16 @@ export function JobPreview({ jobData }: JobPreviewProps) {
             </div>
           )}
 
-          <Separator className="bg-gray-700" />
+          <Separator className="bg-white/10" />
 
           {/* Interview Process */}
           <div>
-            <h3 className="font-semibold mb-3 flex items-center gap-2 text-gray-200">
-              <Sparkles className="w-4 h-4 text-yellow-400" />
+            <h3 className="font-semibold mb-3 flex items-center gap-2 text-white">
               Interview Process
             </h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <Card className="bg-purple-900/20 border-purple-500/30">
+              <Card className="bg-white/[0.1] backdrop-blur-2xl border border-white/10 rounded-2xl hover:border-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.04)] mb-4">
                 <CardContent className="pt-6 text-center">
                   <Video className="w-8 h-8 mx-auto mb-2 text-purple-400" />
                   <p className="font-semibold text-white">{videoQuestions.length}</p>
@@ -185,7 +182,7 @@ export function JobPreview({ jobData }: JobPreviewProps) {
                 </CardContent>
               </Card>
 
-              <Card className="bg-blue-900/20 border-blue-500/30">
+              <Card className="bg-white/[0.1] backdrop-blur-2xl border border-white/10 rounded-2xl hover:border-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.04)]">
                 <CardContent className="pt-6 text-center">
                   <FileText className="w-8 h-8 mx-auto mb-2 text-blue-400" />
                   <p className="font-semibold text-white">{textQuestions.length}</p>
@@ -193,7 +190,7 @@ export function JobPreview({ jobData }: JobPreviewProps) {
                 </CardContent>
               </Card>
 
-              <Card className="bg-green-900/20 border-green-500/30">
+              <Card className="bg-white/[0.1] backdrop-blur-2xl border border-white/10 rounded-2xl hover:border-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.04)]">
                 <CardContent className="pt-6 text-center">
                   <CheckSquare className="w-8 h-8 mx-auto mb-2 text-green-400" />
                   <p className="font-semibold text-white">{mcQuestions.length}</p>
@@ -201,23 +198,12 @@ export function JobPreview({ jobData }: JobPreviewProps) {
                 </CardContent>
               </Card>
             </div>
-
-            <div className="flex items-center gap-4 text-sm text-gray-400">
-              <div className="flex items-center gap-1">
-                <Clock className="w-4 h-4 text-blue-400" />
-                Est. {formatTime(estimatedTime)}
-              </div>
-              <div className="flex items-center gap-1">
-                <CheckCircle className="w-4 h-4 text-green-400" />
-                AI-Powered Evaluation
-              </div>
-            </div>
           </div>
 
           {/* Questions List */}
           {totalQuestions > 0 && (
             <div>
-              <h3 className="font-semibold mb-3 text-gray-200">Interview Questions Preview</h3>
+              <h3 className="font-semibold mb-3 text-white">Interview Questions Preview</h3>
               <div className="space-y-3">
                 {jobData.questions?.map((question, index) => (
                   <motion.div
@@ -235,11 +221,11 @@ export function JobPreview({ jobData }: JobPreviewProps) {
                         {question.type === 'video' && <Video className="w-4 h-4 text-purple-400" />}
                         {question.type === 'text' && <FileText className="w-4 h-4 text-blue-400" />}
                         {question.type === 'multiple_choice' && <CheckSquare className="w-4 h-4 text-green-400" />}
-                        <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
+                        <Badge variant="outline" className="text-xs border-white-100 text-gray-300">
                           {question.timeLimit ? formatTime(question.timeLimit) : 'No limit'}
                         </Badge>
                         {question.required && (
-                          <Badge variant="secondary" className="text-xs bg-yellow-900/30 text-yellow-400 border-yellow-500/30">Required</Badge>
+                          <Badge variant="secondary" className="text-xs bg-white-500 text-yellow-400 border-yellow-400/40">Required</Badge>
                         )}
                       </div>
                       <p className="text-sm text-gray-200">{question.question}</p>
@@ -261,62 +247,11 @@ export function JobPreview({ jobData }: JobPreviewProps) {
           )}
         </CardContent>
       </Card>
-
-      {/* Expected Results */}
-      <Card className="bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-blue-500/30">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-white">
-            <TrendingUp className="w-5 h-5 text-green-400" />
-            Expected Results
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-start gap-3">
-              <div className="text-2xl">📊</div>
-              <div>
-                <p className="font-medium text-gray-200">Automated Screening</p>
-                <p className="text-sm text-gray-400">
-                  AI will rank candidates based on their responses, saving you 80% of screening time
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="text-2xl">⚡</div>
-              <div>
-                <p className="font-medium text-gray-200">Faster Hiring</p>
-                <p className="text-sm text-gray-400">
-                  Reduce time-to-hire by 60% with async interviews
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="text-2xl">🎯</div>
-              <div>
-                <p className="font-medium text-gray-200">Better Matches</p>
-                <p className="text-sm text-gray-400">
-                  Find candidates who align with your requirements
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="text-2xl">📈</div>
-              <div>
-                <p className="font-medium">Data Insights</p>
-                <p className="text-sm text-muted-foreground">
-                  Track metrics and improve your hiring process
-                </p>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* Publishing Info */}
-      <Alert className="border-green-200 bg-green-50">
+      <Alert className="bg-white/[0.8] backdrop-blur-2xl border border-white/10 rounded-2xl hover:border-white/20 transition-all duration-300 shadow-[0_0_20px_rgba(255,255,255,0.04)]">
         <CheckCircle className="h-4 w-4 text-green-600" />
         <AlertDescription>
-          <p className="font-medium text-green-900 mb-1">Ready to publish?</p>
+          <p className="font-medium text-green-900 mb-3">Ready to publish?</p>
           <p className="text-sm">
             Once published, your job will be live and candidates can start applying immediately.
             You&apos;ll receive notifications for each new application.

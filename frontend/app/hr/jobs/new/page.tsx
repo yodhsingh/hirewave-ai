@@ -181,55 +181,57 @@ export default function NewJobPage() {
 
   const progress = (currentStep / WIZARD_STEPS.length) * 100;
 
+  
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Background Effects */}
-      <div className="fixed inset-0">
-        <div className={`absolute inset-0 bg-gradient-to-br ${gradients.bgPrimary}`} />
-        <div className={`absolute inset-0 bg-gradient-to-tr ${gradients.bgSecondary}`} />
-      </div>
-
       {/* Header */}
-      <div className="relative z-10 bg-black/50 backdrop-blur-lg border-b border-gray-800 sticky top-0">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push('/hr/dashboard')}
-                className="gap-2 text-white hover:bg-gray-800"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Dashboard
-              </Button>
-              <div className="h-8 w-px bg-gray-700" />
-              <div>
-                <h1 className={`text-xl font-semibold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
-                  Create New Job
-                </h1>
-                <p className="text-sm text-gray-300">
-                  Step {currentStep} of {WIZARD_STEPS.length}
-                </p>
-              </div>
-            </div>
-            <Badge
-              variant="outline"
-              className={`bg-gradient-to-r ${gradients.cardHeader} border-blue-500/50 text-blue-300`}
+      <div className="relative z-10 bg-white/90 backdrop-blur-xl border-b border-black/10 sticky top-0 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+      <div className="container mx-auto px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push('/hr/dashboard')}
+              // UI: Inverted text and hover for light surface
+              className="gap-2 text-black hover:bg-black"
             >
-              <Sparkles className="w-3 h-3 mr-1" />
-              AI-Powered Screening
-            </Badge>
+              <ArrowLeft className="w-4 h-4" />
+              Back to Dashboard
+            </Button>
+            {/* UI: Changed divider to match new border */}
+            <div className="h-8 w-px bg-black/10" />
+            <div>
+              {/*
+                UI: Removed gradient, set to primary dark text.
+                - Typography: Updated font-semibold to font-medium (per spec).
+              */}
+              <h1 className="text-xl font-medium text-gray-900">
+                Create New Job
+              </h1>
+              {/* UI: Updated secondary text from text-gray-300 to text-gray-500 */}
+              <p className="text-sm text-gray-500">
+                Step {currentStep} of {WIZARD_STEPS.length}
+              </p>
+            </div>
           </div>
+            <Badge
+            variant="outline"
+            className="border border-black/10 bg-transparent text-gray-500 font-medium text-xs tracking-wide"
+          >
+            {/* <Sparkles className="w-3 h-3 mr-1" />
+            AI-Powered Screening */}
+          </Badge>
         </div>
       </div>
+    </div>
 
       <div className="relative z-10 container mx-auto px-6 py-8">
         {/* Progress Bar */}
         <div className="max-w-4xl mx-auto mb-8">
           <Progress
             value={progress}
-            className="h-2 bg-gray-800"
+            className="h-2 bg-white/10"
           />
 
           {/* Step Indicators */}
@@ -243,13 +245,13 @@ export default function NewJobPage() {
                 <div
                   key={step.id}
                   className={`flex flex-col items-center gap-2 ${
-                    isActive ? 'text-blue-400' : isCompleted ? 'text-green-400' : 'text-gray-500'
+                    isActive ? 'text-white' : isCompleted ? 'text-green-400' : 'text-gray-500'
                   }`}
                 >
                   <div className={`
                     w-10 h-10 rounded-full flex items-center justify-center transition-all
-                    ${isActive ? `bg-gradient-to-r ${gradients.primary} text-white shadow-lg shadow-blue-500/30 scale-110` :
-                      isCompleted ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-gray-800 text-gray-400'}
+                    ${isActive ? `bg-gray-500/20 text-blue-400 border border-blue-500/30  shadow-blue-400/40 scale-110` :
+                      isCompleted ? 'bg-gray-500/20 text-green-400 border border-green-500/30' : 'bg-white/10 text-gray-400'}
                   `}>
                     {isCompleted ? (
                       <CheckCircle className="w-5 h-5" />
@@ -272,10 +274,10 @@ export default function NewJobPage() {
           <AnimatePresence mode="wait">
             {currentStep === 1 && (
               <motion.div key="step1" {...fadeInUp}>
-                <Card className="bg-white/[0.04] backdrop-blur-xl border border-white/10">
+                <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl hover:border-white/20 transition-colors cursor-pointer group">
                   <CardHeader className={`border-b border-gray-700 rounded-t-lg`}>
-                    <CardTitle className={`text-2xl font-bold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>Job Details</CardTitle>
-                    <CardDescription className="text-gray-200 mt-2">
+                    <CardTitle className="text-2xl font-medium text-white">Job Details</CardTitle>
+                    <CardDescription className="text-gray-300 mt-2">
                       Provide basic information about the position you're hiring for FEW INSIGHTS
                     </CardDescription>
                   </CardHeader>
@@ -288,9 +290,9 @@ export default function NewJobPage() {
 
             {currentStep === 2 && (
               <motion.div key="step2" {...fadeInUp}>
-                <Card className="bg-gray-900/90 backdrop-blur-md border border-gray-700 shadow-xl">
-                  <CardHeader className={`bg-gradient-to-r ${gradients.cardHeaderAlt} border-b border-gray-700 rounded-t-lg`}>
-                    <CardTitle className={`text-2xl font-bold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>Interview Questions</CardTitle>
+                <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl hover:border-white/20 transition-colors cursor-pointer group">
+                  <CardHeader className={`border-b border-gray-700 rounded-t-lg`}>
+                    <CardTitle className="text-2xl font-medium text-white">Interview Questions</CardTitle>
                     <CardDescription className="text-gray-200 mt-2">
                       Create custom questions for candidates to answer. Mix different types for best results.
                     </CardDescription>
@@ -308,8 +310,8 @@ export default function NewJobPage() {
             {currentStep === 3 && (
               <motion.div key="step3" {...fadeInUp}>
                 <Card className="bg-gray-900/90 backdrop-blur-md border border-gray-700 shadow-xl">
-                  <CardHeader className={`bg-gradient-to-r ${gradients.success} border-b border-gray-700 rounded-t-lg`}>
-                    <CardTitle className={`text-2xl font-bold bg-gradient-to-r ${gradients.success} bg-clip-text text-transparent`}>Review & Publish</CardTitle>
+                  <CardHeader className={`border-b border-gray-700 rounded-t-lg`}>
+                    <CardTitle className={`text-2xl font-bold text-white bg-clip-text text-transparent`}>Review & Publish</CardTitle>
                     <CardDescription className="text-gray-200 mt-2">
                       Preview your job posting before publishing it to candidates
                     </CardDescription>
@@ -344,7 +346,7 @@ export default function NewJobPage() {
               </Button>
 
               {currentStep < WIZARD_STEPS.length ? (
-                <Button onClick={handleNext} className={`gap-2 bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white`}>
+                <Button onClick={handleNext} className={`gap-2 hover:from-blue-700 hover:to-cyan-700 text-white`}>
                   Next Step
                   <ArrowRight className="w-4 h-4" />
                 </Button>

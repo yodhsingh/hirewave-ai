@@ -226,9 +226,7 @@ export default function HomePage() {
                   </h1>
                 </div>
 
-
-
-            <Button
+            {/* <Button
               onClick={handleCandidateDemo}
               size="lg"
               variant="outline"
@@ -237,7 +235,7 @@ export default function HomePage() {
               <Target className="w-5 h-5 mr-2" />
               I'm an Applicant
               <ChevronRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
+            </Button> */}
           </motion.div>
 
               {/* CTA Buttons */}
@@ -258,7 +256,7 @@ export default function HomePage() {
                 <Button
                   onClick={handleCandidateDemo}
                   variant="outline"
-                  className="border border-black/20 bg-transparent hover:bg-black/5 text-black rounded-lg px-8 py-3 text-sm font-normal transition-all inline-flex items-center gap-2"
+                  className="bg-[#2D2D2D] text-white hover:bg-[#1a1a1a] rounded-lg px-8 py-3 text-sm font-normal inline-flex items-center gap-2"
                 >
                   <span>I'm an Applicant</span>
                   <Image src="/Double Right.svg" alt="" width={18} height={18} className="opacity-90" />
