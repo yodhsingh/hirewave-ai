@@ -1,329 +1,214 @@
-# AI-Powered Interview Screening Platform 🚀
+Here is the comprehensive, formal `README.md` file generated based on your project's architectural specifications.
 
-An innovative platform that automates technical screening through AI-powered phone interviews, helping HR teams manage high-volume recruitment efficiently.
+-----
 
-## 🌟 Features
+# GenAI-First Interview Platform
 
-### Core Features
-- **AI Phone Interviews**: Automated voice-based technical screening calls
-- **Multi-Step Job Creation**: Intuitive wizard for creating job postings
-- **Candidate Pipeline**: Visual tracking of candidates through interview stages
-- **Real-time Analytics**: AI scoring and performance metrics
-- **Bulk Invitations**: Send interview invites to multiple candidates
-- **Dark Theme UI**: Modern, professional interface with glass morphism effects
+**Software Engineering Project - IIT Madras**
 
-### Key Components
-- **HR Dashboard**: Manage active jobs and view key metrics
-- **Job Details Page**: Comprehensive job management with candidate pipeline
-- **Candidate Review**: Detailed view with AI transcripts and scoring
-- **Question Builder**: Create custom interview questions with AI suggestions
+[](https://segenai.vercel.app)
+[](https://nextjs.org/)
+[](https://www.google.com/search?q=./design/class_diagrams/)
 
-## 🛠️ Tech Stack
+-----
 
-- **Frontend Framework**: Next.js 15 (App Router)
-- **React Version**: React 19
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS v3.4
-- **UI Components**: shadcn/ui with Radix UI
-- **State Management**: Zustand
-- **Forms**: React Hook Form with Zod validation
-- **Data Fetching**: TanStack Query (React Query)
-- **Animations**: Framer Motion
-- **Icons**: Lucide React
+## 1\. Project Overview
 
-## 📋 Prerequisites
+This project presents a **GenAI-First Asynchronous Interview Platform**, designed to modernize the technical recruitment and candidate screening process. The primary objective is to develop a system that empowers Human Resources (HR) teams to efficiently evaluate a large volume of applicants while providing candidates with a fair, flexible, and robust opportunity to demonstrate their skills beyond the limitations of a traditional resume. The platform leverages Generative AI to conduct automated, in-depth interviews, analyze responses, and provide structured feedback, thereby reducing bias and streamlining the hiring workflow.
 
-Before you begin, ensure you have the following installed:
-- **Node.js**: Version 18.0 or higher ([Download](https://nodejs.org/))
-- **npm**: Version 9.0 or higher (comes with Node.js)
-- **Git**: For version control ([Download](https://git-scm.com/))
+The system is architected around a clear separation of concerns, featuring a reactive frontend built with Next.js and a sophisticated, layered design model. The core innovation lies in the integration of an AI-assisted interview flow, which guides candidates through role-specific questions, and an administrative dashboard that provides HR personnel with powerful analytics and candidate management tools. The design documentation, including extensive flowcharts and class diagrams, maps out a clean, scalable architecture, ensuring that the frontend user experience is seamlessly integrated with the underlying domain logic and AI services.
 
-## 🚀 Getting Started
+## 2\. System Architecture
 
-### 1. Clone the Repository
+The system's architecture is modeled on **Clean Architecture** principles, separating the software into distinct, independent layers. This design promotes modularity, testability, and maintainability by enforcing a strict dependency rule: inner layers (domain) do not depend on outer layers (infrastructure, UI).
 
-```bash
-# Clone the repository
-git clone https://github.com/just-ravina/soft-engg-project-sept-2025-se-SEP-15.git
+The architectural design is documented in detail within the `/design/class_diagrams` directory, using Mermaid (`.mmd`) and PDF formats. These diagrams illustrate the logical separation of concerns:
 
-# Navigate to the frontend directory
-cd soft-engg-project-sept-2025-se-SEP-15/frontend
-```
+1.  **Domain Layer:** Represents the core business logic and entities (e.g., `User`, `Job`, `Interview`, `Candidate`). This is the heart of the application.
+      * *Reference: `01-domain-layer---core-entities.mmd`*
+2.  **AI Layer:** Defines abstractions and interfaces for Generative AI services (e.g., interview question generation, response analysis, feedback).
+      * *Reference: `02-ai-layer---abstractions.mmd`*
+3.  **Application Layer:** Contains the application-specific business rules and services that orchestrate the flow of data between the domain layer and the outer layers.
+      * *Reference: `03-application-layer---services.mmd`*
+4.  **Infrastructure Layer:** Provides concrete implementations for external concerns, such as database access (e.g., PostgreSQL repositories), third-party AI model clients, and payment gateways.
+      * *Reference: `04-infrastructure-layer---implementations.mmd`*
+5.  **API Layer:** Exposes the application's functionality to the outside world via RESTful endpoints, connecting the backend logic to the frontend client.
+      * *Reference: `05-api-layer---endpoints.mmd`*
+6.  **Analytics Layer:** Defines the data flow and models for capturing user interactions and generating insights for the HR dashboard.
+      * *Reference: `06-analytics-layer---data-flow.mmd`*
 
-### 2. Install Dependencies
+The overall system flow, particularly the interaction between the user, the GenAI models, and the system database, is visualized in `design/genai_design_flow.excalidraw`.
 
-```bash
-# Install all required packages
-npm install
+## 3\. Frontend Structure (Next.js + TypeScript)
 
-# If you encounter any issues, try:
-npm install --legacy-peer-deps
-```
+The `frontend/` directory contains the entire client-facing application, built using **Next.js 14** (App Router) and **TypeScript**. This framework provides file-based routing, server-side rendering (SSR), and a robust component model.
 
-### 3. Run the Development Server
-
-```bash
-# Start the development server
-npm run dev
-
-# The application will be available at:
-# http://localhost:3000
-```
-
-### 4. Build for Production
-
-```bash
-# Create an optimized production build
-npm run build
-
-# Run the production build locally
-npm start
-```
-
-## 📁 Project Structure
+Below is a hierarchical view of the key frontend directories:
 
 ```
 frontend/
-├── app/                    # Next.js App Router pages
-│   ├── hr/                # HR portal pages
-│   │   ├── dashboard/     # HR dashboard
-│   │   ├── jobs/         # Job management
-│   │   └── candidates/   # Candidate review
-│   └── api/              # API routes (mock endpoints)
-├── components/           # React components
-│   ├── ui/              # Reusable UI components
-│   └── hr/              # HR-specific components
-├── lib/                 # Utility functions and services
-│   ├── api/            # API client
-│   ├── mock/           # Mock data and store
-│   └── schemas/        # Validation schemas
-├── types/              # TypeScript type definitions
-└── public/            # Static assets
+├── app/
+│   ├── (applicant)/        # Routes for the candidate-facing interview process
+│   ├── (hr)/               # Routes for the HR administrative dashboard
+│   ├── (public)/           # Routes for public-facing pages (home, about)
+│   │   ├── contact/
+│   │   ├── pricing/
+│   │   └── page.tsx        # Public homepage
+│   ├── api/                # Backend API routes (serverless functions)
+│   │   ├── candidates/
+│   │   ├── interviews/
+│   │   ├── invites/
+│   │   └── jobs/
+│   ├── layout.tsx          # Root layout for the entire application
+│   └── page.tsx            # Entry page (often redirects or serves homepage)
+├── components/
+│   ├── hr/                 # Domain-specific: HR dashboard components
+│   ├── layout/             # Reusable layout components (Header, Sidebar)
+│   └── ui/                 # Generic, reusable UI atoms (Button, Card)
+├── lib/
+│   ├── api-client.ts       # Centralized API fetching logic (e.g., fetch wrapper)
+│   ├── stores.ts           # Client-side state management (e.g., Zustand/Jotai)
+│   ├── theme.ts            # Theming and design token definitions
+│   └── validation.ts       # Zod schemas for form validation
+├── public/                 # Static assets (images, fonts, SVGs)
+├── types/                  # Global TypeScript type definitions
+├── globals.css             # Global stylesheet (Tailwind base styles)
+├── next.config.ts          # Next.js configuration file
+└── tailwind.config.ts      # Tailwind CSS configuration and theming
 ```
 
-## 🎯 Key Pages & Navigation
+### Key File Explanations
 
-### Landing Page (`/`)
-- Modern landing page with animated hero section
-- Feature highlights and call-to-action
+  * **`/frontend/app`**: This is the core of the Next.js App Router. Each folder represents a URL segment.
+      * `layout.tsx`: Defines the root HTML shell, loading global providers and styles.
+      * `page.tsx`: The main component rendered for a specific route.
+      * `(folder_name)`: Route groups used to organize routes (e.g., `(hr)`) without affecting the URL path.
+  * **`/frontend/lib`**: This directory holds the frontend's "business logic" and core utilities. It separates logic from the UI (components), enabling cleaner code.
+  * **`/frontend/public`**: All files in this directory are served statically at the root URL (e.g., `/logo.svg`).
 
-### HR Dashboard (`/hr/dashboard`)
-- View active jobs with candidate counts
-- Real-time metrics and statistics
-- Quick access to job management
+## 4\. Design Documentation
 
-### Create New Job (`/hr/jobs/new`)
-- 3-step wizard: Job Details → Questions → Review
-- AI-powered question generation
-- Support for phone, video, text, and code questions
+The `/design` directory serves as the single source of truth for the system's architecture and visual flow.
 
-### Job Details (`/hr/jobs/[id]`)
-- Candidate pipeline visualization
-- Invite candidates functionality
-- Interview questions overview
-- Analytics and metrics
+  * **`/design/class_diagrams/`**: This folder contains the formal architectural blueprints.
+      * The `.mmd` (Mermaid) files are the source code for the diagrams, allowing for easy version control and updates.
+      * They collectively define the boundaries and responsibilities of each layer in our **Clean Architecture** model.
+      * `class_diagrams.pdf` provides a consolidated, viewable version of all architectural layers.
+  * **`genai_design_flow.excalidraw`**: This is a high-level flowchart or visualization (editable with Excalidraw) that illustrates the end-to-end user journey and system interactions, particularly focusing on the GenAI processes.
 
-### Candidate Review (`/hr/candidates/[id]`)
-- AI phone interview transcripts
-- Audio playback simulation
-- AI scoring breakdown
-- Interview responses
+## 5\. Component Documentation
 
-## 🎨 UI Features
+The `/frontend/components` directory is organized by domain and reusability, following a modular design principle.
 
-### Dark Theme
-The entire application uses a dark theme with:
-- Black backgrounds with gradient overlays
-- Glass morphism effects
-- Purple-blue gradient accents
-- High contrast for readability
+### \#\#\# `components/ui/`
 
-### Responsive Design
-- Mobile-first approach
-- Adaptive layouts for all screen sizes
-- Touch-friendly interactions
+This directory contains the primitive, reusable UI components that form the application's design system. They are "headless" or style-agnostic where possible, with styling applied via Tailwind CSS.
 
-## 👥 Mock Data
+  * **Examples:** `Button.tsx`, `Card.tsx`, `Input.tsx`, `Dialog.tsx`.
+  * **Purpose:** To ensure a consistent look and feel across the entire application and accelerate development.
 
-The application uses mock data including:
+### \#\#\# `components/layout/`
 
-### Core Team Members (IIT Madras)
-- Hiya Syal
-- Parmeet Singh
-- Shubham Tiwari
-- Akshit Mittal
-- Ravina
-- Sidhaarth Shree
-- Dalyodh Singh
-- Akash Kumar
+These components are responsible for the structural layout and navigation of the application.
 
-### Job Titles
-- Data Scientist
-- Senior Software Engineer
-- Machine Learning Engineer
-- DevOps Engineer
-- Product Manager - AI/ML
-- And more tech-focused roles
+  * **Examples:** `Header.tsx`, `Footer.tsx`, `Sidebar.tsx`, `PageWrapper.tsx`.
+  * **Purpose:** To provide a consistent navigational experience for different user roles (e.g., a candidate vs. an HR admin).
 
-### Locations
-- New Delhi
-- Mumbai
-- Bangalore
-- Chennai
-- Hyderabad
-- Remote
+### \#\#\# `components/hr/`
 
-## 🧪 Available Scripts
+These are domain-specific, composite components used exclusively within the HR dashboard. They are built by combining smaller `ui` and `layout` components.
 
-```bash
-# Development
-npm run dev          # Start development server
+  * **Examples:** `HRDashboardAnalytics.tsx`, `JobCreationForm.tsx`, `CandidateListing.tsx`.
+  * **Purpose:** To encapsulate complex features for the HR user persona.
 
-# Building
-npm run build        # Create production build
-npm start           # Run production build
+### \#\#\# `components/LoginModal.tsx`
 
-# Code Quality
-npm run lint        # Run ESLint
-npm run lint:fix    # Fix ESLint issues
-npm run type-check  # Run TypeScript checks
+This is a key entry-point component that likely handles user authentication (login/signup) for all user roles. It manages authentication state and interfaces with the authentication API endpoints.
 
-# Testing (if configured)
-npm test           # Run tests
-```
+## 6\. Libraries and Configurations
 
-## 🔧 Configuration Files
+The project's root contains several key configuration files that define the development environment, dependencies, and build processes.
 
-- `next.config.mjs` - Next.js configuration
-- `tailwind.config.ts` - Tailwind CSS configuration
-- `tsconfig.json` - TypeScript configuration
-- `.eslintrc.json` - ESLint rules
-- `package.json` - Dependencies and scripts
+  * **`package.json`**: Lists all project dependencies (e.g., `next`, `react`, `tailwindcss`) and `scripts` (e.g., `npm run dev`, `npm run build`).
+  * **`tailwind.config.ts`**: Configures the Tailwind CSS utility-first framework, including custom themes, colors, and plugins.
+  * **`tsconfig.json`**: The TypeScript compiler configuration file, defining strictness rules, path aliases, and target JavaScript version.
+  * **`eslint.config.mjs`**: Configuration for the ESLint linter, enforcing code quality and style consistency.
+  * **`restart.sh`**: A utility shell script, likely used for forcefully restarting the development server or a deployment environment.
 
-## 📦 Key Dependencies
+## 7\. API and Integration
 
-### Core
-- `next`: 15.0.0 - React framework
-- `react`: 19.0.0-rc - UI library
-- `typescript`: ^5 - Type safety
+The application uses Next.js API Routes (located in `/frontend/app/api/`) to function as its backend, providing serverless endpoints for the frontend to consume.
 
-### UI/UX
-- `tailwindcss`: 3.4.0 - Utility-first CSS
-- `framer-motion`: ^11 - Animations
-- `lucide-react`: ^0.344.0 - Icons
-- `@radix-ui/*`: UI primitives
+  * **Structure:** The API follows a RESTful resource-oriented structure.
+      * `/frontend/app/api/jobs`: Handles creation, retrieval, updating, and deletion (CRUD) of job postings.
+      * `/frontend/app/api/candidates`: Manages candidate data and submissions.
+      * `/frontend/app/api/interviews`: The core endpoint for initiating, processing, and retrieving AI-assisted interview sessions.
+      * `/frontend/app/api/invites`: Manages sending and validating interview invitation tokens.
+  * **Dynamic Routes:** Folders like `[id]` (e.g., `api/jobs/[id]`) and `[token]` are dynamic segments that allow the API to handle requests for specific resources.
+  * **Backend Integration:** These API routes are the "backend-for-frontend" (BFF). They are responsible for validating incoming requests from the client, interacting with the database (Infrastructure Layer), and calling AI services (AI Layer) before returning a response to the Next.js frontend.
 
-### Forms & Validation
-- `react-hook-form`: ^7.49.3 - Form handling
-- `zod`: ^3.22.4 - Schema validation
-- `@hookform/resolvers`: ^3.3.4 - Validation resolvers
+## 8\. Installation and Setup
 
-### State & Data
-- `zustand`: ^4.5.0 - State management
-- `@tanstack/react-query`: ^5.20.2 - Data fetching
-- `@faker-js/faker`: ^8.4.0 - Mock data generation
+To run the frontend development server locally, follow these steps:
 
-## 🐛 Troubleshooting
+1.  **Clone the repository:**
 
-### Common Issues
+    ```bash
+    git clone https://github.com/just-ravina/soft-engg-project-sept-2025-se-SEP-15.git
+    ```
 
-1. **Port Already in Use**
-   ```bash
-   # Kill process on port 3000
-   npx kill-port 3000
-   # Or use a different port
-   npm run dev -- -p 3001
-   ```
+2.  **Navigate into the frontend directory:**
 
-2. **Module Not Found Errors**
-   ```bash
-   # Clear cache and reinstall
-   rm -rf node_modules package-lock.json
-   npm install
-   ```
+    ```bash
+    cd soft-engg-project-sept-2025-se-SEP-15/frontend
+    ```
 
-3. **TypeScript Errors**
-   ```bash
-   # Check for type errors
-   npx tsc --noEmit
-   ```
+3.  **Install dependencies:**
 
-4. **Build Failures**
-   ```bash
-   # Clear Next.js cache
-   rm -rf .next
-   npm run build
-   ```
+    ```bash
+    npm install
+    ```
 
-## 🤝 Contributing
+4.  **Run the development server:**
 
-1. Create a feature branch
-2. Make your changes
-3. Run lint and type checks
-4. Submit a pull request
+    ```bash
+    npm run dev
+    ```
 
-## 📝 Environment Variables
+The application will be available at `http://localhost:3000`.
 
-Currently, the application uses mock data and doesn't require environment variables. For production deployment, you may need:
+## 9\. Design References and Documentation Artifacts
 
-```env
-# .env.local (create this file)
-NEXT_PUBLIC_API_URL=your-api-url
-NEXT_PUBLIC_APP_URL=your-app-url
-```
+The following design artifacts are critical for understanding the system's logic and architecture. They are located in the `/design` folder.
 
-## 🚦 Development Workflow
+  * `class_diagrams/class_diagrams.pdf`: (PDF) Consolidated view of all architectural layers.
+  * `class_diagrams/01-domain-layer---core-entities.mmd`: (Mermaid) Defines core entities (Job, User, etc.).
+  * `class_diagrams/02-ai-layer---abstractions.mmd`: (Mermaid) Defines interfaces for AI services.
+  * `class_diagrams/03-application-layer---services.mmd`: (Mermaid) Defines application use cases and services.
+  * `class_diagrams/04-infrastructure-layer---implementations.mmd`: (Mermaid) Defines concrete implementations (DB, external APIs).
+  * `class_diagrams/05-api-layer---endpoints.mmd`: (Mermaid) Maps services to API endpoints.
+  * `class_diagrams/06-analytics-layer---data-flow.mmd`: (Mermaid) Defines data models for analytics.
+  * `genai_design_flow.excalidraw`: (Excalidraw) Visual flowchart of the primary user (candidate) and GenAI interaction.
 
-1. **Start Development**: `npm run dev`
-2. **Make Changes**: Edit files in `app/`, `components/`, etc.
-3. **Check Lint**: `npm run lint`
-4. **Test Build**: `npm run build`
-5. **Commit Changes**: Use Git
+## 10\. Academic Reflection
 
-## 📱 Browser Support
+This project is an exercise in applying modern software engineering principles to a complex, real-world problem. The architecture heavily emphasizes **modularity**, **abstraction**, and **separation of concerns** as defined by **SOLID** principles and a **Clean Architecture** model.
 
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
+By enforcing a layered design, we ensure that the core business logic (Domain Layer) is entirely independent of the database, user interface, and AI services (Infrastructure/UI Layers). This decoupling is essential for long-term maintainability and testability.
 
-## 🎯 Main User Flows
+The integration of Generative AI is not an afterthought but a core component of the system, represented by its own abstract layer. This allows the system to be **AI-agnostic**, meaning the underlying AI models (e.g., from OpenAI, Anthropic, or a local model) can be swapped without affecting the application's business rules. The use of **Domain-Driven Design (DDD)** principles, evident in the naming of components (`/hr`, `/applicant`) and services, ensures that the software model accurately reflects the business domain of human resources and recruitment.
 
-### HR User Journey
-1. Land on homepage → Click "Get Started"
-2. Navigate to HR Dashboard
-3. Click "Create New Job"
-4. Fill job details → Add questions → Review & Publish
-5. View job in Active Jobs
-6. Click job to see details
-7. Invite candidates via email
-8. Review candidate responses and AI scores
+## 11\. Contributors and Future Work
 
-### Key Features to Explore
-- **Create a Job**: Try the 3-step wizard
-- **View Candidates**: Check the pipeline visualization
-- **Review Responses**: See AI transcripts and scoring
-- **Invite Candidates**: Test bulk invitation feature
+### Contributors
 
-## 💡 Tips for New React Developers
+  * *Further documentation required for this module. (List of team members, supervisors, and TAs to be added here.)*
 
-1. **Component Structure**: Components are in `/components` folder
-2. **Pages**: Each file in `/app` becomes a route
-3. **State Management**: Zustand stores are in `/lib/store`
-4. **Styling**: Uses Tailwind CSS classes (e.g., `className="bg-black text-white"`)
-5. **Mock Data**: Check `/lib/mock/data.ts` for data structure
+### Future Work
 
-## 📞 Support
+This platform serves as a robust foundation for numerous research and development extensions. Potential future work includes:
 
-For issues or questions:
-- Check existing issues on GitHub
-- Review the documentation
-- Contact the development team
-
-## 📄 License
-
-This project is part of the IIT Madras Software Engineering course.
-
----
-
-**Built with ❤️ by the IIT Madras Team SE 15**
+  * Advanced bias detection and mitigation algorithms in AI feedback.
+  * Integration with Applicant Tracking Systems (ATS) like Greenhouse or Lever.
+  * Real-time, conversational AI interviews in addition to asynchronous sessions.
+  * Long-term predictive analytics to correlate interview performance with on-the-job success.
