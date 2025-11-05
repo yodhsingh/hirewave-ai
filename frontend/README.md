@@ -38,18 +38,6 @@ frontend/
 ```
 ## Key File Explanations
 
-### /frontend/app
-- **Core of Next.js App Router**: Each folder represents a URL segment.
-- **layout.tsx**: Defines root HTML shell, loads global providers and styles.
-- **page.tsx**: Main component for a specific route.
-- **(folder_name)**: Route groups for organization (e.g., (hr)) without URL path change.
-
-### /frontend/lib
-- **Business Logic & Core Utilities**: Separates logic from UI for cleaner code.
-
-### /frontend/public
-- **Static Files**: Served at root URL (e.g., /logo.svg).
-
 ## Design Documentation
 
 ### /design
@@ -67,12 +55,10 @@ frontend/
 ### /frontend/components
 - **Organized by Domain & Reusability**: Modular design principle.
 
-#### components/ui/
-
 ## Technology Stack
 
 ### Frontend
-- Framework: React
+- Framework: React,Next.js
 - Styling: Tailwind
 
 ### Backend
