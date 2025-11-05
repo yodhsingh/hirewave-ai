@@ -75,6 +75,8 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
     form.setValue('requirements', currentReqs.filter((_, i) => i !== index));
   };
 
+  const cardClass = 'bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl hover:border-white/30 transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.1)]';
+
   return (
     <div className="space-y-6">
       {/* Job Title */}
@@ -86,7 +88,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
           id="title"
           {...form.register('title')}
           placeholder="e.g., Senior Frontend Developer"
-          className="w-full bg-white border-black text-black placeholder:text-black focus:border-blue-500"
+          className="w-full bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500 rounded-xl"
         />
         {errors.title && (
           <p className="text-sm text-red-400 mt-1">{errors.title.message}</p>
@@ -107,15 +109,15 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
                 value={field.value || ''}
                 onValueChange={field.onChange} 
               >
-                <SelectTrigger className="w-full bg-white border-black text-black">
+                <SelectTrigger className="w-full bg-white/5 border-white/20 text-white rounded-xl">
                   <SelectValue placeholder="Select department"/>
                 </SelectTrigger>
-                <SelectContent className="bg-white text-black ">
+                <SelectContent className="bg-[#1A1A1A] text-white border-white/20">
                   {DEPARTMENTS.map((dept) => (
                     <SelectItem
                       key={dept}
                       value={dept}
-                      className="text-black cursor-pointer hover:bg-gray-100 data-[state=checked]:bg-black data-[state=checked]:text-white"
+                      className="text-white cursor-pointer hover:bg-white/10 focus:bg-white/10"
                     >
                       {dept}
                     </SelectItem>
@@ -141,15 +143,15 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
                 value={field.value || ''}
                 onValueChange={field.onChange}
               >
-                <SelectTrigger className="w-full bg-white border-black text-black">
+                <SelectTrigger className="w-full bg-white/5 border-white/20 text-white rounded-xl">
                   <SelectValue placeholder="Select employment type" />
                 </SelectTrigger>
-                <SelectContent className="bg-white text-black">
+                <SelectContent className="bg-[#1A1A1A] text-white border-white/20">
                   {EMPLOYMENT_TYPES.map((type) => (
                     <SelectItem
                       key={type}
                       value={type}
-                      className="text-black cursor-pointer hover:bg-gray-100"
+                      className="text-white cursor-pointer hover:bg-white/10 focus:bg-white/10"
                     >
                       {type}
                     </SelectItem>
@@ -173,7 +175,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
           id="location"
           {...form.register('location')}
           placeholder="e.g., New Delhi or Remote"
-          className="w-full bg-white border-black text-black placeholder:text-black focus:border-blue-500"
+          className="w-full bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500 rounded-xl"
         />
         {errors.location && (
           <p className="text-sm text-red-400 mt-1">{errors.location.message}</p>
@@ -184,7 +186,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
           {LOCATION_TYPES.map((type) => (
             <Card
               key={type.value}
-              className="p-3 cursor-pointer bg-white border-black text-center hover:bg-gray-100 transition-colors"
+              className="p-3 cursor-pointer bg-white/10 border-white/20 text-center hover:bg-white/15 hover:border-white/30 transition-colors rounded-xl"
               onClick={() => {
                 const currentLocation = form.getValues('location');
                 if (!currentLocation.includes(type.label)) {
@@ -192,7 +194,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
                 }
               }}
             >
-              <p className="text-sm font-medium text-black">{type.label}</p>
+              <p className="text-sm font-medium text-white">{type.label}</p>
             </Card>
           ))}
         </div>
@@ -207,10 +209,10 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
           {EXPERIENCE_LEVELS.map((level) => (
             <Card
               key={level.value}
-              className="p-3 cursor-pointer bg-white border-black hover:bg-gray-100 transition-colors"
+              className="p-3 cursor-pointer bg-white/10 border-white/20 hover:bg-white/15 hover:border-white/30 transition-colors rounded-xl"
             >
               <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-black">{level.label}</p>
+                <p className="text-sm font-medium text-white">{level.label}</p>
               </div>
             </Card>
           ))}
@@ -226,12 +228,12 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
           id="description"
           {...form.register('description')}
           placeholder="Describe the role, responsibilities, and what makes this opportunity exciting..."
-          className="min-h-[150px] bg-white border-black text-black placeholder:text-black focus:border-blue-500"
+          className="min-h-[150px] bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500 rounded-xl"
         />
         {errors.description && (
           <p className="text-sm text-red-400 mt-1">{errors.description.message}</p>
         )}
-        <p className="text-sm text-gray-300 mt-1">
+        <p className="text-sm text-gray-400 mt-1">
           Tip: A clear, engaging description helps attract the right candidates
         </p>
       </div>
@@ -253,13 +255,13 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
                   addRequirement();
                 }
               }}
-              className="bg-white border-black text-black placeholder:text-black focus:border-blue-500"
+              className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500 rounded-xl"
             />
             <Button
               type="button"
               onClick={addRequirement}
               size="sm"
-              className="bg-gray-900 text-white hover:bg-gray-800 font-medium"
+              className="bg-white text-black hover:opacity-90 font-medium rounded-xl"
             >
               Add
             </Button>
@@ -271,13 +273,13 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
                 <Badge
                   key={index}
                   variant="secondary"
-                  className="py-1.5 px-3 flex items-center gap-2 bg-white text-black border-black"
+                  className="py-1.5 px-3 flex items-center gap-2 bg-white/10 text-white border-white/20 rounded-xl"
                 >
                   {req}
                   <button
                     type="button"
                     onClick={() => removeRequirement(index)}
-                    className="hover:text-red-500 transition-colors font-bold"
+                    className="hover:text-red-400 transition-colors font-bold"
                   >
                     ×
                   </button>
@@ -286,7 +288,7 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
             </div>
           )}
 
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-gray-400">
             Add key skills, qualifications, and experience requirements
           </p>
         </div>
@@ -301,15 +303,15 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
           <Input
             placeholder="Min (e.g., ₹12,00,000)"
             type="text"
-            className="bg-white border-black text-black placeholder:text-black focus:border-blue-500"
+            className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500 rounded-xl"
           />
           <Input
             placeholder="Max (e.g., ₹18,00,000)"
             type="text"
-            className="bg-white border-black text-black placeholder:text-black focus:border-blue-500"
+            className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500 rounded-xl"
           />
         </div>
-        <p className="text-sm text-gray-300 mt-1">
+        <p className="text-sm text-gray-400 mt-1">
           Adding salary information can increase application rates by 30%
         </p>
       </div>

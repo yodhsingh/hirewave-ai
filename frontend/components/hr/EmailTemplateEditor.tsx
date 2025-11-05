@@ -9,7 +9,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Mail, Eye, Save, FileText, Sparkles } from 'lucide-react';
-import { gradients } from '@/lib/theme';
 
 interface EmailTemplate {
   id: string;
@@ -119,9 +118,11 @@ export function EmailTemplateEditor() {
       .replace(/\{\{interviewLink\}\}/g, 'https://interview.example.com/abc123');
   };
 
+  const cardClass = 'bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl hover:border-white/30 transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.1)]';
+
   return (
     <div className="space-y-6">
-      <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+      <Card className={cardClass}>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
@@ -133,7 +134,7 @@ export function EmailTemplateEditor() {
                 Customize the invitation email sent to candidates
               </CardDescription>
             </div>
-            <Badge className={`bg-gradient-to-r ${gradients.cardHeader} border-blue-500/50 text-blue-300`}>
+            <Badge className="bg-white/10 text-white border-white/20">
               <Sparkles className="w-3 h-3 mr-1" />
               Template Variables Available
             </Badge>
@@ -142,20 +143,22 @@ export function EmailTemplateEditor() {
         <CardContent className="space-y-6">
           {/* Template Selection */}
           <div>
-            <Label className="text-gray-300 mb-3 block">Choose a Template</Label>
+            <Label className="text-white font-bold mb-3 block">Choose a Template</Label>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {DEFAULT_TEMPLATES.map((template) => (
                 <Button
                   key={template.id}
                   variant="outline"
                   onClick={() => handleTemplateSelect(template)}
-                  className={`h-auto py-4 px-4 flex flex-col items-start gap-2 ${
+                  className={`h-auto py-4 px-4 flex flex-col items-start gap-2 rounded-xl ${
                     selectedTemplate.id === template.id
-                      ? 'bg-blue-900/30 border-blue-500/50 text-white'
-                      : 'bg-gray-800 border-gray-600 text-gray-300 hover:bg-gray-700'
+                      ? 'bg-white/20 border-white/30 text-white'
+                      : 'bg-white/10 border-white/20 text-gray-300 hover:bg-white/15 hover:text-white'
                   }`}
                 >
-                  <FileText className="w-5 h-5" />
+                  <div className="inline-flex items-center justify-center w-10 h-10 bg-white/20 rounded-xl mb-2">
+                    <FileText className="w-5 h-5" />
+                  </div>
                   <div className="text-left">
                     <p className="font-medium">{template.name}</p>
                     <p className="text-xs text-gray-400 mt-1">{template.subject.slice(0, 40)}...</p>
@@ -166,8 +169,8 @@ export function EmailTemplateEditor() {
           </div>
 
           {/* Template Variables Helper */}
-          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-            <Label className="text-gray-300 mb-2 block text-sm">Available Variables</Label>
+          <div className="bg-white/10 border border-white/20 rounded-xl p-4">
+            <Label className="text-white font-bold mb-2 block text-sm">Available Variables</Label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {TEMPLATE_VARIABLES.map((variable) => (
                 <Button
@@ -175,9 +178,9 @@ export function EmailTemplateEditor() {
                   variant="ghost"
                   size="sm"
                   onClick={() => insertVariable(variable.name)}
-                  className="justify-start text-left h-auto py-2 px-3 hover:bg-gray-700"
+                  className="justify-start text-left h-auto py-2 px-3 hover:bg-white/10 rounded-lg"
                 >
-                  <code className="text-blue-400 font-mono text-xs mr-2">{variable.name}</code>
+                  <code className="text-purple-400 font-mono text-xs mr-2">{variable.name}</code>
                   <span className="text-gray-400 text-xs">{variable.description}</span>
                 </Button>
               ))}
@@ -186,12 +189,18 @@ export function EmailTemplateEditor() {
 
           {/* Editor/Preview Tabs */}
           <Tabs value={isPreview ? 'preview' : 'edit'} onValueChange={(v) => setIsPreview(v === 'preview')}>
-            <TabsList className="bg-gray-800 border-gray-700">
-              <TabsTrigger value="edit" className="data-[state=active]:bg-gray-700">
+            <TabsList className="bg-white/10 border-white/20 rounded-xl">
+              <TabsTrigger 
+                value="edit" 
+                className="data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-lg"
+              >
                 <FileText className="w-4 h-4 mr-2" />
                 Edit
               </TabsTrigger>
-              <TabsTrigger value="preview" className="data-[state=active]:bg-gray-700">
+              <TabsTrigger 
+                value="preview" 
+                className="data-[state=active]:bg-white/20 data-[state=active]:text-white rounded-lg"
+              >
                 <Eye className="w-4 h-4 mr-2" />
                 Preview
               </TabsTrigger>
@@ -199,40 +208,40 @@ export function EmailTemplateEditor() {
 
             <TabsContent value="edit" className="space-y-4 mt-4">
               <div>
-                <Label htmlFor="subject" className="text-gray-300 mb-2 block">
+                <Label htmlFor="subject" className="text-white font-bold mb-2 block">
                   Email Subject
                 </Label>
                 <Input
                   id="subject"
                   value={customSubject}
                   onChange={(e) => setCustomSubject(e.target.value)}
-                  className="bg-gray-800 border-gray-600 text-white"
+                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 rounded-xl"
                   placeholder="Enter email subject..."
                 />
               </div>
 
               <div>
-                <Label htmlFor="body" className="text-gray-300 mb-2 block">
+                <Label htmlFor="body" className="text-white font-bold mb-2 block">
                   Email Body
                 </Label>
                 <Textarea
                   id="body"
                   value={customBody}
                   onChange={(e) => setCustomBody(e.target.value)}
-                  className="bg-gray-800 border-gray-600 text-white min-h-[300px] font-mono text-sm"
+                  className="bg-white/5 border-white/20 text-white placeholder:text-gray-500 min-h-[300px] font-mono text-sm rounded-xl"
                   placeholder="Enter email body..."
                 />
               </div>
             </TabsContent>
 
             <TabsContent value="preview" className="space-y-4 mt-4">
-              <div className="bg-white text-black rounded-lg p-6 border border-gray-300">
-                <div className="border-b border-gray-300 pb-4 mb-4">
-                  <p className="text-xs text-gray-500 mb-1">Subject:</p>
-                  <p className="font-semibold">{getPreviewText(customSubject)}</p>
+              <div className="bg-white/10 border border-white/20 rounded-xl p-6">
+                <div className="border-b border-white/20 pb-4 mb-4">
+                  <p className="text-xs text-gray-400 mb-1">Subject:</p>
+                  <p className="font-semibold text-white">{getPreviewText(customSubject)}</p>
                 </div>
                 <div className="prose prose-sm max-w-none">
-                  <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed">
+                  <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-gray-300">
                     {getPreviewText(customBody)}
                   </pre>
                 </div>
@@ -244,18 +253,18 @@ export function EmailTemplateEditor() {
           </Tabs>
 
           {/* Save Button */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-700">
+          <div className="flex justify-end gap-3 pt-4 border-t border-white/20">
             <Button
               variant="outline"
               onClick={() => {
                 setCustomSubject(selectedTemplate.subject);
                 setCustomBody(selectedTemplate.body);
               }}
-              className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+              className="bg-white/10 border-white/20 text-white hover:bg-white/20 rounded-xl"
             >
               Reset to Template
             </Button>
-            <Button className={`gap-2 bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white`}>
+            <Button className="gap-2 bg-white text-black hover:opacity-90 rounded-xl shadow-md hover:shadow-lg transition-all">
               <Save className="w-4 h-4" />
               Save Template
             </Button>
