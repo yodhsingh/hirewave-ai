@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 import { useAuthStore } from '@/lib/store/authStore';
+import { Target, ChevronRight } from 'lucide-react';
 
 const NG_FEATURES = [
   {
