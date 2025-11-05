@@ -1,0 +1,1148 @@
+classDiagram
+    %% ========================================
+    %% DOMAIN LAYER - Core Entities
+    %% ========================================
+
+    class User {
+        +UUID id
+        +string email
+        +string passwordHash
+        +UserRole role
+        +UUID organizationId
+        +DateTime createdAt
+        +DateTime updatedAt
+        +boolean isActive
+        +login(password) boolean
+        +resetPassword(token, newPassword) void
+        +hasPermission(permission) boolean
+    }
+
+    class Organization {
+        +UUID id
+        +string name
+        +string domain
+        +SubscriptionTier tier
+        +int maxJobs
+        +int maxCandidates
+        +DateTime createdAt
+        +getActiveJobs() List~Job~
+        +isWithinLimits() boolean
+    }
+
+    class Job {
+        +UUID id
+        +UUID organizationId
+        +string title
+        +string description
+        +List~Question~ questions
+        +JobStatus status
+        +DateTime expiresAt
+        +DateTime createdAt
+        +JobSettings settings
+        +addQuestion(question) void
+        +removeQuestion(questionId) void
+        +close() void
+        +getStats() JobStats
+        +publishInvites(emails) List~Invite~
+    }
+
+    class Question {
+        +UUID id
+        +UUID jobId
+        +QuestionType type
+        +string text
+        +int timeLimit
+        +int maxRetries
+        +boolean required
+        +QuestionSettings settings
+        +validate() boolean
+        +render() QuestionRenderData
+    }
+
+    class Candidate {
+        +UUID id
+        +UUID jobId
+        +string email
+        +string name
+        +CandidateStatus status
+        +UUID inviteId
+        +DateTime invitedAt
+        +DateTime startedAt
+        +DateTime submittedAt
+        +DateTime scoredAt
+        +Map~string, any~ metadata
+        +updateStatus(newStatus) void
+        +getResponses() List~InterviewResponse~
+        +getScore() Score
+        +canRetake() boolean
+    }
+
+    class InterviewResponse {
+        +UUID id
+        +UUID candidateId
+        +UUID questionId
+        +ResponseType type
+        +string content
+        +string videoUrl
+        +string transcriptText
+        +int duration
+        +DateTime submittedAt
+        +Map~string, any~ metadata
+        +hasVideo() boolean
+        +hasTranscript() boolean
+        +validate() boolean
+    }
+
+    class Score {
+        +UUID id
+        +UUID candidateId
+        +float overallScore
+        +Map~string, float~ dimensionScores
+        +string feedback
+        +List~string~ strengths
+        +List~string~ improvements
+        +Map~string, any~ insights
+        +DateTime generatedAt
+        +string aiModel
+        +int aiTokensUsed
+        +getPercentile() float
+        +toDict() dict
+    }
+
+    class Invite {
+        +UUID id
+        +UUID jobId
+        +string email
+        +string token
+        +InviteStatus status
+        +DateTime sentAt
+        +DateTime expiresAt
+        +DateTime openedAt
+        +isValid() boolean
+        +markAsOpened() void
+        +markAsExpired() void
+    }
+
+    class PracticeSession {
+        +UUID id
+        +UUID userId
+        +string topic
+        +List~PracticeResponse~ responses
+        +DateTime startedAt
+        +DateTime completedAt
+        +float averageScore
+        +startSession() void
+        +submitResponse(response) void
+        +complete() void
+        +getFeedback() PracticeFeedback
+    }
+
+    %% Domain Relationships
+    User "1" --> "*" Organization : belongs to
+    Organization "1" --> "*" Job : has
+    Job "1" --> "*" Question : contains
+    Job "1" --> "*" Candidate : has applicants
+    Candidate "1" --> "1" Invite : from
+    Candidate "1" --> "*" InterviewResponse : submits
+    Candidate "1" --> "0..1" Score : receives
+    Question "1" --> "*" InterviewResponse : answered by
+    User "1" --> "*" PracticeSession : practices
+
+    %% ========================================
+    %% GENAI LAYER - AI Services
+    %% ========================================
+
+    class AIOrchestrator {
+        -Map~AICapability, List~AIProvider~~ providers
+        -PromptManager promptManager
+        -CostTracker costTracker
+        -CacheManager cache
+        +execute(capability, operation, kwargs) Any
+        +executeWithFallback(providers, operation) Any
+        +trackCost(provider, operation, tokens) void
+        +getCachedResult(cacheKey) Optional~Any~
+        +registerProvider(capability, provider) void
+    }
+
+    class BaseLLMProvider {
+        <<abstract>>
+        +string name
+        +string model
+        +float costPerToken
+        +generate(prompt, kwargs)* string
+        +generateStructured(prompt, schema)* dict
+        +streamGenerate(prompt, kwargs)* Generator
+        +countTokens(text) int
+        +estimateCost(tokens) float
+    }
+
+    class OpenAIProvider {
+        -OpenAI client
+        +string apiKey
+        +generate(prompt, kwargs) string
+        +generateStructured(prompt, schema) dict
+        +createEmbedding(text) List~float~
+        +transcribe(audioFile) string
+        +analyzeImage(imageUrl) dict
+    }
+
+    class AnthropicProvider {
+        -Anthropic client
+        +string apiKey
+        +generate(prompt, kwargs) string
+        +generateStructured(prompt, schema) dict
+        +streamGenerate(prompt, kwargs) Generator
+    }
+
+    class LocalLlamaProvider {
+        -OllamaClient client
+        +string modelName
+        +generate(prompt, kwargs) string
+        +generateStructured(prompt, schema) dict
+        +isAvailable() boolean
+    }
+
+    class TranscriptionService {
+        -BaseLLMProvider provider
+        -S3Client s3Client
+        +transcribeVideo(videoUrl) Transcript
+        +transcribeAudio(audioUrl) Transcript
+        +transcribeFromS3(s3Key) Transcript
+        +detectLanguage(audioUrl) string
+        +getSpeakerDiarization(audioUrl) List~Speaker~
+    }
+
+    class ScoringService {
+        -BaseLLMProvider llm
+        -PromptManager promptManager
+        -VectorStore vectorStore
+        +scoreResponse(transcript, question) Score
+        +scoreBatch(responses) List~Score~
+        +generateFeedback(score) Feedback
+        +extractSkills(transcript) List~Skill~
+        +detectFillerWords(transcript) FillerWordAnalysis
+        +analyzePace(transcript, duration) PaceAnalysis
+        +detectSTARMethod(transcript) boolean
+    }
+
+    class FeedbackGenerationService {
+        -BaseLLMProvider llm
+        -PromptManager promptManager
+        +generateDetailedFeedback(score, transcript) Feedback
+        +generatePracticeFeedback(response) PracticeFeedback
+        +suggestImprovements(score) List~Improvement~
+        +generateComparison(currentScore, previousScore) Comparison
+        +generateCoachingTips(weaknesses) List~CoachingTip~
+    }
+
+    class JobMatchingService {
+        -BaseLLMProvider llm
+        -VectorStore vectorStore
+        -EmbeddingService embeddingService
+        +matchCandidateToJobs(candidateProfile) List~JobMatch~
+        +matchJobToCandidates(job) List~CandidateMatch~
+        +explainMatch(candidate, job) MatchExplanation
+        +getSemanticSimilarity(text1, text2) float
+    }
+
+    class EmbeddingService {
+        -BaseLLMProvider provider
+        -VectorStore vectorStore
+        +createEmbedding(text) List~float~
+        +createBatchEmbeddings(texts) List~List~float~~
+        +storeEmbedding(id, embedding, metadata) void
+        +searchSimilar(embedding, topK) List~SearchResult~
+    }
+
+    class PromptManager {
+        -PromptRepository repository
+        -Map~string, Prompt~ cache
+        +getPrompt(name, version) Prompt
+        +renderPrompt(name, variables) string
+        +createPromptVersion(name, template) PromptVersion
+        +trackPromptUsage(name, version, result) void
+        +comparePromptVersions(name, versions) PromptComparison
+    }
+
+    class CostTracker {
+        -CostRepository repository
+        +recordUsage(provider, model, tokens, cost) void
+        +getTotalCost(startDate, endDate) float
+        +getCostByProvider() Map~string, float~
+        +getCostPerCandidate() float
+        +predictMonthlyCost() float
+    }
+
+    %% GenAI Relationships
+    AIOrchestrator --> BaseLLMProvider : manages
+    BaseLLMProvider <|-- OpenAIProvider : implements
+    BaseLLMProvider <|-- AnthropicProvider : implements
+    BaseLLMProvider <|-- LocalLlamaProvider : implements
+    TranscriptionService --> BaseLLMProvider : uses
+    ScoringService --> BaseLLMProvider : uses
+    FeedbackGenerationService --> BaseLLMProvider : uses
+    JobMatchingService --> BaseLLMProvider : uses
+    JobMatchingService --> EmbeddingService : uses
+    AIOrchestrator --> PromptManager : uses
+    AIOrchestrator --> CostTracker : uses
+    ScoringService --> PromptManager : uses
+    FeedbackGenerationService --> PromptManager : uses
+
+    %% ========================================
+    %% APPLICATION LAYER - Use Cases
+    %% ========================================
+
+    class CreateJobUseCase {
+        -JobRepository jobRepository
+        -QuestionRepository questionRepository
+        -EventPublisher eventPublisher
+        +execute(jobData) Job
+        -validateJobData(jobData) void
+        -createQuestions(job, questions) void
+        -publishJobCreatedEvent(job) void
+    }
+
+    class InviteCandidatesUseCase {
+        -JobRepository jobRepository
+        -CandidateRepository candidateRepository
+        -InviteRepository inviteRepository
+        -EmailService emailService
+        -EventPublisher eventPublisher
+        +execute(jobId, emails) List~Invite~
+        -validateEmails(emails) void
+        -generateTokens(emails) Map~string, string~
+        -sendInviteEmails(invites) void
+        -publishCandidateInvitedEvents(invites) void
+    }
+
+    class SubmitInterviewUseCase {
+        -CandidateRepository candidateRepository
+        -ResponseRepository responseRepository
+        -S3Service s3Service
+        -TaskQueue taskQueue
+        -EventPublisher eventPublisher
+        +execute(token, responses) Candidate
+        -validateResponses(responses) void
+        -uploadVideos(responses) void
+        -saveResponses(candidateId, responses) void
+        -enqueueTranscription(candidateId) void
+        -updateCandidateStatus(candidateId, status) void
+        -publishInterviewSubmittedEvent(candidateId) void
+    }
+
+    class ScoreCandidateUseCase {
+        -CandidateRepository candidateRepository
+        -ResponseRepository responseRepository
+        -ScoringService scoringService
+        -ScoreRepository scoreRepository
+        -EventPublisher eventPublisher
+        +execute(candidateId) Score
+        -getResponses(candidateId) List~InterviewResponse~
+        -scoreResponses(responses) Score
+        -saveScore(candidateId, score) void
+        -updateCandidateStatus(candidateId) void
+        -publishCandidateScoredEvent(candidateId, score) void
+    }
+
+    class GeneratePracticeFeedbackUseCase {
+        -PracticeSessionRepository sessionRepository
+        -FeedbackGenerationService feedbackService
+        -TranscriptionService transcriptionService
+        +execute(sessionId, response) PracticeFeedback
+        -transcribeResponse(response) string
+        -generateFeedback(transcript) PracticeFeedback
+        -saveFeedback(sessionId, feedback) void
+        -trackImprovement(userId) ImprovementMetrics
+    }
+
+    class MatchJobsToApplicantUseCase {
+        -UserRepository userRepository
+        -JobRepository jobRepository
+        -JobMatchingService matchingService
+        +execute(userId) List~JobMatch~
+        -getCandidateProfile(userId) CandidateProfile
+        -getActiveJobs() List~Job~
+        -matchJobs(profile, jobs) List~JobMatch~
+        -rankMatches(matches) List~JobMatch~
+    }
+
+    class BulkUpdateCandidatesUseCase {
+        -CandidateRepository candidateRepository
+        -EventPublisher eventPublisher
+        -EmailService emailService
+        +execute(candidateIds, newStatus) void
+        -validateCandidates(candidateIds) void
+        -updateStatuses(candidateIds, newStatus) void
+        -sendStatusEmails(candidates, newStatus) void
+        -publishBulkUpdateEvent(candidateIds, newStatus) void
+    }
+
+    class ExportCandidatesUseCase {
+        -CandidateRepository candidateRepository
+        -ScoreRepository scoreRepository
+        -ExportService exportService
+        +execute(jobId, format) ExportFile
+        -getCandidatesWithScores(jobId) List~CandidateWithScore~
+        -formatData(candidates, format) bytes
+        -uploadToS3(file) string
+    }
+
+    %% Use Case Relationships
+    CreateJobUseCase --> Job : creates
+    InviteCandidatesUseCase --> Invite : creates
+    SubmitInterviewUseCase --> InterviewResponse : creates
+    ScoreCandidateUseCase --> Score : creates
+    ScoreCandidateUseCase --> ScoringService : uses
+    GeneratePracticeFeedbackUseCase --> FeedbackGenerationService : uses
+    MatchJobsToApplicantUseCase --> JobMatchingService : uses
+
+    %% ========================================
+    %% INFRASTRUCTURE LAYER - Repositories
+    %% ========================================
+
+    class BaseRepository~T~ {
+        <<abstract>>
+        -Session db
+        +get(id)* Optional~T~
+        +getAll()* List~T~
+        +create(entity)* T
+        +update(entity)* T
+        +delete(id)* boolean
+        +exists(id)* boolean
+    }
+
+    class JobRepository {
+        +getByOrganization(orgId) List~Job~
+        +getActiveJobs() List~Job~
+        +getWithQuestions(jobId) Job
+        +updateStats(jobId, stats) void
+        +searchJobs(query, filters) List~Job~
+    }
+
+    class CandidateRepository {
+        +getByJobId(jobId) List~Candidate~
+        +getByStatus(jobId, status) List~Candidate~
+        +getWithResponses(candidateId) Candidate
+        +getWithScore(candidateId) Candidate
+        +bulkUpdateStatus(candidateIds, status) void
+        +getTopCandidates(jobId, limit) List~Candidate~
+    }
+
+    class ResponseRepository {
+        +getByCandidateId(candidateId) List~InterviewResponse~
+        +getByQuestionId(questionId) List~InterviewResponse~
+        +saveWithTranscript(response, transcript) InterviewResponse
+        +getWithTranscripts(candidateId) List~InterviewResponse~
+    }
+
+    class ScoreRepository {
+        +getByCandidateId(candidateId) Optional~Score~
+        +getByJobId(jobId) List~Score~
+        +getAverageScore(jobId) float
+        +getScoreDistribution(jobId) Map~string, int~
+        +getPercentile(score, jobId) float
+    }
+
+    class S3Service {
+        -S3Client client
+        -string bucketName
+        +uploadVideo(file, candidateId) string
+        +uploadAudio(file, candidateId) string
+        +uploadTranscript(text, candidateId) string
+        +getPresignedUrl(key, expiry) string
+        +deleteFile(key) boolean
+        +listFiles(prefix) List~string~
+    }
+
+    class CacheService {
+        -Redis client
+        +get(key) Optional~Any~
+        +set(key, value, ttl) void
+        +delete(key) void
+        +exists(key) boolean
+        +setWithExpiry(key, value, seconds) void
+        +getOrSet(key, factory, ttl) Any
+    }
+
+    class EmailService {
+        -SendGridClient client
+        -TemplateManager templates
+        +sendInvite(email, inviteUrl) boolean
+        +sendReminder(email, inviteUrl) boolean
+        +sendResultNotification(email, result) boolean
+        +sendBulkEmails(emails, template, data) List~boolean~
+    }
+
+    class TaskQueue {
+        -Celery celery
+        +enqueueTranscription(candidateId, videoUrl) TaskId
+        +enqueueScoring(candidateId) TaskId
+        +enqueueBatchScoring(candidateIds) TaskId
+        +enqueueEmailSend(email, template) TaskId
+        +getTaskStatus(taskId) TaskStatus
+        +cancelTask(taskId) boolean
+    }
+
+    class EventPublisher {
+        -RedisClient redis
+        -string channelPrefix
+        +publish(eventName, data) void
+        +publishDomainEvent(event) void
+        +publishBatch(events) void
+    }
+
+    class VectorStore {
+        <<interface>>
+        +storeEmbedding(id, embedding, metadata)*
+        +searchSimilar(embedding, topK)* List~SearchResult~
+        +deleteEmbedding(id)* boolean
+        +updateMetadata(id, metadata)* void
+    }
+
+    class PineconeVectorStore {
+        -PineconeClient client
+        -string indexName
+        +storeEmbedding(id, embedding, metadata) void
+        +searchSimilar(embedding, topK) List~SearchResult~
+        +deleteEmbedding(id) boolean
+        +createIndex(dimension) void
+    }
+
+    class PgVectorStore {
+        -Session db
+        +storeEmbedding(id, embedding, metadata) void
+        +searchSimilar(embedding, topK) List~SearchResult~
+        +deleteEmbedding(id) boolean
+    }
+
+    %% Repository Relationships
+    BaseRepository <|-- JobRepository : extends
+    BaseRepository <|-- CandidateRepository : extends
+    BaseRepository <|-- ResponseRepository : extends
+    BaseRepository <|-- ScoreRepository : extends
+    VectorStore <|.. PineconeVectorStore : implements
+    VectorStore <|.. PgVectorStore : implements
+    JobMatchingService --> VectorStore : uses
+    EmbeddingService --> VectorStore : uses
+
+    %% ========================================
+    %% BACKGROUND WORKERS - Celery Tasks
+    %% ========================================
+
+    class BaseTask {
+        <<abstract>>
+        +string name
+        +int maxRetries
+        +int timeoutSeconds
+        +run(args, kwargs)* Any
+        +onSuccess(result) void
+        +onFailure(exception) void
+        +onRetry(exception) void
+    }
+
+    class TranscriptionTask {
+        -TranscriptionService transcriptionService
+        -ResponseRepository responseRepository
+        -EventPublisher eventPublisher
+        +run(responseId) Transcript
+        -downloadVideo(videoUrl) bytes
+        -transcribe(videoBytes) string
+        -saveTranscript(responseId, transcript) void
+        -publishTranscriptionCompletedEvent(responseId) void
+    }
+
+    class ScoringTask {
+        -ScoreCandidateUseCase useCase
+        -CandidateRepository candidateRepository
+        +run(candidateId) Score
+        -checkPrerequisites(candidateId) boolean
+        -scoreCandidate(candidateId) Score
+        -handleScoringFailure(candidateId, error) void
+    }
+
+    class BatchScoringTask {
+        -ScoringTask scoringTask
+        -CandidateRepository candidateRepository
+        +run(jobId) List~Score~
+        -getCandidatesForScoring(jobId) List~Candidate~
+        -scoreInBatch(candidateIds) List~Score~
+        -aggregateResults(scores) BatchScoringResult
+    }
+
+    class EmailTask {
+        -EmailService emailService
+        +run(emailType, recipient, data) boolean
+        -renderTemplate(emailType, data) EmailContent
+        -sendEmail(recipient, content) boolean
+        -handleBounce(recipient) void
+    }
+
+    class AnalyticsAggregationTask {
+        -AnalyticsRepository analyticsRepository
+        -JobRepository jobRepository
+        +run(jobId) JobAnalytics
+        -calculateMetrics(jobId) Metrics
+        -saveAnalytics(jobId, analytics) void
+    }
+
+    class CleanupTask {
+        -S3Service s3Service
+        -CandidateRepository candidateRepository
+        +run() CleanupResult
+        -deleteExpiredInvites() int
+        -deleteOldVideos() int
+        -archiveCompletedJobs() int
+    }
+
+    class ReminderTask {
+        -InviteRepository inviteRepository
+        -EmailService emailService
+        +run() int
+        -getPendingInvites() List~Invite~
+        -sendReminders(invites) void
+        -markRemindersSent(invites) void
+    }
+
+    %% Task Relationships
+    BaseTask <|-- TranscriptionTask : extends
+    BaseTask <|-- ScoringTask : extends
+    BaseTask <|-- BatchScoringTask : extends
+    BaseTask <|-- EmailTask : extends
+    BaseTask <|-- AnalyticsAggregationTask : extends
+    BaseTask <|-- CleanupTask : extends
+    BaseTask <|-- ReminderTask : extends
+    BatchScoringTask --> ScoringTask : delegates to
+    TranscriptionTask --> TranscriptionService : uses
+    ScoringTask --> ScoreCandidateUseCase : uses
+
+    %% ========================================
+    %% API LAYER - Controllers/Routes
+    %% ========================================
+
+    class BaseController {
+        <<abstract>>
+        #getCurrentUser() User
+        #validateRequest(schema) void
+        #handleError(exception) Response
+        #jsonResponse(data, status) Response
+    }
+
+    class JobController {
+        -CreateJobUseCase createJobUseCase
+        -JobRepository jobRepository
+        +createJob(request) Response
+        +getJob(jobId) Response
+        +listJobs(filters) Response
+        +updateJob(jobId, request) Response
+        +deleteJob(jobId) Response
+        +getJobStats(jobId) Response
+        +closeJob(jobId) Response
+    }
+
+    class CandidateController {
+        -InviteCandidatesUseCase inviteUseCase
+        -CandidateRepository candidateRepository
+        -BulkUpdateCandidatesUseCase bulkUpdateUseCase
+        -ExportCandidatesUseCase exportUseCase
+        +inviteCandidates(jobId, request) Response
+        +getCandidates(jobId, filters) Response
+        +getCandidate(candidateId) Response
+        +bulkUpdate(request) Response
+        +exportCandidates(jobId, format) Response
+    }
+
+    class InterviewController {
+        -SubmitInterviewUseCase submitUseCase
+        -ResponseRepository responseRepository
+        -InviteRepository inviteRepository
+        +getInterviewByToken(token) Response
+        +submitInterview(token, request) Response
+        +getProgress(token) Response
+        +saveProgress(token, request) Response
+    }
+
+    class PracticeController {
+        -GeneratePracticeFeedbackUseCase feedbackUseCase
+        -PracticeSessionRepository sessionRepository
+        +startSession(request) Response
+        +submitResponse(sessionId, request) Response
+        +getSession(sessionId) Response
+        +listSessions(userId) Response
+        +getImprovement(userId) Response
+    }
+
+    class ScoreController {
+        -ScoreRepository scoreRepository
+        -CandidateRepository candidateRepository
+        +getScore(candidateId) Response
+        +getScores(jobId) Response
+        +getScoreDistribution(jobId) Response
+        +getTopCandidates(jobId, limit) Response
+        +regenerateScore(candidateId) Response
+    }
+
+    class MatchingController {
+        -MatchJobsToApplicantUseCase matchUseCase
+        -JobMatchingService matchingService
+        +matchJobs(userId) Response
+        +matchCandidates(jobId) Response
+        +explainMatch(candidateId, jobId) Response
+    }
+
+    class WebSocketHandler {
+        -EventPublisher eventPublisher
+        -CacheService cache
+        +connect(userId) void
+        +disconnect(userId) void
+        +subscribe(userId, channels) void
+        +handleMessage(userId, message) void
+        +broadcast(channel, message) void
+    }
+
+    %% Controller Relationships
+    BaseController <|-- JobController : extends
+    BaseController <|-- CandidateController : extends
+    BaseController <|-- InterviewController : extends
+    BaseController <|-- PracticeController : extends
+    BaseController <|-- ScoreController : extends
+    BaseController <|-- MatchingController : extends
+    JobController --> CreateJobUseCase : uses
+    CandidateController --> InviteCandidatesUseCase : uses
+    CandidateController --> BulkUpdateCandidatesUseCase : uses
+    InterviewController --> SubmitInterviewUseCase : uses
+    PracticeController --> GeneratePracticeFeedbackUseCase : uses
+    MatchingController --> MatchJobsToApplicantUseCase : uses
+
+    %% ========================================
+    %% EVENT-DRIVEN ARCHITECTURE
+    %% ========================================
+
+    class DomainEvent {
+        <<abstract>>
+        +UUID eventId
+        +DateTime occurredAt
+        +string eventType
+        +UUID aggregateId
+        +int version
+        +toDict()* dict
+    }
+
+    class JobCreated {
+        +UUID jobId
+        +UUID organizationId
+        +string title
+        +DateTime createdAt
+    }
+
+    class CandidateInvited {
+        +UUID candidateId
+        +UUID jobId
+        +string email
+        +string token
+        +DateTime invitedAt
+    }
+
+    class InterviewStarted {
+        +UUID candidateId
+        +UUID jobId
+        +DateTime startedAt
+    }
+
+    class InterviewSubmitted {
+        +UUID candidateId
+        +UUID jobId
+        +int responsesCount
+        +DateTime submittedAt
+    }
+
+    class TranscriptionCompleted {
+        +UUID responseId
+        +UUID candidateId
+        +string transcriptText
+        +int duration
+        +DateTime completedAt
+    }
+
+    class CandidateScored {
+        +UUID candidateId
+        +UUID jobId
+        +UUID scoreId
+        +float overallScore
+        +DateTime scoredAt
+    }
+
+    class CandidateStatusChanged {
+        +UUID candidateId
+        +UUID jobId
+        +CandidateStatus oldStatus
+        +CandidateStatus newStatus
+        +DateTime changedAt
+        +string changedBy
+    }
+
+    class EventHandler {
+        <<interface>>
+        +handle(event)* void
+        +canHandle(eventType)* boolean
+    }
+
+    class EmailNotificationHandler {
+        -EmailService emailService
+        +handle(event) void
+        +canHandle(eventType) boolean
+        -sendCandidateScoredEmail(event) void
+        -sendStatusChangedEmail(event) void
+    }
+
+    class WebSocketNotificationHandler {
+        -WebSocketHandler wsHandler
+        +handle(event) void
+        +canHandle(eventType) boolean
+        -broadcastToHR(event) void
+        -broadcastToCandidate(event) void
+    }
+
+    class AnalyticsHandler {
+        -AnalyticsRepository analyticsRepository
+        +handle(event) void
+        +canHandle(eventType) boolean
+        -updateJobStats(event) void
+        -trackConversion(event) void
+    }
+
+    class CacheInvalidationHandler {
+        -CacheService cache
+        +handle(event) void
+        +canHandle(eventType) boolean
+        -invalidateCandidateCache(candidateId) void
+        -invalidateJobCache(jobId) void
+    }
+
+    class EventBus {
+        -RedisClient redis
+        -Map~string, List~EventHandler~~ handlers
+        +publish(event) void
+        +subscribe(eventType, handler) void
+        +unsubscribe(eventType, handler) void
+        -routeEvent(event) void
+        -notifyHandlers(event, handlers) void
+    }
+
+    %% Event Relationships
+    DomainEvent <|-- JobCreated : extends
+    DomainEvent <|-- CandidateInvited : extends
+    DomainEvent <|-- InterviewStarted : extends
+    DomainEvent <|-- InterviewSubmitted : extends
+    DomainEvent <|-- TranscriptionCompleted : extends
+    DomainEvent <|-- CandidateScored : extends
+    DomainEvent <|-- CandidateStatusChanged : extends
+    EventHandler <|.. EmailNotificationHandler : implements
+    EventHandler <|.. WebSocketNotificationHandler : implements
+    EventHandler <|.. AnalyticsHandler : implements
+    EventHandler <|.. CacheInvalidationHandler : implements
+    EventBus --> EventHandler : manages
+    EventBus --> DomainEvent : publishes
+
+    %% ========================================
+    %% PHONE INTERVIEW INTEGRATION
+    %% ========================================
+
+    class TwilioService {
+        -TwilioClient client
+        -string accountSid
+        -string authToken
+        -string phoneNumber
+        +makeOutboundCall(to, callbackUrl) CallSid
+        +handleIncomingCall(request) TwiML
+        +recordCall(callSid) RecordingSid
+        +getRecording(recordingSid) RecordingData
+        +getCallStatus(callSid) CallStatus
+        +endCall(callSid) boolean
+        +sendSMS(to, message) MessageSid
+    }
+
+    class PhoneInterviewService {
+        -TwilioService twilioService
+        -S3Service s3Service
+        -TranscriptionService transcriptionService
+        -CandidateRepository candidateRepository
+        +initiatePhoneInterview(candidateId, phoneNumber) PhoneSession
+        +handleCallConnected(callSid, candidateId) void
+        +handleCallEnded(callSid, duration) void
+        +processRecording(recordingSid) Transcript
+        +getPhoneInterviewStatus(sessionId) PhoneSessionStatus
+    }
+
+    class PhoneSession {
+        +UUID id
+        +UUID candidateId
+        +string phoneNumber
+        +string callSid
+        +PhoneSessionStatus status
+        +DateTime initiatedAt
+        +DateTime startedAt
+        +DateTime endedAt
+        +int duration
+        +string recordingUrl
+        +string transcriptUrl
+        +updateStatus(status) void
+        +markAsCompleted(duration) void
+        +getTranscript() Optional~Transcript~
+    }
+
+    class TwiMLGenerator {
+        +generateWelcomeMessage() TwiML
+        +generateQuestionPrompt(question) TwiML
+        +generateGoodbyeMessage() TwiML
+        +generateErrorMessage() TwiML
+        +enableRecording() TwiML
+        +addGatherForResponse(timeout) TwiML
+    }
+
+    class CallWebhookHandler {
+        -PhoneInterviewService phoneService
+        -EventPublisher eventPublisher
+        +handleStatusCallback(request) Response
+        +handleRecordingCallback(request) Response
+        +handleCallConnected(request) Response
+        +handleCallCompleted(request) Response
+        -publishCallEvent(event) void
+    }
+
+    class PhoneInterviewController {
+        -PhoneInterviewService phoneService
+        -CandidateRepository candidateRepository
+        +schedulePhoneInterview(candidateId, request) Response
+        +getPhoneSessionStatus(sessionId) Response
+        +cancelPhoneInterview(sessionId) Response
+        +retryPhoneInterview(sessionId) Response
+    }
+
+    %% Phone Interview Relationships
+    PhoneInterviewService --> TwilioService : uses
+    PhoneInterviewService --> S3Service : stores recordings
+    PhoneInterviewService --> TranscriptionService : transcribes calls
+    PhoneInterviewService --> PhoneSession : manages
+    TwilioService --> TwiMLGenerator : generates responses
+    CallWebhookHandler --> PhoneInterviewService : delegates to
+    PhoneInterviewController --> PhoneInterviewService : uses
+
+    %% ========================================
+    %% ANALYTICS AND REPORTING
+    %% ========================================
+
+    class AnalyticsService {
+        -JobRepository jobRepository
+        -CandidateRepository candidateRepository
+        -ScoreRepository scoreRepository
+        -AnalyticsRepository analyticsRepository
+        +calculateJobAnalytics(jobId) JobAnalytics
+        +getHiringFunnel(jobId) FunnelData
+        +getTimeToHire(jobId) TimeMetrics
+        +getCandidateSources(jobId) SourceDistribution
+        +getApplicationsOverTime(jobId, period) TimeSeries
+        +getScoreDistribution(jobId) Distribution
+        +getTopCandidates(jobId, limit) List~Candidate~
+    }
+
+    class JobAnalytics {
+        +UUID jobId
+        +int totalInvited
+        +int totalStarted
+        +int totalSubmitted
+        +int totalScored
+        +int totalShortlisted
+        +int totalRejected
+        +float conversionRate
+        +float averageScore
+        +float averageTimeToHire
+        +Map~string, int~ sourceBreakdown
+        +DateTime calculatedAt
+        +getFunnelData() FunnelData
+        +getConversionMetrics() ConversionMetrics
+    }
+
+    class ExportService {
+        -CandidateRepository candidateRepository
+        -ScoreRepository scoreRepository
+        -S3Service s3Service
+        +exportCandidates(jobId, format, fields) ExportFile
+        +generateCSV(data) bytes
+        +generateExcel(data) bytes
+        +generatePDF(data) bytes
+        +uploadExport(file) string
+        +getExportHistory(jobId) List~Export~
+    }
+
+    class ExportFile {
+        +UUID id
+        +ExportFormat format
+        +string filename
+        +string s3Url
+        +int recordCount
+        +DateTime createdAt
+        +DateTime expiresAt
+        +getPresignedUrl(expiry) string
+        +isExpired() boolean
+    }
+
+    class ReportGenerator {
+        -AnalyticsService analyticsService
+        -ExportService exportService
+        -ChartGenerator chartGenerator
+        +generateJobReport(jobId) Report
+        +generateCandidateReport(candidateId) Report
+        +generateExecutiveSummary(orgId, period) Report
+        +scheduleRecurringReport(config) ScheduledReport
+    }
+
+    class ChartGenerator {
+        +generateHiringFunnelChart(data) ChartData
+        +generateTimeToHireChart(data) ChartData
+        +generateSourcesChart(data) ChartData
+        +generateScoreDistribution(data) ChartData
+        +generateApplicationsTrend(data) ChartData
+    }
+
+    class NotificationService {
+        -EmailService emailService
+        -WebSocketHandler wsHandler
+        -NotificationRepository notificationRepository
+        +sendNotification(userId, notification) void
+        +sendBulkNotifications(userIds, notification) void
+        +markAsRead(notificationId) void
+        +getUnreadCount(userId) int
+        +getNotifications(userId, filters) List~Notification~
+    }
+
+    class Notification {
+        +UUID id
+        +UUID userId
+        +NotificationType type
+        +string title
+        +string message
+        +Map~string, any~ data
+        +boolean isRead
+        +DateTime createdAt
+        +DateTime readAt
+        +markAsRead() void
+        +getActionUrl() Optional~string~
+    }
+
+    %% Analytics Relationships
+    AnalyticsService --> JobAnalytics : produces
+    ExportService --> ExportFile : creates
+    ReportGenerator --> AnalyticsService : uses
+    ReportGenerator --> ExportService : uses
+    ReportGenerator --> ChartGenerator : uses
+    NotificationService --> Notification : manages
+    NotificationService --> EmailService : uses
+    NotificationService --> WebSocketHandler : uses
+
+    %% ========================================
+    %% USAGE EXAMPLES / INTERVIEW SESSION
+    %% ========================================
+
+    class InterviewSessionService {
+        -InviteRepository inviteRepository
+        -QuestionRepository questionRepository
+        -ResponseRepository responseRepository
+        -CandidateRepository candidateRepository
+        +validateToken(token) Optional~InterviewSession~
+        +startInterview(token) InterviewSession
+        +getCurrentQuestion(sessionId) Question
+        +submitResponse(sessionId, response) InterviewResponse
+        +getProgress(sessionId) InterviewProgress
+        +saveProgress(sessionId, progress) void
+        +completeInterview(sessionId) Candidate
+    }
+
+    class InterviewSession {
+        +UUID id
+        +UUID candidateId
+        +UUID jobId
+        +string token
+        +SessionStatus status
+        +int currentQuestionIndex
+        +DateTime startedAt
+        +DateTime lastActivityAt
+        +Map~string, any~ progress
+        +isExpired() boolean
+        +getCurrentQuestion() Question
+        +canSubmit() boolean
+        +recordActivity() void
+    }
+
+    class DeviceCheckService {
+        +checkCameraPermission() PermissionStatus
+        +checkMicrophonePermission() PermissionStatus
+        +testCamera() CameraTestResult
+        +testMicrophone() MicTestResult
+        +testNetwork() NetworkTestResult
+        +recordTestVideo() VideoTestResult
+        +validateBrowser() BrowserCompatibility
+    }
+
+    class MediaRecordingService {
+        -S3Service s3Service
+        +startRecording(sessionId) RecordingSession
+        +stopRecording(recordingId) Recording
+        +uploadRecording(recordingId, blob) string
+        +saveToIndexedDB(recordingId, blob) void
+        +getRecording(recordingId) Recording
+        +deleteRecording(recordingId) boolean
+    }
+
+    class Recording {
+        +UUID id
+        +UUID sessionId
+        +UUID questionId
+        +RecordingType type
+        +string localBlobUrl
+        +string s3Url
+        +int duration
+        +int fileSize
+        +RecordingStatus status
+        +DateTime recordedAt
+        +isUploaded() boolean
+        +getPlaybackUrl() string
+    }
+
+    class InterviewProgress {
+        +UUID sessionId
+        +int totalQuestions
+        +int answeredQuestions
+        +int requiredQuestions
+        +float completionPercentage
+        +List~UUID~ completedQuestionIds
+        +DateTime lastSaveAt
+        +canComplete() boolean
+        +getNextQuestion() Optional~Question~
+    }
+
+    class ConsentService {
+        +recordConsent(candidateId, consentData) Consent
+        +validateConsent(candidateId) boolean
+        +getConsentDocument(jobId) ConsentDocument
+        +revokeConsent(candidateId) void
+    }
+
+    class Consent {
+        +UUID id
+        +UUID candidateId
+        +ConsentType type
+        +boolean videoRecording
+        +boolean dataProcessing
+        +boolean aiAnalysis
+        +string ipAddress
+        +DateTime consentedAt
+        +isValid() boolean
+    }
+
+    %% Interview Session Relationships
+    InterviewSessionService --> InterviewSession : manages
+    InterviewSessionService --> InterviewProgress : tracks
+    InterviewSession --> DeviceCheckService : validates setup
+    InterviewSession --> MediaRecordingService : records responses
+    MediaRecordingService --> Recording : creates
+    ConsentService --> Consent : manages
