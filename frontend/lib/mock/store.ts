@@ -341,13 +341,13 @@ class MockStore {
       id: generateId(),
       email: profile.email || '',
       name: profile.name || '',
-      skills: profile.skills || [],
-      desiredRoles: profile.desiredRoles || [],
       createdAt: new Date(),
       updatedAt: new Date(),
-      practiceSessions: [],
-      applications: [],
       ...profile,
+      skills: profile.skills || [],
+      desiredRoles: profile.desiredRoles || [],
+      practiceSessions: profile.practiceSessions || [],
+      applications: profile.applications || [],
     };
 
     this.data.applicants.push(newApplicant);
@@ -358,9 +358,14 @@ class MockStore {
     const applicantIndex = this.data.applicants.findIndex(a => a.id === id);
     if (applicantIndex === -1) return null;
 
+    const currentApplicant = this.data.applicants[applicantIndex];
     this.data.applicants[applicantIndex] = {
-      ...this.data.applicants[applicantIndex],
+      ...currentApplicant,
       ...updates,
+      skills: updates.skills || currentApplicant.skills || [],
+      desiredRoles: updates.desiredRoles || currentApplicant.desiredRoles || [],
+      practiceSessions: updates.practiceSessions || currentApplicant.practiceSessions || [],
+      applications: updates.applications || currentApplicant.applications || [],
       updatedAt: new Date(),
     };
 
@@ -460,21 +465,23 @@ class MockStore {
     const sessions = this.getPracticeSessionsByApplicantId(applicantId);
     if (sessions.length === 0) return null;
 
-    const scores = sessions.map(s => s.score.overall);
-    const averageScore = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const scores = sessions.filter(s => s.score).map(s => s.score!.overall);
+    const averageScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
 
     
-    const firstScore = sessions[0]?.score.overall || 0;
-    const lastScore = sessions[sessions.length - 1]?.score.overall || 0;
+    const firstScore = sessions[0]?.score?.overall || 0;
+    const lastScore = sessions[sessions.length - 1]?.score?.overall || 0;
     const improvementRate = firstScore > 0 ? ((lastScore - firstScore) / firstScore) * 100 : 0;
 
     
     const areaScores: Record<string, number[]> = {};
     sessions.forEach(session => {
-      Object.entries(session.score.breakdown).forEach(([area, score]) => {
-        if (!areaScores[area]) areaScores[area] = [];
-        areaScores[area].push(score);
-      });
+      if (session.score?.breakdown) {
+        Object.entries(session.score.breakdown).forEach(([area, score]) => {
+          if (!areaScores[area]) areaScores[area] = [];
+          areaScores[area].push(score);
+        });
+      }
     });
 
     const areaAverages = Object.entries(areaScores).map(([area, scores]) => ({
@@ -496,9 +503,9 @@ class MockStore {
         sessionId: s.id,
         date: s.startedAt,
         jobTitle: s.jobTitle,
-        score: s.score.overall,
+        score: s.score?.overall || 0,
         duration: (s.duration || 0) / 60,
-        questionsAnswered: s.questions.length,
+        questionsAnswered: s.questions?.length || 0,
         improvement: 0, 
       })),
       skillProgression: [],

@@ -114,36 +114,40 @@ export default function ApplicantOnboarding() {
     <div className="min-h-screen bg-black text-white">
       {/* Background Effects */}
       <div className="fixed inset-0">
-        <div className="absolute inset-0 bg-gray-900" />
-        <div className="absolute inset-0 bg-gray-800/50" />
-
+        <div className={`absolute inset-0 bg-gradient-to-br ${gradients.bgPrimary}`} />
+        <div className={`absolute inset-0 bg-gradient-to-tr ${gradients.bgSecondary}`} />
         <FloatingParticles />
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-10 border-b border-gray-200 bg-white sticky top-0">
+      <nav className="relative z-10 border-b border-gray-800 bg-black/50 backdrop-blur-lg sticky top-0">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link
                 href="/applicant"
-                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-white hover:bg-gray-800 rounded-md transition-colors"
               >
                 <ArrowLeft className="w-4 h-4 text-white" />
                 Back to Home
               </Link>
               <div className="h-8 w-px bg-gray-700" />
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
-                 Profile Setup
+                <h1 className={`text-xl font-semibold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
+                  Profile Setup
                 </h1>
-
-                <p className="text-sm text-black">
+                <p className="text-sm text-gray-300">
                   Step {currentStep} of {totalSteps}
                 </p>
               </div>
             </div>
-      
+            <Badge
+              variant="outline"
+              className={`bg-gradient-to-r ${gradients.cardHeader} border-blue-500/50 text-blue-300`}
+            >
+              <Sparkles className="w-3 h-3 mr-1" />
+              AI-Powered Matching
+            </Badge>
           </div>
         </div>
       </nav>
@@ -153,7 +157,7 @@ export default function ApplicantOnboarding() {
         <div className="mb-8">
           <Progress
             value={(currentStep / totalSteps) * 100}
-            className="h-2 bg-gray-700 [&>div]:bg-gray-400 mb-4"
+            className="h-2 bg-gray-800 mb-4"
           />
 
           {/* Progress Steps */}
@@ -172,8 +176,8 @@ export default function ApplicantOnboarding() {
                 >
                   <div className={`
                     w-10 h-10 rounded-full flex items-center justify-center transition-all
-                    ${isActive ? 'bg-gray-700 text-white shadow-md scale-110' :
-                      isCompleted ? 'bg-gray-600 text-gray-200 border border-gray-500' : 'bg-gray-800 text-gray-400'}
+                    ${isActive ? `bg-gradient-to-r ${gradients.primary} text-white shadow-lg shadow-blue-500/30 scale-110` :
+                      isCompleted ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-gray-800 text-gray-400'}
                   `}>
                     {isCompleted ? (
                       <CheckCircle className="w-5 h-5" />
@@ -198,8 +202,8 @@ export default function ApplicantOnboarding() {
           key={currentStep}
         >
           <Card className="mt-12 bg-gray-900/90 backdrop-blur-md border border-gray-700 shadow-xl">
-            <CardHeader className="bg-gray-800 border-b border-gray-700 rounded-t-lg">
-              <CardTitle className="text-2xl font-bold text-white">
+            <CardHeader className={`bg-gradient-to-r ${gradients.cardHeader} border-b border-gray-700 rounded-t-lg`}>
+              <CardTitle className={`text-2xl font-bold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
                 {steps[currentStep - 1].title}
               </CardTitle>
               <CardDescription className="text-gray-200 mt-2">
@@ -358,8 +362,8 @@ export default function ApplicantOnboarding() {
                           variant={profile.skills?.includes(skill) ? 'default' : 'outline'}
                           className={`cursor-pointer transition-all ${
                             profile.skills?.includes(skill)
-                              ? 'bg-gray-700 border-0 text-white'
-                              : 'bg-gray-800/20 border-gray-600 hover:bg-gray-700 text-white'
+                              ? `bg-gradient-to-r ${gradients.primary} border-0 text-white`
+                              : 'bg-white/5 border-white/20 hover:bg-white/10 text-white'
                           }`}
                           onClick={() => toggleSkill(skill)}
                         >
@@ -399,8 +403,8 @@ export default function ApplicantOnboarding() {
                         variant={profile.desiredRoles?.includes(role) ? 'default' : 'outline'}
                         className={`cursor-pointer transition-colors ${
                           profile.desiredRoles?.includes(role)
-                            ? 'bg-gray-700 hover:bg-gray-600 text-white border-gray-600'
-                            : 'hover:bg-gray-800/20 text-gray-300 border-gray-500'
+                            ? 'bg-blue-600 hover:bg-blue-700 text-white border-blue-600'
+                            : 'hover:bg-white/10 text-gray-300 border-white/20'
                         }`}
                         onClick={() => toggleRole(role)}
                       >
@@ -478,7 +482,7 @@ export default function ApplicantOnboarding() {
             {/* Step 5: Review */}
             {currentStep === 5 && (
               <div className="space-y-4">
-                <div className="p-6 rounded-lg bg-gray-800 text-white">
+                <div className={`p-6 rounded-lg bg-gradient-to-r ${gradients.primary} text-white`}>
                   <h3 className="text-xl font-semibold mb-2">Profile Summary</h3>
                   <p className="opacity-95">Review your information before proceeding</p>
                 </div>
@@ -561,14 +565,14 @@ export default function ApplicantOnboarding() {
                 variant="outline"
                 onClick={handleBack}
                 disabled={currentStep === 1}
-                className="border-white/20 bg-white/5 hover:bg-white/10 text-white"
+                className="border-white/20 bg-white/5 hover:bg-white/10"
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Back
               </Button>
               <Button
                 onClick={handleNext}
-                className="bg-gray-700 hover:bg-gray-600 text-white"
+                className={`bg-gradient-to-r ${gradients.primary} hover:opacity-90`}
               >
                 {currentStep === 5 ? (
                   <>

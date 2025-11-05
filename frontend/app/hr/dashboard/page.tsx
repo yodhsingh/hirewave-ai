@@ -159,39 +159,48 @@ export default function HRDashboard() {
           <Bell className="w-6 h-6 text-gray-900" />
         </Button>
 
-        {/* User Profile Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            {/*
-              UI: Apply "Secondary (light card)" style to the trigger
-              - bg-white/10 -> bg-black/5
-              - hover:bg-white/15 -> hover:bg-black/10
-              - border-white/10 -> border-black/10
-              - Removed redundant backdrop-blur
-            */}
-            <Button variant="ghost" className="flex items-center gap-2 bg-black/5 hover:bg-black/10 border border-black/10 transition-all rounded-xl px-3 py-2">
-              <div className="flex items-center gap-3">
-                <div className="text-right hidden md:block">
-                  {/* UI: Inverted text colors per spec */}
-                  <p className="text-sm font-medium text-gray-900">Dalyodh Singh</p>
-                  <p className="text-xs text-gray-500">HR Manager</p>
-                </div>
-                {/* UI: Inverted avatar styles */}
-                <div className="w-9 h-9 rounded-full bg-black/5 border border-black/10 flex items-center justify-center shadow-[0_0_8px_rgba(0,0,0,0.08)]">
-                  <span className="text-gray-900 text-sm font-medium">DS</span>
-                </div>
-              </div>
-            </Button>
-          </DropdownMenuTrigger>
-          {/*
-            NOTE: The DropdownMenuContent is unchanged.
-            Its existing dark-glass theme provides the correct contrast
-            against the new light-glass navbar.
-          */}
-          <DropdownMenuContent className="bg-black/50 border-white/10 backdrop-blur-xl text-white w-56" align="end">
-            <div className="px-3 py-2 border-b border-b-white/10">
-              <p className="text-sm font-medium">Dalyodh Singh</p>
-              <p className="text-xs text-gray-400">22f3001166@ds.study.iitm.ac.in</p>
+              {/* User Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-800">
+                    <div className="flex items-center gap-3">
+                      <div className="text-right hidden md:block">
+                        <p className="text-sm font-medium text-white">Dalyodh Singh</p>
+                        <p className="text-xs text-gray-400">HR Manager</p>
+                      </div>
+                      <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${gradients.primary} flex items-center justify-center`}>
+                        <span className="text-white text-sm font-bold">DS</span>
+                      </div>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white w-56" align="end">
+                  <div className="px-3 py-2 border-b border-gray-800">
+                    <p className="text-sm font-medium">Dalyodh Singh</p>
+                    <p className="text-xs text-gray-400">22f3001166@ds.study.iitm.ac.in</p>
+                  </div>
+                  <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/hr/profile')}>
+                    <User className="w-4 h-4 mr-2" />
+                    View Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/hr/settings')}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/hr/team')}>
+                    Team Members
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/hr/help')}>
+                    Help & Support
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem className="text-red-400 hover:bg-gray-800">
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
             <DropdownMenuItem className="hover:bg-white/10">
               <User className="w-4 h-4 mr-2" />

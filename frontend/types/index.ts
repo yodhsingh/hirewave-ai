@@ -710,3 +710,220 @@ export interface Notification {
   read: boolean;
   createdAt: Date;
 }
+
+// Practice Session Types
+export interface PracticeScore {
+  overall: number;
+  breakdown: {
+    communication: number;
+    content: number;
+    confidence: number;
+    structure: number;
+    relevance: number;
+  };
+  percentile?: number;
+  grade: string;
+  readinessLevel: 'interview_ready' | 'almost_ready' | 'needs_practice' | 'more_practice_needed';
+}
+
+export interface PracticeFeedback {
+  id?: ID;
+  sessionId?: ID;
+  overall: string;
+  strengths?: Array<{
+    category: string;
+    title: string;
+    description: string;
+    priority: 'high' | 'medium' | 'low';
+    examples?: string[];
+  }>;
+  improvements?: Array<{
+    category: string;
+    title: string;
+    description: string;
+    priority: 'high' | 'medium' | 'low';
+    examples?: string[];
+  }>;
+  communicationAnalysis?: {
+    clarity: number;
+    pace: string;
+    volume: string;
+    fillerWordCount: number;
+    vocabularyLevel: string;
+    sentenceStructure: string;
+  };
+  technicalAnalysis?: {
+    accuracy: number;
+    depth: string;
+    problemSolvingApproach: string;
+    technicalTermsUsed: string[];
+    conceptsExplained: string[];
+    examplesProvided: boolean;
+  };
+  behavioralAnalysis?: {
+    starMethodUsed: boolean;
+    specificityLevel: string;
+    outcomesFocused: boolean;
+    leadershipShown: boolean;
+    teamworkShown: boolean;
+    conflictResolution: boolean;
+  };
+  aiCoachTips?: string[];
+  nextSteps?: string[];
+  specificFeedback?: QuestionFeedback[];
+}
+
+export interface QuestionFeedback {
+  questionId: string;
+  score: number;
+  maxScore: number;
+  feedback: string;
+  keyPointsCovered?: string[];
+  keyPointsMissed?: string[];
+  improvement?: string;
+}
+
+// Applicant Dashboard Types
+export interface ApplicantProfile {
+  id: ID;
+  name: string;
+  email: string;
+  phone?: string;
+  location?: string;
+  willingToRelocate?: boolean;
+  resumeUrl?: string;
+  linkedinUrl?: string;
+  githubUrl?: string;
+  portfolioUrl?: string;
+  availability?: string;
+  expectedSalary?: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  resumeText?: string;
+  skills: string[];
+  desiredRoles: string[];
+  experience?: number;
+  currentRole?: string;
+  education?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  practiceSessions: PracticeSession[];
+  applications: any[];
+}
+
+export interface JobMatch {
+  jobId: ID;
+  job: Job;
+  matchScore: number;
+  matchReasons: string[];
+  missingSkills: string[];
+  salary?: {
+    min: number;
+    max: number;
+    currency: string;
+  };
+  benefits?: string[];
+  status?: 'new' | 'applied' | 'interviewing' | 'offered' | 'rejected';
+  appliedAt?: Date;
+}
+
+export interface PracticeSession {
+  id: ID;
+  userId?: ID;
+  applicantId?: ID;
+  type?: 'general' | 'job_specific' | 'skill_based';
+  sessionType?: 'general' | 'job_specific' | 'skill_based';
+  jobId?: ID;
+  jobTitle?: string;
+  status: 'completed' | 'in_progress' | 'abandoned';
+  score?: PracticeScore;
+  feedback?: PracticeFeedback;
+  questions: PracticeQuestion[];
+  responses: PracticeResponse[];
+  startedAt: Date;
+  completedAt?: Date;
+  duration?: number; // in minutes
+  improvementPlan?: any;
+  recordingUrls?: any;
+}
+
+export interface PracticeQuestion {
+  id: ID;
+  sessionId?: ID;
+  type?: QuestionType;
+  question: string;
+  description?: string;
+  timeLimit?: number;
+  category: 'behavioral' | 'technical' | 'situational' | 'general' | 'competency';
+  difficulty: 'easy' | 'medium' | 'hard';
+  expectedAnswerPoints?: string[];
+  order?: number;
+  tips?: string[];
+  tags?: string[];
+}
+
+export interface PracticeResponse {
+  id: ID;
+  sessionId: ID;
+  questionId: ID;
+  type?: QuestionType;
+  content: string;
+  duration?: number;
+  retries?: number;
+  confidence?: number;
+  pace?: string;
+  fillerWords?: string[];
+  timestamp?: Date;
+  score?: number;
+  feedback?: string;
+  submittedAt?: Date;
+}
+
+export interface InterviewTip {
+  id: ID;
+  category: 'preparation' | 'during' | 'after' | 'technical' | 'behavioral' | 'general';
+  title: string;
+  description?: string;
+  content?: string;
+  examples?: string[];
+  doList?: string[];
+  dontList?: string[];
+  relatedQuestions?: string[];
+  priority?: 'high' | 'medium' | 'low';
+  tags?: string[];
+}
+
+export interface PerformanceStats {
+  applicantId?: ID;
+  totalSessions: number;
+  totalPracticeTime?: number;
+  averageScore: number;
+  improvementRate?: number;
+  improvement?: number;
+  strongestArea?: string;
+  strongestAreas?: string[];
+  weakestArea?: string;
+  weakestAreas?: string[];
+  sessionHistory?: Array<{
+    sessionId: ID;
+    date: Date;
+    jobTitle?: string;
+    score: number;
+    duration: number;
+    questionsAnswered: number;
+    improvement?: number;
+  }>;
+  recentSessions?: Array<{
+    id: ID;
+    date: Date;
+    jobTitle?: string;
+    score: number;
+    duration: number;
+    questionsAnswered: number;
+  }>;
+  skillProgression?: any[];
+  readinessScore?: number;
+  comparisonToOthers?: any;
+}
