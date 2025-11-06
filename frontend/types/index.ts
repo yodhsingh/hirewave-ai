@@ -375,12 +375,12 @@ export interface ApplicantProfile {
   name: string;
   phone?: string;
   resumeUrl?: string;
-  resumeText?: string; 
+  resumeText?: string;
   linkedinUrl?: string;
   githubUrl?: string;
   portfolioUrl?: string;
   skills: string[];
-  experience?: number; 
+  experience?: number;
   currentRole?: string;
   desiredRoles: string[];
   location?: string;
@@ -390,11 +390,12 @@ export interface ApplicantProfile {
     max: number;
     currency: string;
   };
-  availability?: 'immediate' | '2_weeks' | '1_month' | '2_months' | 'other';
+  availability?: 'immediate' | '2_weeks' | '1_month' | '2_months' | 'other' | string;
+  education?: string;
   createdAt: Date;
   updatedAt: Date;
   practiceSessions: PracticeSession[];
-  applications: ApplicationRecord[];
+  applications: ApplicationRecord[] | any[];
 }
 
 export interface PracticeSession {
@@ -418,43 +419,50 @@ export interface PracticeSession {
 
 export interface PracticeQuestion {
   id: ID;
-  sessionId: ID;
+  sessionId?: ID;
+  type?: QuestionType;
   question: string;
-  category: 'behavioral' | 'technical' | 'situational' | 'competency';
+  description?: string;
+  category: 'behavioral' | 'technical' | 'situational' | 'competency' | 'general';
   difficulty: 'easy' | 'medium' | 'hard';
-  expectedAnswerPoints?: string[]; 
-  timeLimit?: number; 
-  order: number;
-  tips?: string[]; 
+  expectedAnswerPoints?: string[];
+  timeLimit?: number;
+  order?: number;
+  tips?: string[];
+  tags?: string[];
 }
 
 export interface PracticeResponse {
   id: ID;
   sessionId: ID;
   questionId: ID;
-  content: string; 
+  type?: QuestionType;
+  content: string;
   audioUrl?: string;
   videoUrl?: string;
-  duration: number;
-  retries: number;
-  confidence: number; 
-  pace: 'too_slow' | 'good' | 'too_fast';
-  fillerWords: string[]; 
-  timestamp: Date;
+  duration?: number;
+  retries?: number;
+  confidence?: number;
+  pace?: 'too_slow' | 'good' | 'too_fast' | string;
+  fillerWords?: string[];
+  timestamp?: Date;
+  score?: number;
+  feedback?: string;
+  submittedAt?: Date;
 }
 
 export interface PracticeFeedback {
-  id: ID;
-  sessionId: ID;
-  overall: string; 
-  strengths: FeedbackItem[];
-  improvements: FeedbackItem[];
-  specificFeedback: QuestionFeedback[];
-  communicationAnalysis: CommunicationAnalysis;
+  id?: ID;
+  sessionId?: ID;
+  overall: string;
+  strengths?: FeedbackItem[];
+  improvements?: FeedbackItem[];
+  specificFeedback?: QuestionFeedback[];
+  communicationAnalysis?: CommunicationAnalysis;
   technicalAnalysis?: TechnicalAnalysis;
   behavioralAnalysis?: BehavioralAnalysis;
-  aiCoachTips: string[];
-  nextSteps: string[];
+  aiCoachTips?: string[];
+  nextSteps?: string[];
 }
 
 export interface FeedbackItem {
@@ -466,40 +474,40 @@ export interface FeedbackItem {
 }
 
 export interface QuestionFeedback {
-  questionId: ID;
+  questionId: ID | string;
   score: number;
   maxScore: number;
   feedback: string;
-  keyPointsCovered: string[];
-  keyPointsMissed: string[];
-  improvement: string;
-  modelAnswer?: string; 
+  keyPointsCovered?: string[];
+  keyPointsMissed?: string[];
+  improvement?: string;
+  modelAnswer?: string;
 }
 
 export interface CommunicationAnalysis {
-  clarity: number; 
-  pace: 'too_slow' | 'good' | 'too_fast';
-  volume: 'too_quiet' | 'good' | 'too_loud';
+  clarity: number;
+  pace: 'too_slow' | 'good' | 'too_fast' | string;
+  volume: 'too_quiet' | 'good' | 'too_loud' | string;
   fillerWordCount: number;
-  vocabularyLevel: 'basic' | 'intermediate' | 'advanced';
-  sentenceStructure: 'simple' | 'varied' | 'complex';
-  eyeContact?: number; 
-  bodyLanguage?: 'closed' | 'neutral' | 'open'; 
-  facialExpression?: 'nervous' | 'neutral' | 'confident'; 
+  vocabularyLevel: 'basic' | 'intermediate' | 'advanced' | string;
+  sentenceStructure: 'simple' | 'varied' | 'complex' | string;
+  eyeContact?: number;
+  bodyLanguage?: 'closed' | 'neutral' | 'open' | string;
+  facialExpression?: 'nervous' | 'neutral' | 'confident' | string;
 }
 
 export interface TechnicalAnalysis {
-  accuracy: number; 
-  depth: 'surface' | 'moderate' | 'deep';
-  problemSolvingApproach: 'unclear' | 'structured' | 'excellent';
+  accuracy: number;
+  depth: 'surface' | 'moderate' | 'deep' | string;
+  problemSolvingApproach: 'unclear' | 'structured' | 'excellent' | string;
   technicalTermsUsed: string[];
   conceptsExplained: string[];
   examplesProvided: boolean;
 }
 
 export interface BehavioralAnalysis {
-  starMethodUsed: boolean; 
-  specificityLevel: 'vague' | 'moderate' | 'specific';
+  starMethodUsed: boolean;
+  specificityLevel: 'vague' | 'moderate' | 'specific' | string;
   outcomesFocused: boolean;
   leadershipShown: boolean;
   teamworkShown: boolean;
@@ -507,7 +515,7 @@ export interface BehavioralAnalysis {
 }
 
 export interface PracticeScore {
-  overall: number; 
+  overall: number;
   breakdown: {
     communication: number;
     content: number;
@@ -515,9 +523,9 @@ export interface PracticeScore {
     structure: number;
     relevance: number;
   };
-  percentile?: number; 
-  grade: 'A' | 'B' | 'C' | 'D' | 'F';
-  readinessLevel: 'not_ready' | 'needs_practice' | 'almost_ready' | 'interview_ready';
+  percentile?: number;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F' | string;
+  readinessLevel: 'not_ready' | 'needs_practice' | 'almost_ready' | 'interview_ready' | 'more_practice_needed';
 }
 
 export interface ImprovementPlan {
@@ -589,45 +597,61 @@ export interface ApplicationRecord {
 export interface JobMatch {
   jobId: ID;
   job: Job;
-  matchScore: number; 
+  matchScore: number;
   matchReasons: string[];
   missingSkills: string[];
-  salary: {
+  salary?: {
     min: number;
     max: number;
     currency: string;
   };
   benefits?: string[];
-  distance?: number; 
+  distance?: number;
+  status?: 'new' | 'applied' | 'interviewing' | 'offered' | 'rejected';
+  appliedAt?: Date;
 }
 
 export interface InterviewTip {
   id: ID;
-  category: 'general' | 'behavioral' | 'technical' | 'company_specific';
+  category: 'general' | 'behavioral' | 'technical' | 'company_specific' | 'preparation' | 'during' | 'after';
   title: string;
-  content: string;
+  description?: string;
+  content?: string;
   examples?: string[];
-  doList: string[];
-  dontList: string[];
+  doList?: string[];
+  dontList?: string[];
   relatedQuestions?: string[];
+  priority?: 'high' | 'medium' | 'low';
+  tags?: string[];
 }
 
 export interface PerformanceStats {
-  applicantId: ID;
+  applicantId?: ID;
   totalSessions: number;
-  totalPracticeTime: number; 
+  totalPracticeTime?: number;
   averageScore: number;
-  improvementRate: number; 
-  strongestAreas: ImprovementAreaCategory[];
-  weakestAreas: ImprovementAreaCategory[];
-  sessionHistory: SessionSummary[];
-  skillProgression: SkillProgression[];
-  readinessScore: number; 
-  comparisonToOthers: {
+  improvementRate?: number;
+  improvement?: number;
+  strongestArea?: string;
+  strongestAreas?: ImprovementAreaCategory[] | string[];
+  weakestArea?: string;
+  weakestAreas?: ImprovementAreaCategory[] | string[];
+  sessionHistory?: SessionSummary[];
+  recentSessions?: Array<{
+    id: ID;
+    date: Date;
+    jobTitle?: string;
+    score: number;
+    duration: number;
+    questionsAnswered: number;
+  }>;
+  skillProgression?: SkillProgression[] | any[];
+  readinessScore?: number;
+  comparisonToOthers?: {
     percentile: number;
     averageScore: number;
     yourScore: number;
-  };
+  } | any;
 }
 
 export interface SessionSummary {
@@ -709,221 +733,4 @@ export interface Notification {
   data?: any;
   read: boolean;
   createdAt: Date;
-}
-
-// Practice Session Types
-export interface PracticeScore {
-  overall: number;
-  breakdown: {
-    communication: number;
-    content: number;
-    confidence: number;
-    structure: number;
-    relevance: number;
-  };
-  percentile?: number;
-  grade: string;
-  readinessLevel: 'interview_ready' | 'almost_ready' | 'needs_practice' | 'more_practice_needed';
-}
-
-export interface PracticeFeedback {
-  id?: ID;
-  sessionId?: ID;
-  overall: string;
-  strengths?: Array<{
-    category: string;
-    title: string;
-    description: string;
-    priority: 'high' | 'medium' | 'low';
-    examples?: string[];
-  }>;
-  improvements?: Array<{
-    category: string;
-    title: string;
-    description: string;
-    priority: 'high' | 'medium' | 'low';
-    examples?: string[];
-  }>;
-  communicationAnalysis?: {
-    clarity: number;
-    pace: string;
-    volume: string;
-    fillerWordCount: number;
-    vocabularyLevel: string;
-    sentenceStructure: string;
-  };
-  technicalAnalysis?: {
-    accuracy: number;
-    depth: string;
-    problemSolvingApproach: string;
-    technicalTermsUsed: string[];
-    conceptsExplained: string[];
-    examplesProvided: boolean;
-  };
-  behavioralAnalysis?: {
-    starMethodUsed: boolean;
-    specificityLevel: string;
-    outcomesFocused: boolean;
-    leadershipShown: boolean;
-    teamworkShown: boolean;
-    conflictResolution: boolean;
-  };
-  aiCoachTips?: string[];
-  nextSteps?: string[];
-  specificFeedback?: QuestionFeedback[];
-}
-
-export interface QuestionFeedback {
-  questionId: string;
-  score: number;
-  maxScore: number;
-  feedback: string;
-  keyPointsCovered?: string[];
-  keyPointsMissed?: string[];
-  improvement?: string;
-}
-
-// Applicant Dashboard Types
-export interface ApplicantProfile {
-  id: ID;
-  name: string;
-  email: string;
-  phone?: string;
-  location?: string;
-  willingToRelocate?: boolean;
-  resumeUrl?: string;
-  linkedinUrl?: string;
-  githubUrl?: string;
-  portfolioUrl?: string;
-  availability?: string;
-  expectedSalary?: {
-    min: number;
-    max: number;
-    currency: string;
-  };
-  resumeText?: string;
-  skills: string[];
-  desiredRoles: string[];
-  experience?: number;
-  currentRole?: string;
-  education?: string;
-  createdAt: Date;
-  updatedAt: Date;
-  practiceSessions: PracticeSession[];
-  applications: any[];
-}
-
-export interface JobMatch {
-  jobId: ID;
-  job: Job;
-  matchScore: number;
-  matchReasons: string[];
-  missingSkills: string[];
-  salary?: {
-    min: number;
-    max: number;
-    currency: string;
-  };
-  benefits?: string[];
-  status?: 'new' | 'applied' | 'interviewing' | 'offered' | 'rejected';
-  appliedAt?: Date;
-}
-
-export interface PracticeSession {
-  id: ID;
-  userId?: ID;
-  applicantId?: ID;
-  type?: 'general' | 'job_specific' | 'skill_based';
-  sessionType?: 'general' | 'job_specific' | 'skill_based';
-  jobId?: ID;
-  jobTitle?: string;
-  status: 'completed' | 'in_progress' | 'abandoned';
-  score?: PracticeScore;
-  feedback?: PracticeFeedback;
-  questions: PracticeQuestion[];
-  responses: PracticeResponse[];
-  startedAt: Date;
-  completedAt?: Date;
-  duration?: number; // in minutes
-  improvementPlan?: any;
-  recordingUrls?: any;
-}
-
-export interface PracticeQuestion {
-  id: ID;
-  sessionId?: ID;
-  type?: QuestionType;
-  question: string;
-  description?: string;
-  timeLimit?: number;
-  category: 'behavioral' | 'technical' | 'situational' | 'general' | 'competency';
-  difficulty: 'easy' | 'medium' | 'hard';
-  expectedAnswerPoints?: string[];
-  order?: number;
-  tips?: string[];
-  tags?: string[];
-}
-
-export interface PracticeResponse {
-  id: ID;
-  sessionId: ID;
-  questionId: ID;
-  type?: QuestionType;
-  content: string;
-  duration?: number;
-  retries?: number;
-  confidence?: number;
-  pace?: string;
-  fillerWords?: string[];
-  timestamp?: Date;
-  score?: number;
-  feedback?: string;
-  submittedAt?: Date;
-}
-
-export interface InterviewTip {
-  id: ID;
-  category: 'preparation' | 'during' | 'after' | 'technical' | 'behavioral' | 'general';
-  title: string;
-  description?: string;
-  content?: string;
-  examples?: string[];
-  doList?: string[];
-  dontList?: string[];
-  relatedQuestions?: string[];
-  priority?: 'high' | 'medium' | 'low';
-  tags?: string[];
-}
-
-export interface PerformanceStats {
-  applicantId?: ID;
-  totalSessions: number;
-  totalPracticeTime?: number;
-  averageScore: number;
-  improvementRate?: number;
-  improvement?: number;
-  strongestArea?: string;
-  strongestAreas?: string[];
-  weakestArea?: string;
-  weakestAreas?: string[];
-  sessionHistory?: Array<{
-    sessionId: ID;
-    date: Date;
-    jobTitle?: string;
-    score: number;
-    duration: number;
-    questionsAnswered: number;
-    improvement?: number;
-  }>;
-  recentSessions?: Array<{
-    id: ID;
-    date: Date;
-    jobTitle?: string;
-    score: number;
-    duration: number;
-    questionsAnswered: number;
-  }>;
-  skillProgression?: any[];
-  readinessScore?: number;
-  comparisonToOthers?: any;
 }
