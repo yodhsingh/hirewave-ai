@@ -8,15 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/lib/store/authStore';
+import { backendClient } from '@/lib/api/backend-client';
+import { toast } from 'sonner';
 
 import Navigation from '@/components/layout/Navigation';
 import Footer from '@/components/layout/Footer';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuthStore();
+  const { login, logout } = useAuthStore();
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState('hr');
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -24,20 +27,65 @@ export default function LoginPage() {
     company: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Dummy validation - accept any email/password
-    if (formData.email && formData.password) {
-      // Login using auth store
-      login(formData.email, userType as 'hr' | 'candidate');
-      
-      // Redirect based on user type
-      if (userType === 'hr') {
-        router.push('/hr/dashboard');
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        // Clear any existing auth data before login to avoid stale token issues
+        logout();
+        await backendClient.logout(); // Also clear backendClient tokens
+
+        // Real login via backend API
+        const response = await backendClient.login(formData.email, formData.password);
+
+        if (response.success && response.data) {
+          // Update auth store with full user data and real JWT tokens from backend
+          const { user, accessToken, refreshToken } = response.data;
+          login(user, accessToken, refreshToken);
+
+          toast.success("Welcome back!", {
+            description: "You've successfully logged in.",
+          });
+
+          // Redirect based on user role from backend
+          if (user.role === 'HR') {
+            router.push('/hr/dashboard');
+          } else {
+            router.push('/applicant');
+          }
+        } else {
+          toast.error("Login failed", {
+            description: response.error?.message || "Invalid credentials",
+          });
+        }
       } else {
-        router.push('/applicant');
+        // Registration via backend API
+        const response = await backendClient.register({
+          email: formData.email,
+          name: formData.name,
+          password: formData.password,
+          role: userType as 'hr' | 'candidate',
+        });
+
+        if (response.success && response.data) {
+          toast.success("Account created!", {
+            description: "Please login with your credentials.",
+          });
+          setIsLogin(true);
+        } else {
+          toast.error("Registration failed", {
+            description: response.error?.message || "Could not create account",
+          });
+        }
       }
+    } catch (error) {
+      toast.error("Error", {
+        description: error instanceof Error ? error.message : "Something went wrong",
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -296,15 +344,22 @@ export default function LoginPage() {
                   {/* Submit Button */}
                   <Button
                     type="submit"
-                    className="w-full bg-[#2D2D2D] text-white hover:bg-[#1a1a1a] rounded-lg px-8 py-4 text-base font-normal h-12"
+                    disabled={isLoading}
+                    className="w-full bg-[#2D2D2D] text-white hover:bg-[#1a1a1a] rounded-lg px-8 py-4 text-base font-normal h-12 disabled:opacity-50"
                   >
-                    {isLogin ? 'Sign In' : 'Create Account'}
+                    {isLoading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
                   </Button>
 
-                  {/* Demo Note */}
-                  <div className="text-center pt-4">
+                  {/* Login Help */}
+                  <div className="text-center pt-4 space-y-2">
                     <p className="text-xs text-black/50">
-                      Demo Mode: Any email and password will work
+                      Team login: 22f1000535@ds.study.iitm.ac.in
+                    </p>
+                    <p className="text-xs text-black/50">
+                      Or: 23f3003216@ds.study.iitm.ac.in
+                    </p>
+                    <p className="text-xs text-black/50">
+                      Password: password123
                     </p>
                   </div>
                 </form>

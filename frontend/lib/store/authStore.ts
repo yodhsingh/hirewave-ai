@@ -5,11 +5,12 @@ import type { User, Role } from '@/types';
 interface AuthState {
   user: User | null;
   token: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   role: Role | null;
 
-  
-  login: (email: string, role: Role) => void;
+
+  login: (user: User, accessToken: string, refreshToken: string) => void;
   logout: () => void;
   updateUser: (user: Partial<User>) => void;
 }
@@ -19,34 +20,55 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       token: null,
+      refreshToken: null,
       isAuthenticated: false,
       role: null,
 
-      login: (email: string, role: Role) => {
-        const mockUser: User = {
-          id: Math.random().toString(36).substring(2),
-          email,
-          name: email.split('@')[0],
-          role,
-          companyId: role === 'hr' ? 'company_123' : undefined,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
+      login: (user: User, accessToken: string, refreshToken: string) => {
+        console.log('[AuthStore.login] Called with user:', user.email, 'role:', user.role);
+        console.log('[AuthStore.login] Access token:', accessToken ? `${accessToken.substring(0, 20)}...` : 'NONE');
+        console.log('[AuthStore.login] Refresh token:', refreshToken ? `${refreshToken.substring(0, 20)}...` : 'NONE');
 
-        const mockToken = `mock_token_${Date.now()}`;
+        // Also store tokens in standalone localStorage keys for immediate access
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('auth_token', accessToken);
+          localStorage.setItem('refresh_token', refreshToken);
+          console.log('[AuthStore.login] Tokens stored in localStorage');
+        }
 
         set({
-          user: mockUser,
-          token: mockToken,
+          user,
+          token: accessToken,
+          refreshToken,
           isAuthenticated: true,
-          role,
+          role: user.role,
         });
+
+        console.log('[AuthStore.login] State updated');
       },
 
       logout: () => {
+        // Clear all auth-related data from localStorage
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('auth-storage'); // Clear Zustand persisted state
+
+          // Clear any other potential auth keys
+          const keysToRemove: string[] = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.includes('auth') || key.includes('token'))) {
+              keysToRemove.push(key);
+            }
+          }
+          keysToRemove.forEach(key => localStorage.removeItem(key));
+        }
+
         set({
           user: null,
           token: null,
+          refreshToken: null,
           isAuthenticated: false,
           role: null,
         });
@@ -63,6 +85,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         token: state.token,
+        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
         role: state.role,
       }),

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { mockStore } from '@/lib/mock/store';
+import { backendClient } from '@/lib/api/backend-client';
 
 export async function GET(
   request: NextRequest,
@@ -7,24 +7,16 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    const candidate = mockStore.getCandidateById(id);
+    const response = await backendClient.getCandidate(id);
 
-    if (!candidate) {
+    if (!response.success) {
       return NextResponse.json(
-        { success: false, error: 'Candidate not found' },
+        { success: false, error: response.error?.message || 'Candidate not found' },
         { status: 404 }
       );
     }
 
-    
-    const job = mockStore.getJobById(candidate.jobId);
-
-    const candidateDetail = {
-      ...candidate,
-      job,
-    };
-
-    return NextResponse.json({ success: true, data: candidateDetail });
+    return NextResponse.json({ success: true, data: response.data });
   } catch (error) {
     return NextResponse.json(
       { success: false, error: 'Failed to fetch candidate' },
@@ -40,19 +32,19 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = await request.json();
-    const { status } = body;
+    const { status, notes, tags } = body;
 
-    if (status) {
-      const updatedCandidate = mockStore.updateCandidateStatus(id, status);
+    if (status || notes !== undefined || tags !== undefined) {
+      const response = await backendClient.updateCandidateStatus(id, status, notes, tags);
 
-      if (!updatedCandidate) {
+      if (!response.success) {
         return NextResponse.json(
-          { success: false, error: 'Candidate not found' },
+          { success: false, error: response.error?.message || 'Candidate not found' },
           { status: 404 }
         );
       }
 
-      return NextResponse.json({ success: true, data: updatedCandidate });
+      return NextResponse.json({ success: true, data: response.data });
     }
 
     return NextResponse.json(

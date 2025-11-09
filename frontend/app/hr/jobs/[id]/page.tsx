@@ -74,7 +74,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { mockStore } from '@/lib/mock/store';
 import type { Job, Candidate } from '@/types';
 import { gradients } from '@/lib/theme';
 import { useAuthStore } from '@/lib/store/authStore';
@@ -84,6 +83,9 @@ import {
   CandidateSourcesChart,
   ApplicationsOverTimeChart,
 } from '@/components/hr/AnalyticsCharts';
+import { useQuery } from '@tanstack/react-query';
+import { backendClient, apiKeys } from '@/lib/api/backend-client';
+import { toast } from 'sonner';
 
 // Mock pipeline stages with theme-consistent colors
 const PIPELINE_STAGES = [
@@ -108,8 +110,6 @@ export default function JobDetailsPage() {
   const params = useParams();
   const router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
-  const [job, setJob] = useState<Job | null>(null);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -118,18 +118,62 @@ export default function JobDetailsPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [activeTab, setActiveTab] = useState('candidates');
 
-  useEffect(() => {
-    // Fetch job details using mock store
-    const jobId = params.id as string;
-    const jobData = mockStore.getJobById(jobId);
-    if (jobData) {
-      setJob(jobData);
-      // Fetch candidates for this job
-      const candidatesData = mockStore.getCandidatesByJobId(jobId);
-      setCandidates(candidatesData);
-    }
-  }, [params.id]);
+  const jobId = params.id as string;
 
+  // Fetch job details from backend
+  const { data: jobResponse, isLoading: isLoadingJob, error: jobError } = useQuery({
+    queryKey: apiKeys.jobs.detail(jobId),
+    queryFn: async () => {
+      console.log('Fetching job details for:', jobId);
+      const response = await backendClient.getJob(jobId);
+      console.log('Job API response:', response);
+      if (!response.success) {
+        console.error('Failed to fetch job:', response.error);
+        toast.error('Failed to load job', {
+          description: response.error?.message || 'Could not load job details',
+        });
+      }
+      return response;
+    },
+    enabled: !!user && !!jobId,
+  });
+
+  // Fetch candidates for this job from backend
+  const { data: candidatesResponse, isLoading: isLoadingCandidates, error: candidatesError } = useQuery({
+    queryKey: apiKeys.candidates.list(jobId),
+    queryFn: async () => {
+      console.log('Fetching candidates for job:', jobId);
+      const response = await backendClient.getCandidates(jobId);
+      console.log('Candidates API response:', response);
+      if (!response.success) {
+        console.error('Failed to fetch candidates:', response.error);
+      }
+      return response;
+    },
+    enabled: !!user && !!jobId,
+  });
+
+  const job = jobResponse?.success ? jobResponse.data : null;
+  const candidates = candidatesResponse?.success ? candidatesResponse.data : [];
+
+  // Show loading state
+  if (isLoadingJob || isLoadingCandidates) {
+    return (
+      <div className="min-h-screen bg-[#0F0F0F] text-white flex items-center justify-center">
+        <div className="fixed inset-0">
+          <div className={`absolute inset-0 bg-gradient-to-br ${gradients.bgPrimary}`} />
+          <div className={`absolute inset-0 bg-gradient-to-tr ${gradients.bgSecondary}`} />
+        </div>
+        <div className="relative z-10 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+          <h2 className="text-2xl font-light mb-2">Loading job details...</h2>
+          <p className="text-gray-400">Please wait</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
   if (!job) {
     return (
       <div className="min-h-screen bg-[#0F0F0F] text-white flex items-center justify-center">
@@ -156,10 +200,10 @@ export default function JobDetailsPage() {
 
     // Score filter
     let matchesScore = true;
-    if (scoreFilter !== 'all' && candidate.scores?.overall !== undefined) {
-      if (scoreFilter === 'high') matchesScore = candidate.scores.overall >= 80;
-      else if (scoreFilter === 'medium') matchesScore = candidate.scores.overall >= 50 && candidate.scores.overall < 80;
-      else if (scoreFilter === 'low') matchesScore = candidate.scores.overall < 50;
+    if (scoreFilter !== 'all' && candidate.score?.overall !== undefined) {
+      if (scoreFilter === 'high') matchesScore = candidate.score.overall >= 80;
+      else if (scoreFilter === 'medium') matchesScore = candidate.score.overall >= 50 && candidate.score.overall < 80;
+      else if (scoreFilter === 'low') matchesScore = candidate.score.overall < 50;
     }
 
     // Date filter
@@ -212,16 +256,27 @@ export default function JobDetailsPage() {
     );
   };
 
-  const handleBulkMove = (newStatus: string) => {
-    // In a real app, this would call an API
-    setCandidates(prev =>
-      prev.map(c =>
-        selectedCandidates.includes(c.id)
-          ? { ...c, status: newStatus as any }
-          : c
-      )
-    );
-    setSelectedCandidates([]);
+  const handleBulkMove = async (newStatus: string) => {
+    try {
+      // Call bulk update API
+      const response = await backendClient.bulkUpdateCandidates(selectedCandidates, newStatus as any);
+      if (response.success) {
+        toast.success('Updated successfully', {
+          description: `Moved ${selectedCandidates.length} candidate(s) to ${newStatus}`,
+        });
+        // Refetch candidates to get updated data
+        await candidatesResponse;
+        setSelectedCandidates([]);
+      } else {
+        toast.error('Update failed', {
+          description: response.error?.message || 'Could not update candidates',
+        });
+      }
+    } catch (error) {
+      toast.error('Error', {
+        description: error instanceof Error ? error.message : 'Something went wrong',
+      });
+    }
   };
 
   const handleBulkReject = () => {
@@ -587,17 +642,12 @@ export default function JobDetailsPage() {
                       Job Description
                     </h3>
                     <p className="text-white/70 leading-relaxed mb-8 flex-1">{job.description}</p>
-                    {job.requirements && job.requirements.length > 0 && (
+                    {job.requirements && (
                       <div>
                         <h4 className="text-lg font-light mb-4 text-white">Requirements</h4>
-                        <ul className="space-y-3">
-                          {job.requirements.map((req, index) => (
-                            <li key={index} className="text-sm text-white/70 flex items-start gap-3">
-                              <div className="w-1.5 h-1.5 rounded-full bg-white/40 mt-2 flex-shrink-0" />
-                              <span>{req}</span>
-                            </li>
-                          ))}
-                        </ul>
+                        <div className="text-sm text-white/70 whitespace-pre-wrap">
+                          {job.requirements}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -928,10 +978,10 @@ export default function JobDetailsPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                {candidate.scores?.overall ? (
+                                {candidate.score?.overall ? (
                                   <div className="flex items-center gap-2">
-                                    <span className="font-semibold text-white">{candidate.scores.overall}</span>
-                                    {candidate.scores.overall >= 80 && (
+                                    <span className="font-semibold text-white">{candidate.score.overall}</span>
+                                    {candidate.score.overall >= 80 && (
                                       <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                                     )}
                                   </div>
@@ -940,13 +990,13 @@ export default function JobDetailsPage() {
                                 )}
                               </TableCell>
                               <TableCell>
-                                {candidate.scores?.breakdown?.technicalSkills ? (
+                                {candidate.score?.breakdown?.technicalSkills ? (
                                   <div className="flex items-center gap-2">
-                                    <span className={`font-medium ${candidate.scores.breakdown.technicalSkills >= 80 ? 'text-green-400' :
-                                      candidate.scores.breakdown.technicalSkills >= 60 ? 'text-cyan-400' :
+                                    <span className={`font-medium ${candidate.score.breakdown.technicalSkills >= 80 ? 'text-green-400' :
+                                      candidate.score.breakdown.technicalSkills >= 60 ? 'text-cyan-400' :
                                         'text-gray-400'
                                       }`}>
-                                      {candidate.scores.breakdown.technicalSkills}
+                                      {candidate.score.breakdown.technicalSkills}
                                     </span>
                                   </div>
                                 ) : (
@@ -954,13 +1004,13 @@ export default function JobDetailsPage() {
                                 )}
                               </TableCell>
                               <TableCell>
-                                {candidate.scores?.breakdown?.communication ? (
+                                {candidate.score?.breakdown?.communication ? (
                                   <div className="flex items-center gap-2">
-                                    <span className={`font-medium ${candidate.scores.breakdown.communication >= 80 ? 'text-green-400' :
-                                      candidate.scores.breakdown.communication >= 60 ? 'text-cyan-400' :
+                                    <span className={`font-medium ${candidate.score.breakdown.communication >= 80 ? 'text-green-400' :
+                                      candidate.score.breakdown.communication >= 60 ? 'text-cyan-400' :
                                         'text-gray-400'
                                       }`}>
-                                      {candidate.scores.breakdown.communication}
+                                      {candidate.score.breakdown.communication}
                                     </span>
                                   </div>
                                 ) : (
@@ -1052,10 +1102,10 @@ export default function JobDetailsPage() {
                           <div className="grid grid-cols-3 gap-4 mb-3">
                             <div className="text-center">
                               <p className="text-xs text-gray-400 mb-1">Overall</p>
-                              {candidate.scores?.overall ? (
+                              {candidate.score?.overall ? (
                                 <div className="flex items-center justify-center gap-1">
-                                  <span className="font-semibold text-white">{candidate.scores.overall}</span>
-                                  {candidate.scores.overall >= 80 && (
+                                  <span className="font-semibold text-white">{candidate.score.overall}</span>
+                                  {candidate.score.overall >= 80 && (
                                     <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
                                   )}
                                 </div>
@@ -1065,12 +1115,12 @@ export default function JobDetailsPage() {
                             </div>
                             <div className="text-center">
                               <p className="text-xs text-gray-400 mb-1">Technical</p>
-                              {candidate.scores?.breakdown?.technicalSkills ? (
-                                <span className={`font-medium ${candidate.scores.breakdown.technicalSkills >= 80 ? 'text-green-400' :
-                                  candidate.scores.breakdown.technicalSkills >= 60 ? 'text-cyan-400' :
+                              {candidate.score?.breakdown?.technicalSkills ? (
+                                <span className={`font-medium ${candidate.score.breakdown.technicalSkills >= 80 ? 'text-green-400' :
+                                  candidate.score.breakdown.technicalSkills >= 60 ? 'text-cyan-400' :
                                     'text-gray-400'
                                   }`}>
-                                  {candidate.scores.breakdown.technicalSkills}
+                                  {candidate.score.breakdown.technicalSkills}
                                 </span>
                               ) : (
                                 <span className="text-gray-500">-</span>
@@ -1078,12 +1128,12 @@ export default function JobDetailsPage() {
                             </div>
                             <div className="text-center">
                               <p className="text-xs text-gray-400 mb-1">Communication</p>
-                              {candidate.scores?.breakdown?.communication ? (
-                                <span className={`font-medium ${candidate.scores.breakdown.communication >= 80 ? 'text-green-400' :
-                                  candidate.scores.breakdown.communication >= 60 ? 'text-cyan-400' :
+                              {candidate.score?.breakdown?.communication ? (
+                                <span className={`font-medium ${candidate.score.breakdown.communication >= 80 ? 'text-green-400' :
+                                  candidate.score.breakdown.communication >= 60 ? 'text-cyan-400' :
                                     'text-gray-400'
                                   }`}>
-                                  {candidate.scores.breakdown.communication}
+                                  {candidate.score.breakdown.communication}
                                 </span>
                               ) : (
                                 <span className="text-gray-500">-</span>

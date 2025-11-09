@@ -1,7 +1,7 @@
 
-export type ID = string;
+export type ID = number;
 
-export type Role = 'hr' | 'candidate' | 'admin';
+export type Role = 'HR' | 'CANDIDATE' | 'ADMIN';
 
 export interface User {
   id: ID;
@@ -20,7 +20,7 @@ export interface AuthSession {
 }
 
 export type JobStatus = 'draft' | 'active' | 'closed';
-export type RoleType = 'Full-time' | 'Part-time' | 'Contract' | 'Internship' | 'Freelance' | 'Temporary';
+export type RoleType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE' | 'TEMPORARY';
 
 export interface Job {
   id: ID;
@@ -29,10 +29,10 @@ export interface Job {
   department: string;
   location: string;
   roleType: RoleType;
-  companyId: ID;
+  companyId?: ID;
   createdBy: ID;
   questions: Question[];
-  requirements?: string[];
+  requirements?: string;
   status: JobStatus;
   createdAt: Date;
   updatedAt: Date;
@@ -58,22 +58,23 @@ export interface JobCreate {
   location: string;
   roleType: RoleType;
   questions: QuestionCreate[];
-  requirements?: string[];
+  requirements?: string;
 }
 
 export type QuestionType = 'phone' | 'video' | 'text' | 'multiple_choice' | 'code';
 
 export interface Question {
   id: ID;
+  jobId: ID;
   type: QuestionType;
   question: string;
-  description?: string;
-  timeLimit?: number; 
-  maxLength?: number; 
-  options?: string[]; 
+  timeLimit?: number;
+  options?: string[];
+  codeTemplate?: string;
+  correctAnswer?: string;
   required: boolean;
   order: number;
-  scoreWeight?: number; 
+  createdAt: Date;
 }
 
 export interface QuestionCreate {
@@ -114,7 +115,7 @@ export interface Candidate {
   submittedAt?: Date;
   lastActivityAt?: Date;
   responses: InterviewResponse[];
-  scores: Score;
+  score?: Score;  // Changed from 'scores' to match backend
   notes?: string;
   tags?: string[];
 }

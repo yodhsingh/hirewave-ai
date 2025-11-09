@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/store/authStore';
 import {
   Briefcase,
   Users,
@@ -43,10 +44,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { FloatingParticles } from '@/components/FloatingParticles';
-import { apiClient } from '@/lib/api/client';
+import { backendClient, apiKeys } from '@/lib/api/backend-client';
 import { useQuery } from '@tanstack/react-query';
 import type { Job } from '@/types';
 import { DM_Sans } from 'next/font/google';
+import { toast } from 'sonner';
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -57,14 +59,40 @@ const dmSans = DM_Sans({
 export default function HRDashboard() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const { user, logout } = useAuthStore();
 
-  // Fetch jobs from mock API
-  const { data: jobsResponse, isLoading: isLoadingJobs } = useQuery({
-    queryKey: ['jobs'],
-    queryFn: () => apiClient.getJobs(),
+  // Fetch jobs from backend API
+  const { data: jobsResponse, isLoading: isLoadingJobs, error } = useQuery({
+    queryKey: apiKeys.jobs.lists(),
+    queryFn: async () => {
+      console.log('Fetching jobs from backend...');
+      const response = await backendClient.getJobs();
+      console.log('Jobs API response:', response);
+      if (!response.success) {
+        console.error('Failed to fetch jobs:', response.error);
+      }
+      return response;
+    },
+    enabled: !!user, // Only fetch if user is logged in
   });
 
-  const jobs = jobsResponse?.data || [];
+  // Show error toast if jobs failed to load
+  useEffect(() => {
+    if (jobsResponse && !jobsResponse.success) {
+      toast.error('Failed to load jobs', {
+        description: jobsResponse.error?.message || 'Could not fetch jobs from server',
+      });
+    }
+  }, [jobsResponse]);
+
+  const jobs = jobsResponse?.success ? jobsResponse.data || [] : [];
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Jobs Response:', jobsResponse);
+    console.log('Jobs:', jobs);
+    console.log('User:', user);
+  }, [jobsResponse, jobs, user]);
 
   const stats = {
     activeJobs: jobs.filter((j: Job) => j.status === 'active').length,
@@ -103,24 +131,6 @@ export default function HRDashboard() {
     //     'radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 70%)',
     // }}
   />
-      {/* ADD THIS BLOCK - Spec-compliant Scrollbar */}
-      <style jsx global>{`
-        ::-webkit-scrollbar {
-          width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.5);
-          border-radius: 9999px;
-        }
-        html {
-          scrollbar-color: white transparent;
-          scrollbar-width: thin;
-        }
-      `}
-      </style>
       <nav className="relative z-10 border-b border-black/10 bg-white/90 backdrop-blur-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
   <div className="container mx-auto px-6 py-4">
     <div className="flex items-center justify-between">
@@ -162,22 +172,24 @@ export default function HRDashboard() {
               {/* User Profile Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-800">
+                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-black/10">
                     <div className="flex items-center gap-3">
                       <div className="text-right hidden md:block">
-                        <p className="text-sm font-medium text-white">Dalyodh Singh</p>
-                        <p className="text-xs text-gray-400">HR Manager</p>
+                        <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
+                        <p className="text-xs text-gray-600">HR Manager</p>
                       </div>
                       <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${gradients.primary} flex items-center justify-center`}>
-                        <span className="text-white text-sm font-bold">DS</span>
+                        <span className="text-white text-sm font-bold">
+                          {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                        </span>
                       </div>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white w-56" align="end">
                   <div className="px-3 py-2 border-b border-gray-800">
-                    <p className="text-sm font-medium">Dalyodh Singh</p>
-                    <p className="text-xs text-gray-400">22f3001166@ds.study.iitm.ac.in</p>
+                    <p className="text-sm font-medium">{user?.name || 'User'}</p>
+                    <p className="text-xs text-gray-400">{user?.email || ''}</p>
                   </div>
                   <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/hr/profile')}>
                     <User className="w-4 h-4 mr-2" />
@@ -195,7 +207,13 @@ export default function HRDashboard() {
                     Help & Support
                   </DropdownMenuItem>
                   <DropdownMenuSeparator className="bg-gray-800" />
-                  <DropdownMenuItem className="text-red-400 hover:bg-gray-800">
+                  <DropdownMenuItem
+                    className="text-red-400 hover:bg-gray-800"
+                    onClick={() => {
+                      logout();
+                      router.push('/login');
+                    }}
+                  >
                     <LogOut className="w-4 h-4 mr-2" />
                     Sign Out
                   </DropdownMenuItem>

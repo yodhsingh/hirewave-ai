@@ -11,10 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { useState } from 'react';
 import type { JobCreateInput } from '@/lib/schemas/validation';
 
 interface JobBasicsFormProps {
@@ -58,22 +55,7 @@ const EXPERIENCE_LEVELS = [
 ];
 
 export function JobBasicsForm({ form }: JobBasicsFormProps) {
-  const [newRequirement, setNewRequirement] = useState('');
-  const requirements = form.watch('requirements') || [];
   const errors = form.formState.errors;
-
-  const addRequirement = () => {
-    if (newRequirement.trim()) {
-      const currentReqs = form.getValues('requirements') || [];
-      form.setValue('requirements', [...currentReqs, newRequirement.trim()]);
-      setNewRequirement('');
-    }
-  };
-
-  const removeRequirement = (index: number) => {
-    const currentReqs = form.getValues('requirements') || [];
-    form.setValue('requirements', currentReqs.filter((_, i) => i !== index));
-  };
 
   const cardClass = 'bg-white/10 backdrop-blur-2xl border border-white/20 rounded-2xl hover:border-white/30 transition-all duration-300 shadow-[0_0_30px_rgba(255,255,255,0.1)]';
 
@@ -240,58 +222,21 @@ export function JobBasicsForm({ form }: JobBasicsFormProps) {
 
       {/* Key Requirements */}
       <div>
-        <Label className="flex items-center gap-2 mb-2 font-bold text-white text-lg">
+        <Label htmlFor="requirements" className="flex items-center gap-2 mb-2 font-bold text-white text-lg">
           Key Requirements
         </Label>
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <Input
-              value={newRequirement}
-              onChange={(e) => setNewRequirement(e.target.value)}
-              placeholder="e.g., 5+ years of React experience"
-              onKeyPress={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  addRequirement();
-                }
-              }}
-              className="bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500 rounded-xl"
-            />
-            <Button
-              type="button"
-              onClick={addRequirement}
-              size="sm"
-              className="bg-white text-black hover:opacity-90 font-medium rounded-xl"
-            >
-              Add
-            </Button>
-          </div>
-
-          {requirements.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {requirements.map((req, index) => (
-                <Badge
-                  key={index}
-                  variant="secondary"
-                  className="py-1.5 px-3 flex items-center gap-2 bg-white/10 text-white border-white/20 rounded-xl"
-                >
-                  {req}
-                  <button
-                    type="button"
-                    onClick={() => removeRequirement(index)}
-                    className="hover:text-red-400 transition-colors font-bold"
-                  >
-                    ×
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          <p className="text-sm text-gray-400">
-            Add key skills, qualifications, and experience requirements
-          </p>
-        </div>
+        <Textarea
+          id="requirements"
+          {...form.register('requirements')}
+          placeholder="List the key skills, qualifications, and experience requirements for this role. You can add multiple requirements, one per line."
+          className="min-h-[120px] bg-white/5 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-500 rounded-xl"
+        />
+        {errors.requirements && (
+          <p className="text-sm text-red-400 mt-1">{errors.requirements.message}</p>
+        )}
+        <p className="text-sm text-gray-400 mt-1">
+          Tip: List each requirement on a new line for better readability
+        </p>
       </div>
 
       {/* Salary Range (Optional) */}

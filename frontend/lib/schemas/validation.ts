@@ -5,19 +5,18 @@ export const jobCreateSchema = z.object({
   description: z.string().min(50, 'Description must be at least 50 characters').max(2000),
   department: z.string().min(2).max(50),
   location: z.string().min(2).max(100),
-  roleType: z.enum(['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance', 'Temporary']),
+  roleType: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP', 'FREELANCE', 'TEMPORARY']),
   questions: z.array(z.object({
     type: z.enum(['phone', 'video', 'text', 'multiple_choice', 'code']),
     question: z.string().min(10, 'Question must be at least 10 characters'),
-    description: z.string().optional(),
-    timeLimit: z.number().min(30).max(1800).optional(), 
-    maxLength: z.number().min(100).max(2000).optional(), 
-    options: z.array(z.string()).min(2).max(6).optional(), 
+    timeLimit: z.number().min(30).max(1800).optional(),
+    options: z.array(z.string()).min(2).max(6).optional(),
+    codeTemplate: z.string().optional(),
+    correctAnswer: z.string().optional(),
     required: z.boolean(),
     order: z.number().min(0).optional(),
-    scoreWeight: z.number().min(0).max(10).optional(),
   })).min(3, 'At least 3 questions required').max(10, 'Maximum 10 questions allowed'),
-  requirements: z.array(z.string()).optional(),
+  requirements: z.string().optional(),
 });
 
 export const questionSchema = z.object({

@@ -152,15 +152,11 @@ export function JobPreview({ jobData }: JobPreviewProps) {
           </div>
 
           {/* Requirements */}
-          {jobData.requirements && jobData.requirements.length > 0 && (
+          {jobData.requirements && (
             <div>
               <h3 className="font-semibold mb-2 text-gray-400">Key Requirements</h3>
-              <div className="flex flex-wrap gap-2">
-                {jobData.requirements.map((req, index) => (
-                  <Badge key={index} variant="secondary" className="bg-gray-700 text-gray-200 border-gray-600">
-                    {req}
-                  </Badge>
-                ))}
+              <div className="text-gray-300 text-sm whitespace-pre-wrap">
+                {jobData.requirements}
               </div>
             </div>
           )}

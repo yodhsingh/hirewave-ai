@@ -56,9 +56,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { mockStore } from '@/lib/mock/store';
+import { backendClient } from '@/lib/api/backend-client';
 import type { Candidate, Job, InterviewResponse } from '@/types';
 import { gradients } from '@/lib/theme';
+import { useAuthStore } from '@/lib/store/authStore';
 import {
   RadarChart,
   PolarGrid,
@@ -76,61 +77,104 @@ const QUESTION_TYPE_ICONS = {
   multiple_choice: MessageSquare,
 };
 
-// Mock phone interview transcript
-const generatePhoneTranscript = (candidateName: string) => ({
-  duration: '15:32',
-  transcript: [
-    { speaker: 'AI', time: '00:00', text: 'Hello! This is your AI interview assistant. Thank you for taking the time to speak with us today. Can you hear me clearly?' },
-    { speaker: candidateName, time: '00:05', text: 'Yes, I can hear you perfectly. Thank you for having me.' },
-    { speaker: 'AI', time: '00:08', text: 'Great! Let\'s begin. Can you tell me about your experience with cloud technologies and distributed systems?' },
-    { speaker: candidateName, time: '00:15', text: 'I have been working with cloud technologies for the past 3 years, primarily AWS and Azure. I\'ve designed and implemented microservices architectures using Docker and Kubernetes. In my recent project, I led the migration of a monolithic application to a distributed system, which improved scalability by 40% and reduced deployment time from hours to minutes.' },
-    { speaker: 'AI', time: '00:45', text: 'That sounds impressive. What were the main challenges you faced during this migration?' },
-    { speaker: candidateName, time: '00:52', text: 'The biggest challenge was managing data consistency across microservices. We implemented event sourcing and CQRS patterns to handle this. Another challenge was service discovery and load balancing, which we solved using Istio service mesh.' },
-    { speaker: 'AI', time: '01:15', text: 'How do you approach debugging issues in a distributed system?' },
-    { speaker: candidateName, time: '01:20', text: 'I use distributed tracing tools like Jaeger and comprehensive logging with correlation IDs. We also implement health checks and circuit breakers to quickly identify and isolate failing services.' },
-  ],
-  audioUrl: '/mock-audio/interview-recording.mp3', // Mock audio URL
-  sentiment: 'positive',
-  confidence: 87,
-  keyTopics: ['AWS', 'Kubernetes', 'Microservices', 'Event Sourcing', 'CQRS', 'Istio'],
-});
+// Helper to format duration in seconds to MM:SS
+const formatDuration = (seconds: number): string => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+// Helper to extract key topics from transcript
+const extractKeyTopics = (transcript: any[]): string[] => {
+  // Simple keyword extraction - in production this would use NLP
+  const keywords = new Set<string>();
+  const techKeywords = ['AWS', 'Azure', 'Kubernetes', 'Docker', 'Lambda', 'DynamoDB', 'Microservices', 'Event Sourcing', 'CQRS', 'Istio', 'Serverless', 'CloudWatch', 'X-Ray', 'Jaeger'];
+
+  transcript.forEach(entry => {
+    techKeywords.forEach(keyword => {
+      if (entry.text.includes(keyword)) {
+        keywords.add(keyword);
+      }
+    });
+  });
+
+  return Array.from(keywords);
+};
 
 export default function CandidateDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user, logout } = useAuthStore();
   const [candidate, setCandidate] = useState<Candidate | null>(null);
   const [job, setJob] = useState<Job | null>(null);
   const [responses, setResponses] = useState<InterviewResponse[]>([]);
   const [activeTab, setActiveTab] = useState('overview');
   const [isPlaying, setIsPlaying] = useState(false);
   const [notes, setNotes] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Fetch candidate details
-    const candidateId = params.id as string;
-    const candidateData = mockStore.getCandidateById(candidateId);
+    const fetchCandidateData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const candidateId = params.id as string;
 
-    if (candidateData) {
-      setCandidate(candidateData);
-      // Fetch job details
-      const jobData = mockStore.getJobById(candidateData.jobId);
-      if (jobData) {
-        setJob(jobData);
+        // Fetch candidate details from backend
+        const candidateResponse = await backendClient.getCandidate(candidateId);
+
+        if (candidateResponse.success && candidateResponse.data) {
+          const candidateData = candidateResponse.data;
+          setCandidate(candidateData);
+
+          // Fetch job details
+          const jobResponse = await backendClient.getJob(candidateData.jobId.toString());
+          if (jobResponse.success && jobResponse.data) {
+            setJob(jobResponse.data);
+          } else {
+            setError('Failed to load job details');
+          }
+
+          // Set notes
+          setNotes(candidateData.notes || '');
+
+          // Set interview responses from backend
+          setResponses(candidateData.responses || []);
+        } else {
+          setError(candidateResponse.error?.message || 'Candidate not found');
+        }
+      } catch (err) {
+        setError('Failed to load candidate data');
+        console.error('Error fetching candidate:', err);
+      } finally {
+        setIsLoading(false);
       }
-      // Fetch responses
-      const responsesData = mockStore.getResponsesByCandidateId(candidateId);
-      setResponses(responsesData);
-      setNotes(candidateData.notes || '');
-    }
+    };
+
+    fetchCandidateData();
   }, [params.id]);
 
-  if (!candidate || !job) {
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-gray-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading candidate data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error || !candidate || !job) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <AlertCircle className="w-16 h-16 mx-auto mb-4 text-gray-400" />
           <h2 className="text-2xl font-bold mb-2">Candidate Not Found</h2>
-          <p className="text-gray-400 mb-4">The candidate you're looking for doesn't exist.</p>
+          <p className="text-gray-400 mb-4">{error || "The candidate you're looking for doesn't exist."}</p>
           <Button onClick={() => router.back()} className={`bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white`}>
             Go Back
           </Button>
@@ -139,7 +183,19 @@ export default function CandidateDetailPage() {
     );
   }
 
-  const phoneTranscript = generatePhoneTranscript(candidate.name);
+  // Get phone interview response from responses
+  const phoneResponse = responses.find(r => r.type === 'phone');
+  const phoneTranscript = phoneResponse && phoneResponse.transcript
+    ? JSON.parse(phoneResponse.transcript)
+    : [];
+  const phoneData = {
+    duration: phoneResponse ? formatDuration(phoneResponse.duration || 0) : '0:00',
+    transcript: phoneTranscript,
+    audioUrl: phoneResponse?.content || '',
+    sentiment: 'positive', // Could be calculated from transcript analysis
+    confidence: 87, // Could be calculated from AI analysis
+    keyTopics: phoneTranscript.length > 0 ? extractKeyTopics(phoneTranscript) : [],
+  };
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -203,19 +259,21 @@ export default function CandidateDetailPage() {
                   <Button variant="ghost" className="flex items-center gap-2 hover:bg-gray-800">
                     <div className="flex items-center gap-3">
                       <div className="text-right hidden md:block">
-                        <p className="text-sm font-medium text-white">Dalyodh Singh</p>
-                        <p className="text-xs text-gray-400">HR Manager</p>
+                        <p className="text-sm font-medium text-white">{user?.name || 'User'}</p>
+                        <p className="text-xs text-gray-400">{user?.role || 'HR'}</p>
                       </div>
                       <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${gradients.primary} flex items-center justify-center`}>
-                        <span className="text-white text-sm font-bold">DS</span>
+                        <span className="text-white text-sm font-bold">
+                          {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                        </span>
                       </div>
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white w-56" align="end">
                   <div className="px-3 py-2 border-b border-gray-800">
-                    <p className="text-sm font-medium">Dalyodh Singh</p>
-                    <p className="text-xs text-gray-400">22f3001166@ds.study.iitm.ac.in</p>
+                    <p className="text-sm font-medium">{user?.name || 'User'}</p>
+                    <p className="text-xs text-gray-400">{user?.email || ''}</p>
                   </div>
                   <DropdownMenuItem className="hover:bg-gray-800">
                     <User className="w-4 h-4 mr-2" />
@@ -235,7 +293,10 @@ export default function CandidateDetailPage() {
                   <DropdownMenuSeparator className="bg-gray-800" />
                   <DropdownMenuItem
                     className="text-red-400 hover:bg-gray-800"
-                    onClick={() => router.push('/')}
+                    onClick={() => {
+                      logout();
+                      router.push('/');
+                    }}
                   >
                     <LogOut className="w-4 h-4 mr-2" />
                     Logout
@@ -269,10 +330,10 @@ export default function CandidateDetailPage() {
                     <Briefcase className="w-3 h-3" />
                     {job.title}
                   </span>
-                  {candidate.scores?.overall && (
+                  {candidate.score?.overall && (
                     <span className="flex items-center gap-1">
                       <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                      AI Score: {candidate.scores.overall}
+                      AI Score: {candidate.score.overall}
                     </span>
                   )}
                 </div>
@@ -364,13 +425,13 @@ export default function CandidateDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {candidate.scores ? (
+                  {candidate.score ? (
                     <div className="space-y-6">
                       <div className="flex items-center justify-between mb-4">
                         <span className={`text-2xl font-bold bg-gradient-to-r ${gradients.primary} bg-clip-text text-transparent`}>
-                          Overall Score: {candidate.scores.overall}/100
+                          Overall Score: {candidate.score.overall}/100
                         </span>
-                        {candidate.scores.overall && candidate.scores.overall >= 80 && (
+                        {candidate.score.overall && candidate.score.overall >= 80 && (
                           <Badge className="bg-green-500/20 text-green-400 border-green-500/30">
                             Top Performer
                           </Badge>
@@ -378,16 +439,16 @@ export default function CandidateDetailPage() {
                       </div>
 
                       {/* Radar Chart for Competency Visualization */}
-                      {candidate.scores.breakdown && (
+                      {candidate.score.breakdown && (
                         <div className="bg-gray-800/50 rounded-lg p-4">
                           <h4 className="text-sm font-semibold text-gray-300 mb-4 text-center">Competency Overview</h4>
                           <ResponsiveContainer width="100%" height={280}>
                             <RadarChart data={[
-                              { subject: 'Communication', value: candidate.scores.breakdown.communication || 0, fullMark: 100 },
-                              { subject: 'Technical', value: candidate.scores.breakdown.technicalSkills || 0, fullMark: 100 },
-                              { subject: 'Problem Solving', value: candidate.scores.breakdown.problemSolving || 0, fullMark: 100 },
-                              { subject: 'Culture Fit', value: candidate.scores.breakdown.cultureFit || 0, fullMark: 100 },
-                              { subject: 'Experience', value: candidate.scores.breakdown.experience || 0, fullMark: 100 },
+                              { subject: 'Communication', value: candidate.score.breakdown.communication || 0, fullMark: 100 },
+                              { subject: 'Technical', value: candidate.score.breakdown.technicalSkills || 0, fullMark: 100 },
+                              { subject: 'Problem Solving', value: candidate.score.breakdown.problemSolving || 0, fullMark: 100 },
+                              { subject: 'Culture Fit', value: candidate.score.breakdown.cultureFit || 0, fullMark: 100 },
+                              { subject: 'Experience', value: candidate.score.breakdown.experience || 0, fullMark: 100 },
                             ]}>
                               <PolarGrid stroke="#374151" />
                               <PolarAngleAxis
@@ -414,7 +475,7 @@ export default function CandidateDetailPage() {
 
                       {/* Progress Bars for Detailed Breakdown */}
                       <div className="space-y-4">
-                        {candidate.scores.breakdown && Object.entries(candidate.scores.breakdown).map(([key, value]) => (
+                        {candidate.score.breakdown && Object.entries(candidate.score.breakdown).map(([key, value]) => (
                           <div key={key} className="space-y-1">
                             <div className="flex justify-between text-sm">
                               <span className="text-gray-300 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
@@ -438,7 +499,7 @@ export default function CandidateDetailPage() {
             </div>
 
             {/* AI Insights Section */}
-            {candidate.scores?.aiInsights && (
+            {candidate.score?.aiInsights && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* AI Summary & Insights */}
                 <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
@@ -450,7 +511,7 @@ export default function CandidateDetailPage() {
                   </CardHeader>
                   <CardContent className="space-y-4 pt-6">
                     <p className="text-gray-300 text-sm leading-relaxed">
-                      {candidate.scores.aiInsights.summary}
+                      {candidate.score.aiInsights.summary}
                     </p>
 
                     <div>
@@ -459,7 +520,7 @@ export default function CandidateDetailPage() {
                         Key Strengths
                       </h4>
                       <ul className="space-y-1.5">
-                        {candidate.scores.aiInsights.strengths.map((strength, idx) => (
+                        {candidate.score.aiInsights.strengths.map((strength, idx) => (
                           <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
                             <span className="text-green-400 mt-1">•</span>
                             {strength}
@@ -474,7 +535,7 @@ export default function CandidateDetailPage() {
                         Areas for Development
                       </h4>
                       <ul className="space-y-1.5">
-                        {candidate.scores.aiInsights.weaknesses.map((weakness, idx) => (
+                        {candidate.score.aiInsights.weaknesses.map((weakness, idx) => (
                           <li key={idx} className="text-sm text-gray-300 flex items-start gap-2">
                             <span className="text-yellow-400 mt-1">•</span>
                             {weakness}
@@ -483,14 +544,14 @@ export default function CandidateDetailPage() {
                       </ul>
                     </div>
 
-                    {candidate.scores.aiInsights.redFlags && candidate.scores.aiInsights.redFlags.length > 0 && (
+                    {candidate.score.aiInsights.redFlags && candidate.score.aiInsights.redFlags.length > 0 && (
                       <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
                         <h4 className="text-sm font-semibold text-red-400 mb-2 flex items-center gap-1.5">
                           <XCircle className="w-4 h-4" />
                           Red Flags
                         </h4>
                         <ul className="space-y-1">
-                          {candidate.scores.aiInsights.redFlags.map((flag, idx) => (
+                          {candidate.score.aiInsights.redFlags.map((flag, idx) => (
                             <li key={idx} className="text-sm text-red-300 flex items-start gap-2">
                               <span className="text-red-400 mt-1">•</span>
                               {flag}
@@ -514,7 +575,7 @@ export default function CandidateDetailPage() {
                     <div>
                       <h4 className="text-sm font-semibold text-cyan-400 mb-3">HR Recommendations</h4>
                       <ul className="space-y-2">
-                        {candidate.scores.aiInsights.recommendations.map((rec, idx) => (
+                        {candidate.score.aiInsights.recommendations.map((rec, idx) => (
                           <li key={idx} className="text-sm text-gray-300 bg-cyan-500/10 border border-cyan-500/20 rounded-lg p-2.5">
                             {rec}
                           </li>
@@ -522,11 +583,11 @@ export default function CandidateDetailPage() {
                       </ul>
                     </div>
 
-                    {candidate.scores.skillsExtracted && (
+                    {candidate.score.skillsExtracted && (
                       <div>
                         <h4 className="text-sm font-semibold text-blue-400 mb-3">Extracted Skills</h4>
                         <div className="flex flex-wrap gap-2">
-                          {candidate.scores.skillsExtracted.map((skill, idx) => (
+                          {candidate.score.skillsExtracted.map((skill, idx) => (
                             <Badge
                               key={idx}
                               variant="outline"
@@ -546,14 +607,14 @@ export default function CandidateDetailPage() {
                       </div>
                     )}
 
-                    {candidate.scores.competencyRanking && (
+                    {candidate.score.competencyRanking && (
                       <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
                         <h4 className="text-sm font-semibold text-blue-400 mb-2">Performance Ranking</h4>
-                        <p className="text-sm text-gray-300 mb-1">{candidate.scores.competencyRanking.comparisonText}</p>
+                        <p className="text-sm text-gray-300 mb-1">{candidate.score.competencyRanking.comparisonText}</p>
                         <div className="flex items-center gap-2 text-xs text-gray-400">
-                          <span>Rank {candidate.scores.competencyRanking.rank} of {candidate.scores.competencyRanking.totalCandidates}</span>
+                          <span>Rank {candidate.score.competencyRanking.rank} of {candidate.score.competencyRanking.totalCandidates}</span>
                           <span>•</span>
-                          <span>{candidate.scores.competencyRanking.percentile}th percentile</span>
+                          <span>{candidate.score.competencyRanking.percentile}th percentile</span>
                         </div>
                       </div>
                     )}
@@ -564,11 +625,11 @@ export default function CandidateDetailPage() {
                         <div className="w-24 h-2 bg-gray-700 rounded-full overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full transition-all"
-                            style={{ width: `${candidate.scores.aiInsights.confidenceLevel}%` }}
+                            style={{ width: `${candidate.score.aiInsights.confidenceLevel}%` }}
                           />
                         </div>
                         <span className="text-xs font-medium text-blue-400">
-                          {candidate.scores.aiInsights.confidenceLevel}%
+                          {candidate.score.aiInsights.confidenceLevel}%
                         </span>
                       </div>
                     </div>
@@ -617,7 +678,7 @@ export default function CandidateDetailPage() {
                     </Badge>
                     <span className="text-sm text-gray-300 flex items-center gap-1">
                       <Clock className="w-4 h-4" />
-                      {phoneTranscript.duration}
+                      {phoneData.duration}
                     </span>
                   </div>
                 </div>
@@ -659,7 +720,7 @@ export default function CandidateDetailPage() {
                 <div className="mb-6">
                   <h4 className="text-sm font-semibold text-gray-200 mb-3">Key Topics Discussed</h4>
                   <div className="flex flex-wrap gap-2">
-                    {phoneTranscript.keyTopics.map((topic, index) => (
+                    {phoneData.keyTopics.map((topic, index) => (
                       <Badge key={index} variant="outline" className="bg-blue-500/20 text-blue-300 border-blue-500/30">
                         {topic}
                       </Badge>
@@ -672,7 +733,7 @@ export default function CandidateDetailPage() {
                   <div className="bg-gray-800 rounded-lg p-4">
                     <p className="text-sm text-gray-400 mb-1">Candidate Confidence</p>
                     <div className="flex items-center gap-2">
-                      <div className="text-2xl font-bold text-green-400">{phoneTranscript.confidence}%</div>
+                      <div className="text-2xl font-bold text-green-400">{phoneData.confidence}%</div>
                       <TrendingUp className="w-5 h-5 text-green-400" />
                     </div>
                   </div>
@@ -694,7 +755,7 @@ export default function CandidateDetailPage() {
                     Interview Transcript
                   </h4>
                   <div className="bg-gray-800 rounded-lg p-4 max-h-[500px] overflow-y-auto space-y-4">
-                    {phoneTranscript.transcript.map((entry, index) => (
+                    {phoneData.transcript.map((entry, index) => (
                       <div key={index} className={`flex gap-3 ${entry.speaker === 'AI' ? 'justify-start' : 'justify-end'}`}>
                         <div className={`max-w-[70%] ${entry.speaker === 'AI' ? 'order-2' : 'order-1'}`}>
                           <div className={`rounded-lg p-3 ${
@@ -815,43 +876,39 @@ export default function CandidateDetailPage() {
 
           {/* AI Analysis Tab */}
           <TabsContent value="ai-analysis" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-lg text-white flex items-center gap-2">
-                    <Brain className="w-5 h-5 text-cyan-400" />
-                    AI Recommendation
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className={`bg-gradient-to-r ${gradients.success} border border-green-500/30 rounded-lg p-4`}>
-                      <p className="text-green-400 font-semibold mb-2">Strong Candidate</p>
-                      <p className="text-sm text-gray-200">
-                        Based on the AI analysis, this candidate demonstrates strong technical skills and excellent communication.
-                        They show deep understanding of cloud technologies and have relevant experience with the required tech stack.
-                      </p>
+            {candidate.score?.aiInsights ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-white flex items-center gap-2">
+                      <Brain className="w-5 h-5 text-cyan-400" />
+                      AI Recommendation
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className={`bg-gradient-to-r ${candidate.score.overall && candidate.score.overall >= 85 ? gradients.success : 'from-yellow-500/10 to-orange-500/10'} border ${candidate.score.overall && candidate.score.overall >= 85 ? 'border-green-500/30' : 'border-yellow-500/30'} rounded-lg p-4`}>
+                        <p className={`${candidate.score.overall && candidate.score.overall >= 85 ? 'text-green-400' : 'text-yellow-400'} font-semibold mb-2`}>
+                          {candidate.score.overall && candidate.score.overall >= 85 ? 'Strong Candidate' : 'Moderate Candidate'}
+                        </p>
+                        <p className="text-sm text-gray-200">
+                          {candidate.score.aiInsights.summary}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-gray-200 mb-2">Key Strengths:</p>
+                        <ul className="space-y-1 text-sm text-gray-300">
+                          {candidate.score.aiInsights.strengths.map((strength, idx) => (
+                            <li key={idx} className="flex items-start gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
+                              <span>{strength}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-200 mb-2">Key Strengths:</p>
-                      <ul className="space-y-1 text-sm text-gray-300">
-                        <li className="flex items-start gap-2">
-                          <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
-                          <span>Strong problem-solving approach</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
-                          <span>Excellent technical knowledge</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <CheckCircle className="w-4 h-4 text-green-400 mt-0.5" />
-                          <span>Clear communication skills</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
 
               <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
                 <CardHeader>
@@ -861,59 +918,90 @@ export default function CandidateDetailPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-300">Overall Ranking</span>
-                        <span className="text-white font-semibold">#3 of 47</span>
+                  {candidate.score?.competencyRanking ? (
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-gray-300">Overall Ranking</span>
+                          <span className="text-white font-semibold">
+                            #{candidate.score.competencyRanking.rank} of {candidate.score.competencyRanking.totalCandidates}
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-300"
+                            style={{ width: `${candidate.score.competencyRanking.percentile}%` }}
+                          />
+                        </div>
+                        <p className="text-xs text-gray-400 mt-1">{candidate.score.competencyRanking.comparisonText}</p>
                       </div>
-                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all duration-300"
-                          style={{ width: '93%' }}
-                        />
-                      </div>
+
+                      {candidate.score.breakdown && (
+                        <>
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-300">Technical Skills</span>
+                              <span className="text-white font-semibold">{candidate.score.breakdown.technicalSkills}/100</span>
+                            </div>
+                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full bg-gradient-to-r ${gradients.success} rounded-full transition-all duration-300`}
+                                style={{ width: `${candidate.score.breakdown.technicalSkills || 0}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-300">Communication</span>
+                              <span className="text-white font-semibold">{candidate.score.breakdown.communication}/100</span>
+                            </div>
+                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full bg-gradient-to-r ${gradients.accent} rounded-full transition-all duration-300`}
+                                style={{ width: `${candidate.score.breakdown.communication || 0}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-300">Problem Solving</span>
+                              <span className="text-white font-semibold">{candidate.score.breakdown.problemSolving}/100</span>
+                            </div>
+                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full bg-gradient-to-r ${gradients.primary} rounded-full transition-all duration-300`}
+                                style={{ width: `${candidate.score.breakdown.problemSolving || 0}%` }}
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between text-sm mb-1">
+                              <span className="text-gray-300">Culture Fit</span>
+                              <span className="text-white font-semibold">{candidate.score.breakdown.cultureFit || 0}/100</span>
+                            </div>
+                            <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full bg-gradient-to-r ${gradients.cardHeaderAlt} rounded-full transition-all duration-300`}
+                                style={{ width: `${candidate.score.breakdown.cultureFit || 0}%` }}
+                              />
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-300">Technical Skills</span>
-                        <span className="text-white font-semibold">Top 10%</span>
-                      </div>
-                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full bg-gradient-to-r ${gradients.success} rounded-full transition-all duration-300`}
-                          style={{ width: '90%' }}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-300">Communication</span>
-                        <span className="text-white font-semibold">Top 15%</span>
-                      </div>
-                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full bg-gradient-to-r ${gradients.accent} rounded-full transition-all duration-300`}
-                          style={{ width: '85%' }}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span className="text-gray-300">Cultural Fit</span>
-                        <span className="text-white font-semibold">Top 20%</span>
-                      </div>
-                      <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full bg-gradient-to-r ${gradients.cardHeaderAlt} rounded-full transition-all duration-300`}
-                          style={{ width: '80%' }}
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  ) : (
+                    <p className="text-gray-400 text-sm">No ranking data available</p>
+                  )}
                 </CardContent>
               </Card>
             </div>
+            ) : (
+              <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
+                <CardContent>
+                  <p className="text-gray-400 text-center py-8">No AI insights available yet</p>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Skills Match */}
             <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
