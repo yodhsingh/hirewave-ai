@@ -3,13 +3,17 @@ from sqlalchemy import Column, String, DateTime, Enum, Integer
 from app.db.base import Base
 import enum
 
-
+# -------------------------------------------------
+# ENUM CLASS: Defines the role of a user in the system
+# -------------------------------------------------
 class UserRole(str, enum.Enum):
-    HR = "HR"
-    CANDIDATE = "CANDIDATE"
-    ADMIN = "ADMIN"
+    HR = "HR" # Human Resources user – can post jobs, view candidates, manage invites
+    CANDIDATE = "CANDIDATE" # Job applicant – can apply for jobs and participate in interviews
+    ADMIN = "ADMIN" # Administrator – has full control over the system
 
-
+# -------------------------------------------------
+# USER MODEL: Represents a system user (HR, Candidate, or Admin)
+# -------------------------------------------------
 class User(Base):
     __tablename__ = "users"
 
