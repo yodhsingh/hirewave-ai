@@ -193,6 +193,9 @@ Once the server is running, visit:
 - `POST /api/v1/interviews/{token}/submit` - Submit interview
 - `POST /api/v1/interviews/upload/video` - Upload video file
 
+### Applicant Dashboard 
+- `GET /api/v1/dashboard/applicant` - get applicant dashboard data 
+
 ## Environment Variables
 
 See `.env.example` for all required environment variables:
