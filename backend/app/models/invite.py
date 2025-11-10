@@ -3,13 +3,13 @@ from sqlalchemy import Column, String, DateTime, Enum, ForeignKey, Integer
 from app.db.base import Base
 import enum
 
-
+# Enum class defining possible invitation statuses
 class InviteStatus(str, enum.Enum):
-    PENDING = "pending"
-    SENT = "sent"
-    OPENED = "opened"
-    USED = "used"
-    EXPIRED = "expired"
+    PENDING = "pending"  # Invitation created but not yet sent
+    SENT = "sent"    # Invitation email has been sent
+    OPENED = "opened"  # Invitation link has been opened
+    USED = "used"    # Invitation has been used for registration
+    EXPIRED = "expired"  # Invitation token has expired
 
 
 class Invite(Base):
