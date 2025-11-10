@@ -224,7 +224,7 @@ export const generateJob = (status: JobStatus = 'active'): Job => {
     description,
     department: faker.helpers.arrayElement(['Engineering', 'Data Science', 'Product', 'Operations', 'Research']),
     location: faker.helpers.arrayElement(indianCities),
-    roleType: faker.helpers.arrayElement<RoleType>(['Full-time', 'Part-time', 'Contract', 'Internship', 'Freelance', 'Temporary']),
+    roleType: faker.helpers.arrayElement<RoleType>(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP', 'FREELANCE', 'TEMPORARY']),
     companyId: generateId(),
     createdBy: generateId(),
     questions: generateQuestions(faker.number.int({ min: 3, max: 8 })),

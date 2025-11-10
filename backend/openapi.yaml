@@ -1,0 +1,1748 @@
+openapi: 3.0.3
+
+info:
+  title: HireWave.AI - GenAI Interview Platform API
+  version: 1.0.0
+  description: |
+    # GenAI Interview Platform API
+
+    An AI-powered asynchronous interview platform that enables HR teams to efficiently screen thousands of candidates
+    while giving applicants fair opportunities to showcase their skills beyond traditional resumes.
+
+    ## Features
+
+    * **JWT Authentication** - Secure token-based authentication with role-based access control (HR, CANDIDATE, ADMIN)
+    * **Job Management** - Create, update, and manage job postings with customizable interview questions
+    * **Candidate Pipeline** - Track candidates through the complete interview lifecycle
+    * **AI-Powered Scoring** - Automatic interview analysis and scoring using GPT-4
+    * **Multi-Format Questions** - Support for video, text, phone, code, and multiple-choice questions
+    * **Bulk Operations** - Send invitations to multiple candidates at once
+    * **Dashboard Analytics** - Real-time insights for both HR and candidates
+    * **Email Notifications** - Automated candidate communications
+
+    ## Authentication Flow
+
+    1. Register or login to receive JWT access and refresh tokens
+    2. Include access token in `Authorization: Bearer <token>` header for protected endpoints
+    3. HR users have access to job and candidate management endpoints
+    4. Candidates access interviews via unique invitation tokens (no auth required)
+
+    ## Candidate Interview Flow
+
+    1. HR sends interview invites → Candidates receive unique tokens
+    2. Candidate opens interview link with token → Status: `invited` → `started`
+    3. Candidate answers questions → Status: `in_progress`
+    4. Candidate submits interview → Status: `submitted`
+    5. AI processes responses → Status: `scored`
+    6. HR reviews and decides → Status: `shortlisted` or `rejected`
+
+  contact:
+    name: HireWave.AI Development Team
+    email: support@hirewave.ai
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000/api/v1
+    description: Local development server
+#  - url: https://api.hirewave.ai/v1
+#    description: Production server
+
+tags:
+  - name: Authentication
+    description: User registration, login, and token management
+  - name: Jobs
+    description: Job posting creation and management (HR only)
+  - name: Candidates
+    description: Candidate management and bulk operations (HR only)
+  - name: Interviews
+    description: Interview question delivery and response collection (public endpoints)
+  - name: Dashboard
+    description: Analytics and statistics dashboards
+  - name: Health
+    description: System health and status checks
+
+# ==================== SECURITY SCHEMES ====================
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from `/auth/login` or `/auth/register`.
+
+        Example: `Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...`
+
+  # ==================== REUSABLE SCHEMAS ====================
+  schemas:
+    # ========== Common Schemas ==========
+    ApiResponse:
+      type: object
+      required:
+        - success
+      properties:
+        success:
+          type: boolean
+          description: Whether the request succeeded
+        data:
+          type: object
+          description: Response payload (varies by endpoint)
+        error:
+          $ref: '#/components/schemas/ApiError'
+
+    ApiError:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+          example: VALIDATION_ERROR
+        message:
+          type: string
+          description: Human-readable error message
+          example: Invalid email format
+        details:
+          type: object
+          description: Additional error context (field-level errors, etc.)
+
+    # ========== User & Auth Schemas ==========
+    UserRole:
+      type: string
+      enum: [HR, CANDIDATE, ADMIN]
+      description: |
+        - `HR`: Can create jobs and manage candidates
+        - `CANDIDATE`: Can take interviews and view own applications
+        - `ADMIN`: Full system access
+
+    User:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - role
+      properties:
+        id:
+          type: integer
+          description: Unique user identifier
+          example: 1
+        email:
+          type: string
+          format: email
+          description: User email address
+          example: hr@company.com
+        name:
+          type: string
+          description: Full name
+          example: John Doe
+        role:
+          $ref: '#/components/schemas/UserRole'
+        company_id:
+          type: integer
+          nullable: true
+          description: Associated company ID (for HR users)
+          example: 5
+        created_at:
+          type: string
+          format: date-time
+          description: Account creation timestamp
+        last_login:
+          type: string
+          format: date-time
+          nullable: true
+          description: Last login timestamp
+
+    UserRegister:
+      type: object
+      required:
+        - email
+        - password
+        - name
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          example: newuser@example.com
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: SecureP@ssw0rd
+        name:
+          type: string
+          example: Jane Smith
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    UserLogin:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: hr@company.com
+        password:
+          type: string
+          format: password
+          example: password123
+
+    TokenResponse:
+      type: object
+      required:
+        - access_token
+        - refresh_token
+        - user
+      properties:
+        access_token:
+          type: string
+          description: JWT access token (expires in 24 hours)
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        refresh_token:
+          type: string
+          description: JWT refresh token (expires in 7 days)
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: '#/components/schemas/User'
+
+    # ========== Job Schemas ==========
+    JobStatus:
+      type: string
+      enum: [draft, active, closed, archived]
+      description: |
+        - `draft`: Job not yet published
+        - `active`: Job is live and accepting applications
+        - `closed`: Job no longer accepting applications
+        - `archived`: Job archived for reference
+
+    RoleType:
+      type: string
+      enum: [FULL_TIME, PART_TIME, CONTRACT, INTERNSHIP, FREELANCE, TEMPORARY]
+
+    QuestionType:
+      type: string
+      enum: [video, text, phone, code, multiple_choice]
+      description: |
+        - `video`: Video recording response
+        - `text`: Text-based answer
+        - `phone`: Phone call interview
+        - `code`: Coding challenge
+        - `multiple_choice`: MCQ question
+
+    Question:
+      type: object
+      required:
+        - id
+        - job_id
+        - type
+        - question
+        - order
+        - required
+      properties:
+        id:
+          type: integer
+          example: 1
+        job_id:
+          type: integer
+          example: 10
+        type:
+          $ref: '#/components/schemas/QuestionType'
+        question:
+          type: string
+          description: The question text
+          example: Tell us about your experience with React
+        description:
+          type: string
+          nullable: true
+          description: Additional context or instructions
+          example: Focus on hooks and state management
+        time_limit:
+          type: integer
+          nullable: true
+          description: Time limit in seconds (for video/code questions)
+          example: 120
+        max_length:
+          type: integer
+          nullable: true
+          description: Maximum character length (for text questions)
+          example: 500
+        options:
+          type: array
+          nullable: true
+          description: Answer choices (for multiple_choice questions)
+          items:
+            type: string
+          example: ["Option A", "Option B", "Option C"]
+        code_template:
+          type: string
+          nullable: true
+          description: Starting code template (for code questions)
+        correct_answer:
+          type: string
+          nullable: true
+          description: Expected answer (for validation)
+        evaluation_criteria:
+          type: object
+          nullable: true
+          description: AI evaluation criteria
+        required:
+          type: boolean
+          default: true
+          description: Whether candidate must answer this question
+        order:
+          type: integer
+          description: Question display order
+          example: 1
+        score_weight:
+          type: number
+          format: float
+          nullable: true
+          description: Weighting factor for overall score calculation
+          example: 1.5
+
+    QuestionCreate:
+      type: object
+      required:
+        - type
+        - question
+        - order
+      properties:
+        type:
+          $ref: '#/components/schemas/QuestionType'
+        question:
+          type: string
+        description:
+          type: string
+        time_limit:
+          type: integer
+        max_length:
+          type: integer
+        options:
+          type: array
+          items:
+            type: string
+        required:
+          type: boolean
+          default: true
+        order:
+          type: integer
+        score_weight:
+          type: number
+          format: float
+
+    JobStats:
+      type: object
+      description: Candidate pipeline statistics for a job
+      properties:
+        total:
+          type: integer
+          description: Total candidates
+          example: 150
+        invited:
+          type: integer
+          description: Candidates invited but not started
+          example: 50
+        started:
+          type: integer
+          description: Candidates who opened the interview
+          example: 80
+        in_progress:
+          type: integer
+          description: Candidates currently answering questions
+          example: 20
+        submitted:
+          type: integer
+          description: Candidates who completed the interview
+          example: 70
+        scored:
+          type: integer
+          description: Interviews that have been AI-scored
+          example: 60
+        shortlisted:
+          type: integer
+          description: Candidates marked for next round
+          example: 15
+        rejected:
+          type: integer
+          description: Candidates rejected
+          example: 35
+
+    JobCreate:
+      type: object
+      required:
+        - title
+        - description
+        - department
+        - location
+        - role_type
+        - questions
+      properties:
+        title:
+          type: string
+          example: Senior Frontend Developer
+        description:
+          type: string
+          example: We are looking for an experienced React developer...
+        department:
+          type: string
+          example: Engineering
+        location:
+          type: string
+          example: Bangalore, India
+        role_type:
+          $ref: '#/components/schemas/RoleType'
+        requirements:
+          type: string
+          nullable: true
+          example: 5+ years of React experience, strong TypeScript skills
+        questions:
+          type: array
+          minItems: 1
+          description: Interview questions for this job
+          items:
+            $ref: '#/components/schemas/QuestionCreate'
+
+    JobUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        department:
+          type: string
+        location:
+          type: string
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        requirements:
+          type: string
+
+    Job:
+      type: object
+      required:
+        - id
+        - title
+        - description
+        - department
+        - location
+        - role_type
+        - status
+        - created_by
+        - created_at
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: Senior Frontend Developer
+        description:
+          type: string
+        department:
+          type: string
+          example: Engineering
+        location:
+          type: string
+          example: Bangalore, India
+        role_type:
+          $ref: '#/components/schemas/RoleType'
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        company_id:
+          type: integer
+          nullable: true
+        created_by:
+          type: integer
+          description: User ID of creator
+        requirements:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+        questions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Question'
+        stats:
+          $ref: '#/components/schemas/JobStats'
+
+    # ========== Candidate Schemas ==========
+    CandidateStatus:
+      type: string
+      enum: [invited, started, in_progress, submitted, scored, shortlisted, rejected, hired]
+      description: |
+        - `invited`: Invitation sent, not yet opened
+        - `started`: Opened interview link
+        - `in_progress`: Currently answering questions
+        - `submitted`: Completed all questions
+        - `scored`: AI analysis complete
+        - `shortlisted`: HR marked for next round
+        - `rejected`: HR marked as not suitable
+        - `hired`: Final status (not currently used in UI)
+
+    ScoreBreakdown:
+      type: object
+      description: Detailed score breakdown by category
+      properties:
+        communication:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 85.5
+        technical_skills:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 78.0
+        problem_solving:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 82.5
+        culture_fit:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 88.0
+        experience:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          example: 75.0
+
+    AIInsights:
+      type: object
+      description: AI-generated analysis of candidate performance
+      properties:
+        summary:
+          type: string
+          description: Overall assessment summary
+          example: Strong candidate with excellent communication skills and solid technical background
+        strengths:
+          type: array
+          items:
+            type: string
+          example: ["Excellent communication", "Strong problem-solving", "Good cultural fit"]
+        weaknesses:
+          type: array
+          items:
+            type: string
+          example: ["Limited experience with microservices", "Could improve algorithm knowledge"]
+        red_flags:
+          type: array
+          items:
+            type: string
+          example: []
+        recommendations:
+          type: array
+          items:
+            type: string
+          example: ["Strongly recommend for technical round", "Consider for team lead role"]
+        confidence_level:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: AI confidence in the assessment (0-1)
+          example: 0.92
+
+    Score:
+      type: object
+      description: Complete scoring information for a candidate
+      properties:
+        overall:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 100
+          description: Overall interview score
+          example: 85.5
+        ai_score:
+          type: number
+          format: float
+          nullable: true
+          description: AI-generated score
+          example: 85.5
+        human_score:
+          type: number
+          format: float
+          nullable: true
+          description: HR-provided score (if any)
+        breakdown:
+          $ref: '#/components/schemas/ScoreBreakdown'
+        ai_insights:
+          $ref: '#/components/schemas/AIInsights'
+        skills_extracted:
+          type: array
+          items:
+            type: string
+          description: Skills identified from responses
+          example: ["React", "TypeScript", "Node.js", "PostgreSQL"]
+        competency_ranking:
+          type: object
+          description: Ranking of competencies
+        scored_at:
+          type: string
+          format: date-time
+        scored_by:
+          type: integer
+          nullable: true
+          description: User ID if human-scored
+
+    InterviewResponse:
+      type: object
+      description: A candidate's answer to one question
+      required:
+        - question_id
+        - type
+        - content
+      properties:
+        id:
+          type: integer
+        candidate_id:
+          type: integer
+        question_id:
+          type: integer
+        type:
+          type: string
+          enum: [video, text, phone, code, multiple_choice]
+        content:
+          type: string
+          description: Answer content (URL for video/audio, text for text responses)
+        transcript:
+          type: string
+          nullable: true
+          description: Transcription for video/audio responses
+        duration:
+          type: integer
+          nullable: true
+          description: Response duration in seconds
+        retries:
+          type: integer
+          default: 0
+          description: Number of re-attempts
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        question_score:
+          type: number
+          format: float
+          nullable: true
+          description: AI score for this specific question
+        question_feedback:
+          type: object
+          nullable: true
+          description: AI feedback for this question
+        keywords_found:
+          type: array
+          items:
+            type: string
+          description: Keywords detected in the answer
+
+    CandidateListItem:
+      type: object
+      description: Candidate summary for list views
+      required:
+        - id
+        - email
+        - name
+        - status
+        - invited_at
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/CandidateStatus'
+        invited_at:
+          type: string
+          format: date-time
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        score:
+          $ref: '#/components/schemas/Score'
+
+    Candidate:
+      type: object
+      description: Complete candidate details
+      required:
+        - id
+        - email
+        - name
+        - job_id
+        - invite_token
+        - status
+        - invited_at
+      properties:
+        id:
+          type: integer
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        resume_url:
+          type: string
+          format: uri
+          nullable: true
+        linkedin_url:
+          type: string
+          format: uri
+          nullable: true
+        job_id:
+          type: integer
+        invite_token:
+          type: string
+          description: Unique invitation token
+        status:
+          $ref: '#/components/schemas/CandidateStatus'
+        invited_at:
+          type: string
+          format: date-time
+        started_at:
+          type: string
+          format: date-time
+          nullable: true
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_activity_at:
+          type: string
+          format: date-time
+          nullable: true
+        notes:
+          type: string
+          nullable: true
+          description: HR notes about the candidate
+        tags:
+          type: array
+          items:
+            type: string
+          description: Custom tags for organization
+        responses:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterviewResponse'
+        score:
+          $ref: '#/components/schemas/Score'
+
+    CandidateUpdate:
+      type: object
+      description: Update candidate status, notes, or tags
+      properties:
+        status:
+          $ref: '#/components/schemas/CandidateStatus'
+        notes:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+
+    BulkInviteRequest:
+      type: object
+      required:
+        - emails
+      properties:
+        emails:
+          type: array
+          minItems: 1
+          maxItems: 1000
+          description: List of candidate email addresses
+          items:
+            type: string
+            format: email
+          example: ["candidate1@example.com", "candidate2@example.com"]
+        expires_in_days:
+          type: integer
+          default: 7
+          minimum: 1
+          maximum: 30
+          description: Days until invitation expires
+          example: 7
+
+    BulkInviteResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: Total emails attempted
+          example: 100
+        sent:
+          type: integer
+          description: Successfully sent invitations
+          example: 95
+        failed:
+          type: integer
+          description: Failed invitations
+          example: 5
+        failed_emails:
+          type: array
+          items:
+            type: string
+            format: email
+          description: List of emails that failed
+          example: ["invalid@example.com"]
+
+    # ========== Interview Submission Schemas ==========
+    InterviewResponseSubmit:
+      type: object
+      required:
+        - question_id
+        - type
+        - content
+      properties:
+        question_id:
+          type: integer
+        type:
+          type: string
+          enum: [video, text, phone, code, multiple_choice]
+        content:
+          type: string
+        duration:
+          type: integer
+        retries:
+          type: integer
+
+    InterviewSubmitRequest:
+      type: object
+      required:
+        - responses
+      properties:
+        responses:
+          type: array
+          items:
+            $ref: '#/components/schemas/InterviewResponseSubmit'
+
+    InterviewSubmitResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+          example: Interview submitted successfully. AI analysis in progress.
+        candidate_id:
+          type: integer
+        submitted_at:
+          type: string
+          format: date-time
+
+    # ========== Dashboard Schemas ==========
+    ApplicantDashboardStats:
+      type: object
+      description: Statistics for candidate dashboard
+      properties:
+        total_applications:
+          type: integer
+          example: 8
+        completed_interviews:
+          type: integer
+          example: 5
+        in_progress:
+          type: integer
+          example: 2
+        pending:
+          type: integer
+          example: 1
+        average_score:
+          type: number
+          format: float
+          example: 82.5
+        readiness_score:
+          type: integer
+          description: Overall interview readiness percentage
+          example: 85
+        practice_streak:
+          type: integer
+          description: Days of continuous practice
+          example: 7
+        improvement_rate:
+          type: number
+          format: float
+          description: Score improvement over time
+          example: 5.2
+
+    RecentApplication:
+      type: object
+      properties:
+        id:
+          type: integer
+        job_title:
+          type: string
+          example: Senior Frontend Developer
+        company:
+          type: string
+          example: HireWave.AI
+        status:
+          $ref: '#/components/schemas/CandidateStatus'
+        applied_at:
+          type: string
+          format: date-time
+        submitted_at:
+          type: string
+          format: date-time
+          nullable: true
+
+    RecentActivity:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [interview, started, submitted]
+        title:
+          type: string
+          example: Completed interview
+        time:
+          type: string
+          format: date-time
+        details:
+          type: string
+          example: "Job ID: 5"
+
+    ApplicantDashboard:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        stats:
+          $ref: '#/components/schemas/ApplicantDashboardStats'
+        recent_applications:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentApplication'
+        recent_activity:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecentActivity'
+
+# ==================== API ENDPOINTS ====================
+paths:
+  # ==================== HEALTH & STATUS ====================
+  /health:
+    get:
+      tags:
+        - Health
+      summary: Health check endpoint
+      description: Check if the API server is running and healthy
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  app:
+                    type: string
+                    example: GenAI Interview Platform
+                  version:
+                    type: string
+                    example: 1.0.0
+                  environment:
+                    type: string
+                    example: development
+
+  # ==================== AUTHENTICATION ====================
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register new user
+      description: |
+        Create a new user account. Returns JWT tokens upon successful registration.
+
+        **Role Selection:**
+        - Use `HR` role for recruiters/hiring managers
+        - Use `CANDIDATE` role for job applicants
+        - `ADMIN` role is restricted
+      operationId: register
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegister'
+            examples:
+              HR User:
+                value:
+                  email: hr@company.com
+                  password: SecureP@ssw0rd123
+                  name: John Recruiter
+                  role: HR
+              Candidate:
+                value:
+                  email: candidate@example.com
+                  password: MyPassword123
+                  name: Jane Applicant
+                  role: CANDIDATE
+      responses:
+        '200':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Email already registered or validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                error:
+                  code: EMAIL_EXISTS
+                  message: Email already registered
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Login user
+      description: |
+        Authenticate user and receive JWT tokens.
+
+        **Default Test Accounts:**
+        - HR: `22f1000535@ds.study.iitm.ac.in` / `password123`
+        - Candidate: `22f1000535@ds.study.iitm.ac.in` / `password123`
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+            example:
+              email: hr@company.com
+              password: password123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TokenResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+              example:
+                success: false
+                error:
+                  code: UNAUTHORIZED
+                  message: Incorrect email or password
+
+  /auth/me:
+    get:
+      tags:
+        - Authentication
+      summary: Get current user profile
+      description: Retrieve the authenticated user's profile information
+      operationId: getCurrentUser
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse'
+
+  # ==================== JOBS ====================
+  /jobs:
+    post:
+      tags:
+        - Jobs
+      summary: Create new job posting
+      description: |
+        Create a new job with interview questions. HR role required.
+
+        **Question Types:**
+        - `video`: Video recording (requires time_limit in seconds)
+        - `text`: Text answer (optional max_length)
+        - `phone`: Phone interview question
+        - `code`: Coding challenge (optional code_template)
+        - `multiple_choice`: MCQ (requires options array)
+      operationId: createJob
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobCreate'
+            example:
+              title: Senior Frontend Developer
+              description: We are looking for an experienced React developer to join our team
+              department: Engineering
+              location: Bangalore, India
+              role_type: FULL_TIME
+              requirements: 5+ years React, TypeScript, Node.js
+              questions:
+                - type: video
+                  question: Tell us about your experience with React
+                  description: Focus on hooks and state management
+                  time_limit: 120
+                  required: true
+                  order: 1
+                  score_weight: 1.5
+                - type: text
+                  question: Describe a challenging bug you fixed recently
+                  max_length: 500
+                  required: true
+                  order: 2
+                  score_weight: 1.0
+      responses:
+        '201':
+          description: Job created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Job'
+        '400':
+          description: Validation error
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized (HR role required)
+
+    get:
+      tags:
+        - Jobs
+      summary: List all jobs
+      description: |
+        Get paginated list of jobs for the current user's company.
+        HR users see only their company's jobs.
+      operationId: listJobs
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: skip
+          in: query
+          description: Number of records to skip (pagination offset)
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          description: Maximum number of records to return
+          schema:
+            type: integer
+            default: 50
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: Jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Job'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Not authorized (HR role required)
+
+  /jobs/{job_id}:
+    get:
+      tags:
+        - Jobs
+      summary: Get job details
+      description: Retrieve complete job information including questions and statistics
+      operationId: getJob
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: Job ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Job retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Job'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Access denied (not your company's job)
+        '404':
+          description: Job not found
+
+    patch:
+      tags:
+        - Jobs
+      summary: Update job details
+      description: Update job information (questions cannot be updated via this endpoint)
+      operationId: updateJob
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobUpdate'
+            example:
+              title: Senior React Developer
+              status: active
+      responses:
+        '200':
+          description: Job updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Job'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Access denied
+        '404':
+          description: Job not found
+
+    delete:
+      tags:
+        - Jobs
+      summary: Delete job
+      description: |
+        Permanently delete a job posting. This will also delete all associated candidates,
+        questions, and interview responses (CASCADE).
+      operationId: deleteJob
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Job deleted successfully
+        '401':
+          description: Not authenticated
+        '403':
+          description: Access denied
+        '404':
+          description: Job not found
+
+  # ==================== CANDIDATES ====================
+  /candidates/{candidate_id}:
+    get:
+      tags:
+        - Candidates
+      summary: Get candidate details
+      description: |
+        Retrieve complete candidate information including interview responses and AI scores.
+        Includes detailed AI insights, score breakdowns, and response transcripts.
+      operationId: getCandidate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: candidate_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Candidate retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Candidate'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Access denied
+        '404':
+          description: Candidate not found
+
+    patch:
+      tags:
+        - Candidates
+      summary: Update candidate
+      description: |
+        Update candidate status, notes, or tags.
+
+        **Common Status Transitions:**
+        - `scored` → `shortlisted` (moving to next round)
+        - `scored` → `rejected` (not suitable)
+        - Any status → `hired` (final selection)
+      operationId: updateCandidate
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: candidate_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateUpdate'
+            examples:
+              Shortlist Candidate:
+                value:
+                  status: shortlisted
+                  notes: Great communication skills, strong technical background
+                  tags: ["top-performer", "culture-fit"]
+              Reject Candidate:
+                value:
+                  status: rejected
+                  notes: Insufficient React experience for senior role
+      responses:
+        '200':
+          description: Candidate updated successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Candidate'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Access denied
+        '404':
+          description: Candidate not found
+
+  /candidates/{job_id}/candidates:
+    get:
+      tags:
+        - Candidates
+      summary: Get job candidates
+      description: |
+        List all candidates who applied for a specific job.
+        Returns simplified candidate data for list views.
+      operationId: getJobCandidates
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          description: Job ID
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Candidates retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CandidateListItem'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Access denied
+
+  /candidates/{job_id}/invites:
+    post:
+      tags:
+        - Candidates
+      summary: Send bulk interview invitations
+      description: |
+        Send interview invitations to multiple candidates at once.
+        Each candidate receives a unique interview token via email.
+
+        **Email Template Includes:**
+        - Job title and company
+        - Unique interview link with token
+        - Expiration date
+        - Instructions
+      operationId: sendInvites
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkInviteRequest'
+            example:
+              emails:
+                - candidate1@example.com
+                - candidate2@example.com
+                - candidate3@example.com
+              expires_in_days: 7
+      responses:
+        '200':
+          description: Invitations sent
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BulkInviteResponse'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Access denied
+        '404':
+          description: Job not found
+
+  # ==================== INTERVIEWS (PUBLIC ENDPOINTS) ====================
+  /interviews/{token}:
+    get:
+      tags:
+        - Interviews
+      summary: Get interview questions (public)
+      description: |
+        Retrieve interview questions for a candidate using their unique invitation token.
+        No authentication required - uses token for authorization.
+
+        **Status Updates:**
+        - If candidate status is `invited`, updates to `started`
+        - Records `started_at` timestamp
+        - Updates invite status to `opened`
+      operationId: getInterviewQuestions
+      parameters:
+        - name: token
+          in: path
+          required: true
+          description: Unique invitation token from email
+          schema:
+            type: string
+            example: abc123xyz456
+      responses:
+        '200':
+          description: Interview questions retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Job'
+        '404':
+          description: Invalid invitation token
+
+  /interviews/{token}/responses:
+    post:
+      tags:
+        - Interviews
+      summary: Save individual interview response
+      description: |
+        Save or update a candidate's answer to a specific question.
+        Updates candidate status to `in_progress` and tracks last activity time.
+
+        **Content Format:**
+        - Video/Audio: URL to uploaded file
+        - Text: Plain text answer
+        - Code: Code string
+        - Multiple Choice: Selected option
+      operationId: saveResponse
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - question_id
+                - content
+                - type
+              properties:
+                question_id:
+                  type: string
+                  description: Question ID
+                content:
+                  type: string
+                  description: Answer content or video URL
+                duration:
+                  type: integer
+                  description: Response duration in seconds
+                type:
+                  type: string
+                  enum: [video, text, phone, code, multiple_choice]
+      responses:
+        '200':
+          description: Response saved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          message:
+                            type: string
+                            example: Response saved successfully
+        '404':
+          description: Invalid token
+
+  /interviews/{token}/submit:
+    post:
+      tags:
+        - Interviews
+      summary: Submit complete interview
+      description: |
+        Submit all interview responses for AI processing.
+
+        **Process:**
+        1. Saves all responses to database
+        2. Updates candidate status to `submitted`
+        3. Updates invite status to `completed`
+        4. Triggers background AI scoring task
+        5. Candidate status will change to `scored` once AI processing completes
+      operationId: submitInterview
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterviewSubmitRequest'
+            example:
+              responses:
+                - question_id: 1
+                  type: video
+                  content: https://storage.s3.amazonaws.com/videos/abc123.mp4
+                  duration: 95
+                  retries: 1
+                - question_id: 2
+                  type: text
+                  content: I once debugged a race condition in our Redux store...
+                  duration: 180
+                  retries: 0
+      responses:
+        '200':
+          description: Interview submitted successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/InterviewSubmitResponse'
+        '404':
+          description: Invalid token
+
+  /interviews/upload/video:
+    post:
+      tags:
+        - Interviews
+      summary: Upload video file
+      description: |
+        Upload video response to cloud storage (S3).
+        Returns URL to use in response submission.
+
+        **Supported Formats:** MP4, WebM, MOV
+        **Max File Size:** Configured in server settings
+      operationId: uploadVideo
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - video
+                - candidate_id
+                - question_id
+              properties:
+                video:
+                  type: string
+                  format: binary
+                  description: Video file
+                candidate_id:
+                  type: string
+                  description: Candidate ID
+                question_id:
+                  type: string
+                  description: Question ID
+      responses:
+        '200':
+          description: Video uploaded successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          url:
+                            type: string
+                            format: uri
+                            example: https://storage.s3.amazonaws.com/videos/123-456.mp4
+                          message:
+                            type: string
+                            example: Video uploaded successfully
+        '400':
+          description: Invalid file type or format
+        '500':
+          description: Upload failed
+
+  # ==================== DASHBOARD ====================
+  /dashboard/applicant:
+    get:
+      tags:
+        - Dashboard
+      summary: Get applicant dashboard data
+      description: |
+        Retrieve dashboard statistics and recent activity for a candidate.
+        Shows all applications, scores, and progress for the authenticated candidate.
+      operationId: getApplicantDashboard
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Dashboard data retrieved
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/ApiResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/ApplicantDashboard'
+        '401':
+          description: Not authenticated
+
+# ==================== SECURITY ====================
+security:
+  - BearerAuth: []

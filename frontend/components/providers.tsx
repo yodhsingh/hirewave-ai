@@ -26,7 +26,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
       <AuthGuard>
         {children}
       </AuthGuard>
-      <Toaster position="top-right" />
+      <Toaster position="bottom-right" />
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

@@ -12,7 +12,6 @@ dependencies = [
 
     # Database
     "sqlalchemy",
-    "alembic",
     "psycopg2-binary",
     "asyncpg",
     "greenlet",

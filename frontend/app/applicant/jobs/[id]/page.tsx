@@ -18,6 +18,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { FloatingParticles } from '@/components/FloatingParticles';
 import { gradients } from '@/lib/theme';
+import { formatRoleType } from '@/lib/utils/format';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
@@ -145,7 +146,7 @@ export default function JobDetailPage() {
                         </span>
                         <span className="flex items-center gap-2">
                           <Briefcase className="w-5 h-5" />
-                          {job.roleType}
+                          {formatRoleType(job.roleType)}
                         </span>
                         <span className="flex items-center gap-2">
                           <Users className="w-5 h-5" />

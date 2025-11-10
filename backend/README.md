@@ -4,35 +4,7 @@ FastAPI backend for an AI-powered asynchronous interview platform.
 
 ## 🚀 Quick Start
 
-**For a complete setup guide with UV, see [UV_SETUP.md](./UV_SETUP.md)**
-
-**Automated Setup (Recommended):**
-
-*If you have Python 3.13 installed:*
-```bash
-# macOS/Linux
-chmod +x setup.sh && ./setup.sh
-
-# Windows PowerShell
-.\setup.ps1
-```
-
-*If you DON'T have Python 3.13 (uses Conda fallback):*
-```bash
-# macOS/Linux
-chmod +x setup_with_conda.sh && ./setup_with_conda.sh
-
-# Windows PowerShell
-.\setup_with_conda.ps1
-```
-
-The conda script will automatically:
-- Check for Python 3.13
-- Create a conda environment if needed
-- Use UV for fast package management
-- Set up everything for you
-
-**Manual Setup:**
+**Setup:**
 ```bash
 # 1. Create virtual environment with UV
 uv venv && source .venv/bin/activate
@@ -40,19 +12,17 @@ uv venv && source .venv/bin/activate
 # 2. Install dependencies
 uv pip install -e .
 
-# 3. Run migrations
-alembic upgrade head
+# 3. Set up database (PostgreSQL) (dont do that on production, use migrations instead)
+#psql $DATABASE_URL -f scripts/sql/schema.sql
+#psql $DATABASE_URL -f scripts/sql/seed.sql
 
-# 4. Seed database
-python update_users.py
-
-# 5. Start server
+# 4. Start server
 uvicorn app.main:app --reload --port 8000
 ```
 
-**Login Credentials (IIT Team Members):**
-- Email: `22f1000535@ds.study.iitm.ac.in` (or any other team member)
-- Password: `password123`
+**Login Credentials:**
+- See seed data in `scripts/sql/seed.sql` for test users
+- Default password for all seed users: `password123`
 
 Visit: http://localhost:8000/api/docs
 
@@ -68,7 +38,7 @@ Visit: http://localhost:8000/api/docs
 - **Background Job Processing** with Celery
 - **Video Upload & Storage** with AWS S3
 - **Email Notifications** via SendGrid
-- **Database Migrations** with Alembic
+- **Simple SQL Schema** with manual migrations
 
 ## Architecture
 
@@ -86,7 +56,11 @@ backend/
 │   ├── tasks/                # Celery background tasks
 │   ├── utils/                # Utility functions
 │   └── main.py               # FastAPI application
-├── alembic/                  # Database migrations
+├── scripts/
+│   └── sql/                  # Database schema and seed data
+│       ├── schema.sql        # Database DDL
+│       ├── seed.sql          # Sample data (all-in-one)
+│       └── README.md         # SQL setup guide
 ├── tests/                    # Test suite
 ├── pyproject.toml            # Dependencies (uv)
 └── .env                      # Environment variables
@@ -141,11 +115,16 @@ cp .env.example .env
 
 5. **Set up the database**:
 ```bash
-# Create PostgreSQL database
-createdb interview_db
+# Set DATABASE_URL in your .env file first
+# Then run:
+psql $DATABASE_URL -f scripts/sql/schema.sql
+psql $DATABASE_URL -f scripts/sql/seed.sql
 
-# Run migrations
-alembic upgrade head
+# Or with local PostgreSQL
+createdb interview_db
+export DATABASE_URL="postgresql://localhost/interview_db"
+psql $DATABASE_URL -f scripts/sql/schema.sql
+psql $DATABASE_URL -f scripts/sql/seed.sql
 ```
 
 6. **Start Redis** (if not running):
@@ -233,23 +212,34 @@ See `.env.example` for all required environment variables:
 - `SENTRY_DSN` - Error monitoring
 - `FRONTEND_URL` - Frontend URL for email links
 
-## Database Migrations
+## Database Schema Management
+
+The project uses manual SQL migrations for simplicity and transparency.
+
+### Setting Up the Database
 
 ```bash
-# Create a new migration
-alembic revision --autogenerate -m "Description of changes"
+# 1. Create schema (tables, enums, constraints)
+psql $DATABASE_URL -f scripts/sql/schema.sql
 
-# Apply migrations
-alembic upgrade head
+# 2. Load seed data (users, jobs, candidates, etc.)
+psql $DATABASE_URL -f scripts/sql/seed.sql
+```
 
-# Rollback one migration
-alembic downgrade -1
+### Making Schema Changes
 
-# Show current revision
-alembic current
+1. Edit `scripts/sql/schema.sql` to add/modify tables
+2. Document changes in `scripts/sql/README.md`
+3. For existing databases, create a new migration file (e.g., `migration_001.sql`)
+4. Test thoroughly before applying to production
 
-# Show migration history
-alembic history
+### Database Reset (Development Only)
+
+```bash
+# WARNING: Deletes all data!
+psql $DATABASE_URL -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+psql $DATABASE_URL -f scripts/sql/schema.sql
+psql $DATABASE_URL -f scripts/sql/seed.sql
 ```
 
 ## Testing
@@ -260,9 +250,6 @@ pytest
 
 # Run with coverage
 pytest --cov=app --cov-report=html
-
-# Run specific test file
-pytest tests/test_auth.py
 
 # Run with verbose output
 pytest -v

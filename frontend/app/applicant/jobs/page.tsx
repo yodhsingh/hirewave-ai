@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { FloatingParticles } from '@/components/FloatingParticles';
 import { gradients } from '@/lib/theme';
+import { formatRoleType } from '@/lib/utils/format';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient } from '@/lib/api/client';
@@ -87,7 +88,7 @@ function JobBrowsingContent() {
   };
 
   const filters = {
-    roleType: ['all', 'Full-time', 'Part-time', 'Contract', 'Remote'],
+    roleType: ['all', 'FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP'],
     location: ['all', 'San Francisco', 'New York', 'Remote', 'London'],
     experience: ['all', 'Entry Level', '1-3 years', '3-5 years', '5+ years'],
     salary: ['all', '< $50k', '$50k-$100k', '$100k-$150k', '$150k+']
@@ -284,7 +285,7 @@ function JobBrowsingContent() {
                                 </span>
                                 <span className="flex items-center gap-1">
                                   <Briefcase className="w-4 h-4" />
-                                  {match.job.roleType}
+                                  {formatRoleType(match.job.roleType)}
                                 </span>
                               </div>
                             </div>

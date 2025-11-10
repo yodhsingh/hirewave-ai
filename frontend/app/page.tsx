@@ -42,7 +42,7 @@ export default function HomePage() {
   }, []);
 
   const handleCandidateDemo = () => {
-    router.push('/applicant');
+    router.push('/login?role=candidate');
   };
 
   const fadeInUp = {

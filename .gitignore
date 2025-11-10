@@ -57,3 +57,7 @@ logs/
 
 # next js with react js
 .next/
+
+frontend/CLAUDE.md
+vercel.json
+frontend/vercel.json

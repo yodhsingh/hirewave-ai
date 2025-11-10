@@ -11,14 +11,12 @@ This folder contains the SQL schema (DDL) and seed data (DML) for the HireWave.A
 
 ### 1. Connect to your PostgreSQL database
 
-Use the connection string from `backend/.env`:
+Get the connection details from your `backend/.env` file:
 ```
-Host: ep-autumn-glade-ad91atgw-pooler.c-2.us-east-1.aws.neon.tech
-Database: neondb
-User: neondb_owner
-Password: npg_IUgy8fBW9EzT
-SSL: require
+DATABASE_URL=postgresql://user:password@host/database?sslmode=require
 ```
+
+Configure your SQL editor with these details from your .env file.
 
 ### 2. Execute schema.sql
 
@@ -41,14 +39,10 @@ Open `seed.sql` in your SQL editor and execute it. This will insert:
 ## Using with Command Line
 
 ```bash
-# Connect to database
-psql "postgresql://neondb_owner:npg_IUgy8fBW9EzT@ep-autumn-glade-ad91atgw-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require"
-
-# Run schema
-\i backend/sql/schema.sql
-
-# Run seed data
-\i backend/sql/seed.sql
+# Set DATABASE_URL from your .env file
+# Then connect and run:
+psql $DATABASE_URL -f scripts/sql/schema.sql
+psql $DATABASE_URL -f scripts/sql/seed.sql
 ```
 
 ## Using with Python Script
@@ -65,14 +59,10 @@ python setup_database.py --yes
 
 After running seed.sql, you can login with:
 
-**HR Users:**
-- Email: `22f1000535@ds.study.iitm.ac.in` / Password: `password123`
-- Email: `23f3003216@ds.study.iitm.ac.in` / Password: `password123`
-- Email: `hr@company.com` / Password: `password123`
-
-**Candidate Users:**
-- Email: `candidate1@email.com` / Password: `password123`
-- Email: `candidate2@email.com` / Password: `password123`
+**Test Users:**
+- See `seed.sql` for complete list of test users
+- Default password for all seed users: `password123`
+- Includes HR users and candidate users
 
 ## Database Changes
 

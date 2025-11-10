@@ -25,6 +25,7 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import type { JobCreateInput } from '@/lib/schemas/validation';
+import { formatRoleType } from '@/lib/utils/format';
 
 interface JobPreviewProps {
   jobData: JobCreateInput;
@@ -132,7 +133,7 @@ export function JobPreview({ jobData }: JobPreviewProps) {
               {jobData.roleType && (
                 <div className="flex items-center gap-1">
                   <Users className="w-4 h-4 text-gray-100" />
-                  {jobData.roleType}
+                  {formatRoleType(jobData.roleType)}
                 </div>
               )}
             </div>

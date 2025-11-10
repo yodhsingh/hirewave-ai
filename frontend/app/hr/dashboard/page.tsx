@@ -49,6 +49,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { Job } from '@/types';
 import { DM_Sans } from 'next/font/google';
 import { toast } from 'sonner';
+import { ViewSwitcher } from '@/components/ViewSwitcher';
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -156,6 +157,8 @@ export default function HRDashboard() {
           <Plus className="w-4 h-4" />
           Create Job
         </Button>
+
+        <ViewSwitcher />
 
         {/*
           UI: This is now a "Secondary (light card)" button

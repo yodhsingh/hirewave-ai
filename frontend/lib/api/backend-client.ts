@@ -350,6 +350,41 @@ class BackendApiClient {
       recentActivity: Array<Record<string, unknown>>;
     }>('/analytics/overview');
   }
+
+  // Dashboard
+  async getApplicantDashboard() {
+    return this.request<{
+      user: {
+        name: string;
+        email: string;
+        role: string;
+      };
+      stats: {
+        total_applications: number;
+        completed_interviews: number;
+        in_progress: number;
+        pending: number;
+        average_score: number;
+        readiness_score: number;
+        practice_streak: number;
+        improvement_rate: number;
+      };
+      recent_applications: Array<{
+        id: number;
+        job_title: string;
+        company: string;
+        status: string;
+        applied_at: string | null;
+        submitted_at: string | null;
+      }>;
+      recent_activity: Array<{
+        type: string;
+        title: string;
+        time: string;
+        details?: string;
+      }>;
+    }>('/dashboard/applicant');
+  }
 }
 
 export const backendClient = new BackendApiClient();

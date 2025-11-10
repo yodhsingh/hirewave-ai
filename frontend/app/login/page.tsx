@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
@@ -16,9 +16,20 @@ import Footer from '@/components/layout/Footer';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, logout } = useAuthStore();
   const [isLogin, setIsLogin] = useState(true);
   const [userType, setUserType] = useState('hr');
+
+  // Check for role query parameter and pre-select user type
+  useEffect(() => {
+    const role = searchParams.get('role');
+    if (role === 'candidate') {
+      setUserType('candidate');
+    } else if (role === 'hr') {
+      setUserType('hr');
+    }
+  }, [searchParams]);
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
@@ -53,7 +64,7 @@ export default function LoginPage() {
           if (user.role === 'HR') {
             router.push('/hr/dashboard');
           } else {
-            router.push('/applicant');
+            router.push('/applicant/dashboard');
           }
         } else {
           toast.error("Login failed", {
@@ -350,18 +361,6 @@ export default function LoginPage() {
                     {isLoading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
                   </Button>
 
-                  {/* Login Help */}
-                  <div className="text-center pt-4 space-y-2">
-                    <p className="text-xs text-black/50">
-                      Team login: 22f1000535@ds.study.iitm.ac.in
-                    </p>
-                    <p className="text-xs text-black/50">
-                      Or: 23f3003216@ds.study.iitm.ac.in
-                    </p>
-                    <p className="text-xs text-black/50">
-                      Password: password123
-                    </p>
-                  </div>
                 </form>
               </div>
             </motion.div>

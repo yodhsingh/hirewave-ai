@@ -51,7 +51,7 @@ export default function NewJobPage() {
     description: '',
     department: '',
     location: '',
-    roleType: 'Full-time',
+    roleType: 'FULL_TIME',
     questions: [],
     requirements: [],
   });
@@ -63,7 +63,7 @@ export default function NewJobPage() {
       description: '',
       department: '',
       location: '',
-      roleType: 'Full-time',
+      roleType: 'FULL_TIME',
       questions: [],
       requirements: [],
     },
