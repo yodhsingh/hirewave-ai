@@ -5,28 +5,30 @@ from sqlalchemy.orm import relationship
 from app.db.base import Base
 import enum
 
-
+# Enum class to represent different statuses of a job
 class JobStatus(str, enum.Enum):
-    DRAFT = "draft"
-    ACTIVE = "active"
-    CLOSED = "closed"
+    DRAFT = "draft" # Job is created but not yet published
+    ACTIVE = "active" # Job is live and accepting applications
+    CLOSED = "closed" # Job is no longer open for applications
 
 
+
+# Enum to represent the type of employment role offered
 class RoleType(str, enum.Enum):
-    FULL_TIME = "FULL_TIME"
-    PART_TIME = "PART_TIME"
-    CONTRACT = "CONTRACT"
-    INTERNSHIP = "INTERNSHIP"
-    FREELANCE = "FREELANCE"
-    TEMPORARY = "TEMPORARY"
+    FULL_TIME = "FULL_TIME" # Full-time employment
+    PART_TIME = "PART_TIME" # Part-time position
+    CONTRACT = "CONTRACT" # Contract-based work
+    INTERNSHIP = "INTERNSHIP" # Internship position
+    FREELANCE = "FREELANCE" # Freelance or gig-based work
+    TEMPORARY = "TEMPORARY" # Temporary or short-term position
 
-
+# Enum defining the type of question used in an interview or application
 class QuestionType(str, enum.Enum):
-    PHONE = "phone"
-    VIDEO = "video"
-    TEXT = "text"
-    MULTIPLE_CHOICE = "multiple_choice"
-    CODE = "code"
+    PHONE = "phone" # Phone-based interview question
+    VIDEO = "video" # Video response question
+    TEXT = "text" # Text or written response question
+    MULTIPLE_CHOICE = "multiple_choice" # Objective question with predefined choices
+    CODE = "code" # Coding question requiring code input
 
 
 class Job(Base):
