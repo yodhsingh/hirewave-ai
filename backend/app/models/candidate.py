@@ -5,17 +5,17 @@ from sqlalchemy.orm import relationship
 from app.db.base import Base
 import enum
 
-
+# Enum class to represent various stages of a candidate in the recruitment process
 class CandidateStatus(str, enum.Enum):
-    INVITED = "invited"
-    STARTED = "started"
-    IN_PROGRESS = "in_progress"
-    SUBMITTED = "submitted"
-    UNDER_REVIEW = "under_review"
-    SCORED = "scored"
-    SHORTLISTED = "shortlisted"
-    REJECTED = "rejected"
-    HIRED = "hired"
+    INVITED = "invited" # Candidate has been invited to take the test/interview
+    STARTED = "started" # Candidate has started the assessment
+    IN_PROGRESS = "in_progress" # Candidate is currently working on the assessment
+    SUBMITTED = "submitted" # Candidate has submitted their test or interview
+    UNDER_REVIEW = "under_review" # Candidate’s submission is being reviewed by HR/interviewer
+    SCORED = "scored" # Candidate’s performance has been evaluated/scored
+    SHORTLISTED = "shortlisted" # Candidate has been shortlisted for next rounds or selection
+    REJECTED = "rejected" # Candidate did not qualify for further rounds
+    HIRED = "hired" # Candidate is successfully hired
 
 
 class Candidate(Base):
