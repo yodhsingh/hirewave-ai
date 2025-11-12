@@ -3,7 +3,7 @@ name = "genai-interview"
 version = "0.1.0"
 description = "FastAPI backend for AI-powered interview platform"
 readme = "README.md"
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.12,<3.14"
 dependencies = [
     # Core Framework
     "fastapi",
@@ -32,6 +32,9 @@ dependencies = [
     "anthropic",
     "langchain",
     "langchain-openai",
+    "google-generativeai",
+    "PyPDF2",
+    "python-docx",
 
     # Cloud Storage
     "boto3",
