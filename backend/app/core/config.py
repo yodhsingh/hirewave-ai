@@ -56,6 +56,10 @@ class Settings(BaseSettings):
     ANTHROPIC_API_KEY: str = ""
     ANTHROPIC_MODEL: str = "claude-3-opus-20240229"
 
+    # Google Gemini AI (optional - only needed for resume parsing)
+    GOOGLE_GEMINI_API_KEY: Optional[str] = None
+    GEMINI_MODEL: str = "gemini-2.5-flash"
+
     # Email (optional - only needed for sending invitations)
     SENDGRID_API_KEY: Optional[str] = None
     SENDGRID_FROM_EMAIL: Optional[str] = "noreply@genai-interview.com"
@@ -71,6 +75,8 @@ class Settings(BaseSettings):
     # File Upload
     MAX_VIDEO_SIZE_MB: int = 500
     ALLOWED_VIDEO_FORMATS: List[str] = ["mp4", "webm", "mov"]
+    MAX_AUDIO_SIZE_MB: int = 50
+    ALLOWED_AUDIO_FORMATS: List[str] = ["mp3", "wav", "m4a", "webm"]
 
     # Monitoring
     SENTRY_DSN: str = ""
@@ -87,6 +93,10 @@ class Settings(BaseSettings):
     @property
     def max_video_size_bytes(self) -> int:
         return self.MAX_VIDEO_SIZE_MB * 1024 * 1024
+
+    @property
+    def max_audio_size_bytes(self) -> int:
+        return self.MAX_AUDIO_SIZE_MB * 1024 * 1024
 
     @property
     def celery_broker(self) -> str:
