@@ -129,15 +129,17 @@ export default function ApplicantDashboard() {
             <div className="flex items-center gap-4">
               <Button
                 onClick={() => router.push('/applicant/jobs')}
-                className="gap-2 bg-black hover:bg-black/90 text-white rounded-xl font-medium"
+                variant="outline"
+                className="gap-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 hover:text-gray-900 rounded-xl font-medium transition-colors"
               >
                 <Briefcase className="w-4 h-4" />
                 Browse Jobs
               </Button>
 
               <Button
-                onClick={() => router.push('/applicant/onboarding')}
-                className="gap-2 bg-black hover:bg-black/90 text-white rounded-xl font-medium"
+                onClick={() => router.push('/applicant/onboarding-with-parser')}
+                variant="outline"
+                className="gap-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 hover:text-gray-900 rounded-xl font-medium transition-colors"
               >
                 <Upload className="w-4 h-4" />
                 Upload Resume
@@ -145,13 +147,16 @@ export default function ApplicantDashboard() {
 
               <Button
                 onClick={() => router.push('/applicant/practice/new')}
-                className="gap-2 bg-black hover:bg-black/90 text-white rounded-xl font-medium"
+                className="gap-2 bg-black hover:bg-black/90 text-white rounded-xl font-medium shadow-sm"
               >
                 <Play className="w-4 h-4" />
                 Start Practice
               </Button>
 
-              <ViewSwitcher />
+              {/* Only show ViewSwitcher for Admin, HR users, or demo mode */}
+              {(user?.role === 'ADMIN' || user?.role === 'HR' || process.env.NEXT_PUBLIC_DEMO_MODE === 'true') && (
+                <ViewSwitcher />
+              )}
 
               <Button variant="ghost" className="relative p-2 bg-black/5 hover:bg-black/10 border border-black/10 rounded-xl transition-all duration-300">
                 <Bell className="w-6 h-6 text-gray-900" />

@@ -379,6 +379,68 @@ class BackendApiClient {
     }>('/analytics/overview');
   }
 
+  async parseResume(file: File) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    return this.request<{
+      personal_info: {
+        name: string | null;
+        email: string | null;
+        phone: string | null;
+        location: string | null;
+        linkedin: string | null;
+        github: string | null;
+        portfolio: string | null;
+        summary: string | null;
+      };
+      experience: Array<{
+        company: string;
+        position: string;
+        location: string;
+        start_date: string;
+        end_date: string;
+        description: string;
+      }>;
+      education: Array<{
+        institution: string;
+        degree: string;
+        field: string;
+        graduation_date: string;
+        gpa: string | null;
+      }>;
+      skills: {
+        technical: string[];
+        soft: string[];
+        languages: string[];
+        tools: string[];
+      };
+      certifications: Array<{
+        name: string;
+        issuer: string;
+        date: string;
+      }>;
+      projects: Array<{
+        name: string;
+        description: string;
+        technologies: string[];
+        url: string | null;
+      }>;
+      achievements: string[];
+      languages_spoken: string[];
+      preferences: {
+        job_type: string | null;
+        desired_roles: string[];
+        industries: string[];
+      };
+      raw_text?: string;
+    }>('/resume/parse', {
+      method: 'POST',
+      body: formData,
+      headers: {}, // Let browser set Content-Type with boundary
+    });
+  }
+
   // Dashboard
   async getApplicantDashboard() {
     return this.request<{
