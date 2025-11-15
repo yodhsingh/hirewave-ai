@@ -29,6 +29,7 @@ async def create_job(
         location=job_data.location,
         role_type=job_data.role_type,
         requirements=job_data.requirements,
+        status=job_data.status,  # Allow setting status from frontend
         created_by=current_user.id,
         company_id=current_user.company_id,
     )

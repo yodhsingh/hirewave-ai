@@ -40,6 +40,23 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Client-side validation
+    if (!isLogin) {
+      if (formData.password.length < 8) {
+        toast.error("Password too short", {
+          description: "Password must be at least 8 characters long",
+        });
+        return;
+      }
+      if (formData.name.trim().length < 2) {
+        toast.error("Name too short", {
+          description: "Please enter your full name",
+        });
+        return;
+      }
+    }
+
     setIsLoading(true);
 
     try {
@@ -72,6 +89,10 @@ export default function LoginPage() {
           });
         }
       } else {
+        // Clear any existing auth data before registration
+        logout();
+        await backendClient.logout();
+
         // Registration via backend API
         const response = await backendClient.register({
           email: formData.email,
@@ -324,8 +345,15 @@ export default function LoginPage() {
                       value={formData.password}
                       onChange={handleChange}
                       className="bg-white border-black/20 text-black placeholder:text-black/50 focus:border-black/40 h-12"
-                      placeholder="Enter your password"
+                      placeholder={isLogin ? "Enter your password" : "Minimum 8 characters"}
                     />
+                    {!isLogin && (
+                      <div className="mt-1 p-2 bg-gray-100 rounded-md">
+                        <p className="text-xs" style={{ color: 'rgb(75, 85, 99)' }}>
+                          ⚠️ Password must be at least 8 characters long
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Company field for signup and HR */}

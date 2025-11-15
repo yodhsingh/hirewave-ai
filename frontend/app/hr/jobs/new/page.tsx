@@ -30,7 +30,7 @@ import { JobBasicsForm } from '@/components/hr/JobBasicsForm';
 import { QuestionBuilder } from '@/components/hr/QuestionBuilder';
 import { JobPreview } from '@/components/hr/JobPreview';
 import { jobCreateSchema, type JobCreateInput } from '@/lib/schemas/validation';
-import { apiClient } from '@/lib/api/client';
+import { backendClient } from '@/lib/api/backend-client';
 import type { QuestionCreate } from '@/types';
 import { gradients } from '@/lib/theme';
 
@@ -72,10 +72,15 @@ export default function NewJobPage() {
 
   // Create job mutation
   const createJobMutation = useMutation({
-    mutationFn: (data: JobCreateInput) => apiClient.createJob(data),
+    mutationFn: (data: JobCreateInput) => backendClient.createJob(data),
     onSuccess: (response) => {
       if (response.success && response.data) {
-        toast.success('Job created and published successfully!');
+        const status = response.data.status;
+        if (status === 'active') {
+          toast.success('Job published successfully!');
+        } else {
+          toast.success('Job saved as draft!');
+        }
         router.push('/hr/dashboard');
       }
     },
@@ -135,7 +140,7 @@ export default function NewJobPage() {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (status: 'draft' | 'active') => {
     setIsSubmitting(true);
 
     // Final validation
@@ -164,7 +169,9 @@ export default function NewJobPage() {
       return;
     }
 
-    createJobMutation.mutate(formValues);
+    // Set the status before submitting
+    const jobData = { ...formValues, status };
+    createJobMutation.mutate(jobData);
   };
 
   const updateQuestions = (questions: QuestionCreate[]) => {
@@ -337,13 +344,17 @@ export default function NewJobPage() {
             </Button>
 
             <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => router.push('/hr/dashboard')}
-                className="bg-gray-800 text-white border-gray-600 hover:bg-gray-700 hover:text-white"
-              >
-                Save as Draft
-              </Button>
+              {currentStep === WIZARD_STEPS.length && (
+                <Button
+                  variant="outline"
+                  onClick={() => handleSubmit('draft')}
+                  disabled={isSubmitting}
+                  className="gap-2 bg-gray-800 text-white border-gray-600 hover:bg-gray-700 hover:text-white disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  Save as Draft
+                </Button>
+              )}
 
               {currentStep < WIZARD_STEPS.length ? (
                 <Button onClick={handleNext} className={`gap-2 hover:from-blue-700 hover:to-cyan-700 text-white`}>
@@ -352,7 +363,7 @@ export default function NewJobPage() {
                 </Button>
               ) : (
                 <Button
-                  onClick={handleSubmit}
+                  onClick={() => handleSubmit('active')}
                   disabled={isSubmitting}
                   className={`gap-2 bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white disabled:opacity-50`}
                 >

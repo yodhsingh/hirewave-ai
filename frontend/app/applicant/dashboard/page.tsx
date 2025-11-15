@@ -7,7 +7,7 @@ import {
   User, Briefcase, Target, TrendingUp, Play, BookOpen,
   ChevronRight, Clock, AlertCircle, Sparkles, Home,
   BarChart3, MessageSquare, Brain, Trophy, Settings,
-  LogOut, Bell
+  LogOut, Bell, Upload
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -128,6 +128,22 @@ export default function ApplicantDashboard() {
 
             <div className="flex items-center gap-4">
               <Button
+                onClick={() => router.push('/applicant/jobs')}
+                className="gap-2 bg-black hover:bg-black/90 text-white rounded-xl font-medium"
+              >
+                <Briefcase className="w-4 h-4" />
+                Browse Jobs
+              </Button>
+
+              <Button
+                onClick={() => router.push('/applicant/onboarding')}
+                className="gap-2 bg-black hover:bg-black/90 text-white rounded-xl font-medium"
+              >
+                <Upload className="w-4 h-4" />
+                Upload Resume
+              </Button>
+
+              <Button
                 onClick={() => router.push('/applicant/practice/new')}
                 className="gap-2 bg-black hover:bg-black/90 text-white rounded-xl font-medium"
               >
@@ -147,12 +163,12 @@ export default function ApplicantDashboard() {
                   <Button variant="ghost" className="flex items-center gap-2 hover:bg-black/10">
                     <div className="flex items-center gap-3">
                       <div className="text-right hidden md:block">
-                        <p className="text-sm font-medium text-gray-900">{profile?.name || 'User'}</p>
-                        <p className="text-xs text-gray-600">Candidate</p>
+                        <p className="text-sm font-medium text-gray-900">{user?.name || profile?.name || 'Guest User'}</p>
+                        <p className="text-xs text-gray-600">{user?.email || profile?.email || 'Candidate'}</p>
                       </div>
                       <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${gradients.primary} flex items-center justify-center`}>
                         <span className="text-white text-sm font-bold">
-                          {profile?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                          {(user?.name || profile?.name || 'U').split(' ').map(n => n[0]).join('').toUpperCase()}
                         </span>
                       </div>
                     </div>
@@ -160,8 +176,8 @@ export default function ApplicantDashboard() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white w-56" align="end">
                   <div className="px-3 py-2 border-b border-gray-800">
-                    <p className="text-sm font-medium">{profile?.name || 'User'}</p>
-                    <p className="text-xs text-gray-400">{profile?.email || ''}</p>
+                    <p className="text-sm font-medium">{user?.name || profile?.name || 'Guest User'}</p>
+                    <p className="text-xs text-gray-400">{user?.email || profile?.email || 'Not logged in'}</p>
                   </div>
                   <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/applicant/profile')}>
                     <User className="w-4 h-4 mr-2" />

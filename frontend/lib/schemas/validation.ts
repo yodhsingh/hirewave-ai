@@ -17,6 +17,7 @@ export const jobCreateSchema = z.object({
     order: z.number().min(0).optional(),
   })).min(3, 'At least 3 questions required').max(10, 'Maximum 10 questions allowed'),
   requirements: z.string().optional(),
+  status: z.enum(['draft', 'active', 'closed']).optional(),
 });
 
 export const questionSchema = z.object({

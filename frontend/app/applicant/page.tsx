@@ -23,9 +23,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Link from 'next/link';
+import { useAuthStore } from '@/lib/store/authStore';
 
 export default function ApplicantLandingPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleSearch = () => {
@@ -147,19 +149,25 @@ export default function ApplicantLandingPage() {
                 <Button variant="ghost" className="flex items-center gap-2 hover:bg-black/5">
                   <div className="flex items-center gap-3">
                     <div className="text-right hidden md:block">
-                      <p className="text-sm font-medium text-black">Profile</p>
-                      <p className="text-xs text-black/60">Job Seeker</p>
+                      <p className="text-sm font-medium text-black">{user?.name || 'Guest User'}</p>
+                      <p className="text-xs text-black/60">{user?.email || 'Not logged in'}</p>
                     </div>
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center">
-                      <User className="w-5 h-5 text-white" />
+                      {user?.name ? (
+                        <span className="text-white text-sm font-bold">
+                          {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </span>
+                      ) : (
+                        <User className="w-5 h-5 text-white" />
+                      )}
                     </div>
                   </div>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="bg-white border-black/10 text-black w-56 shadow-lg" align="end">
                 <div className="px-3 py-2 border-b border-black/10">
-                  <p className="text-sm font-medium text-black">Guest User</p>
-                  <p className="text-xs text-black/60">Not logged in</p>
+                  <p className="text-sm font-medium text-black">{user?.name || 'Guest User'}</p>
+                  <p className="text-xs text-black/60">{user?.email || 'Not logged in'}</p>
                 </div>
                 <DropdownMenuItem className="text-black hover:bg-black/5 focus:bg-black/5" onClick={() => router.push('/applicant/profile')}>
                   <User className="w-4 h-4 mr-2 text-black" />

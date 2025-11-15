@@ -104,10 +104,15 @@ class BackendApiClient {
         ...options?.headers,
       };
 
-      // Add authorization header if token exists
-      if (token) {
+      // Add authorization header if token exists AND not a public endpoint
+      const publicEndpoints = ['/auth/register', '/auth/login'];
+      const isPublicEndpoint = publicEndpoints.some(ep => endpoint.includes(ep));
+
+      if (token && !isPublicEndpoint) {
         headers['Authorization'] = `Bearer ${token}`;
         console.log('[BackendClient] Authorization header set');
+      } else if (token && isPublicEndpoint) {
+        console.log('[BackendClient] Public endpoint - skipping auth header');
       } else {
         console.warn('[BackendClient] NO TOKEN - request will fail if auth required');
       }
@@ -131,12 +136,29 @@ class BackendApiClient {
           this.removeTokens();
         }
 
+        // Handle validation errors from FastAPI (422 status)
+        let errorMessage = 'An error occurred';
+        if (data.detail) {
+          if (Array.isArray(data.detail)) {
+            // Parse validation errors from FastAPI
+            errorMessage = data.detail.map((err: any) =>
+              err.msg || err.message || 'Validation error'
+            ).join(', ');
+          } else if (typeof data.detail === 'string') {
+            errorMessage = data.detail;
+          }
+        } else if (data.error?.message) {
+          errorMessage = data.error.message;
+        } else if (data.message) {
+          errorMessage = data.message;
+        }
+
         return {
           success: false,
           error: {
             code: data.error?.code || response.status.toString(),
-            message: data.error?.message || data.message || 'An error occurred',
-            details: data.error?.details || data.details,
+            message: errorMessage,
+            details: data.error?.details || data.details || data.detail,
           },
         };
       }
@@ -162,13 +184,19 @@ class BackendApiClient {
 
   // Authentication
   async register(data: { email: string; name: string; password: string; role: 'hr' | 'candidate' }) {
+    // Convert role to uppercase for backend compatibility
+    const requestData = {
+      ...data,
+      role: data.role === 'hr' ? 'HR' : 'CANDIDATE'
+    };
+
     const response = await this.request<{
       accessToken: string;  // Already converted to camelCase
       refreshToken: string;  // Already converted to camelCase
       user: User;
     }>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(requestData),
     });
 
     if (response.success && response.data) {

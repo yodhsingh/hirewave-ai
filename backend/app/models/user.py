@@ -21,7 +21,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
     password_hash = Column(String(255), nullable=False)
-    role = Column(Enum(UserRole, native_enum=True, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=UserRole.CANDIDATE)
+    role = Column(Enum(UserRole, name='user_role', native_enum=True, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=UserRole.CANDIDATE)
     company_id = Column(Integer, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

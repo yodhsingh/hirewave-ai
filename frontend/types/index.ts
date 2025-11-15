@@ -59,6 +59,7 @@ export interface JobCreate {
   roleType: RoleType;
   questions: QuestionCreate[];
   requirements?: string;
+  status?: JobStatus;
 }
 
 export type QuestionType = 'phone' | 'video' | 'text' | 'multiple_choice' | 'code';

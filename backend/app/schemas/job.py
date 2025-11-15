@@ -9,12 +9,15 @@ class QuestionBase(BaseModel):
 
     type: QuestionType
     question: str = Field(..., min_length=10)
-    time_limit: Optional[int] = None  # seconds
+    time_limit: Optional[int] = Field(None, alias='timeLimit')  # seconds
     options: Optional[List[str]] = None
-    code_template: Optional[str] = None
-    correct_answer: Optional[str] = None
+    code_template: Optional[str] = Field(None, alias='codeTemplate')
+    correct_answer: Optional[str] = Field(None, alias='correctAnswer')
     required: bool = True
     order: int
+
+    class Config:
+        populate_by_name = True  # Allow both camelCase and snake_case
 
 
 class QuestionCreate(QuestionBase):
@@ -54,14 +57,18 @@ class JobBase(BaseModel):
     description: str = Field(..., min_length=50, max_length=5000)
     department: str = Field(..., min_length=2, max_length=100)
     location: str = Field(..., min_length=2, max_length=255)
-    role_type: RoleType
+    role_type: RoleType = Field(..., alias='roleType')
     requirements: Optional[str] = None
+
+    class Config:
+        populate_by_name = True  # Allow both camelCase and snake_case
 
 
 class JobCreate(JobBase):
     """Job creation schema"""
 
     questions: List[QuestionCreate] = Field(..., min_items=3, max_items=15)
+    status: Optional[JobStatus] = JobStatus.DRAFT  # Allow setting status on create, default to draft
 
 
 class JobUpdate(BaseModel):
