@@ -441,6 +441,51 @@ class BackendApiClient {
     });
   }
 
+  async getProfile() {
+    return this.request<{
+      user_id: number;
+      full_name: string | null;
+      email: string | null;
+      phone: string | null;
+      location: string | null;
+      linkedin_url: string | null;
+      github_url: string | null;
+      portfolio_url: string | null;
+      summary: string | null;
+      current_job_title: string | null;
+      current_company: string | null;
+      years_of_experience: string | null;
+      education: string | null;
+      work_experience: any[] | null;
+      skills: any | null;
+      certifications: any[] | null;
+      projects: any[] | null;
+      achievements: string[] | null;
+      languages_spoken: string[] | null;
+      expected_salary: string | null;
+      availability: string | null;
+      work_type: string | null;
+      preferred_location: string | null;
+      desired_roles: string[] | null;
+      industries: string[] | null;
+      resume_url: string | null;
+      resume_parsed_at: string | null;
+      created_at: string | null;
+      updated_at: string | null;
+      exists: boolean;
+    }>('/profile/me');
+  }
+
+  async saveProfile(profileData: any) {
+    return this.request<{
+      message: string;
+      profile_id?: number;
+    }>('/profile/save', {
+      method: 'POST',
+      body: JSON.stringify(profileData),
+    });
+  }
+
   // Dashboard
   async getApplicantDashboard() {
     return this.request<{

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -42,6 +42,7 @@ export default function OnboardingWithParser() {
   const { user, logout } = useAuthStore();
   const [isUploading, setIsUploading] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [parsedExperience, setParsedExperience] = useState<any[]>([]); // Store parsed work history
@@ -71,6 +72,76 @@ export default function OnboardingWithParser() {
     // Additional
     summary: '',
   });
+
+  // Load existing profile data on mount
+  useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        setIsLoadingProfile(true);
+        const response = await backendClient.getProfile();
+
+        if (response.success && response.data?.exists) {
+          const profile = response.data;
+
+          // Populate form with existing profile data
+          setFormData({
+            name: profile.fullName || profile.full_name || '',
+            email: profile.email || '',
+            phone: profile.phone || '',
+            location: profile.location || '',
+            linkedinUrl: profile.linkedinUrl || profile.linkedin_url || '',
+            githubUrl: profile.githubUrl || profile.github_url || '',
+            portfolioUrl: profile.portfolioUrl || profile.portfolio_url || '',
+            currentRole: profile.currentJobTitle || profile.current_job_title || '',
+            currentCompany: profile.currentCompany || profile.current_company || '',
+            experience: profile.yearsOfExperience || profile.years_of_experience || '',
+            education: profile.education || '',
+            expectedSalary: profile.expectedSalary || profile.expected_salary || '',
+            availability: profile.availability || 'immediate',
+            workType: profile.workType || profile.work_type || 'full-time',
+            preferredLocation: profile.preferredLocation || profile.preferred_location || 'remote',
+            summary: profile.summary || '',
+            skills: [],
+          });
+
+          // Set skills
+          if (profile.skills) {
+            if (Array.isArray(profile.skills)) {
+              setSelectedSkills(profile.skills);
+            } else if (profile.skills.all) {
+              setSelectedSkills(profile.skills.all);
+            } else {
+              const allSkills = [
+                ...(profile.skills.technical || []),
+                ...(profile.skills.soft || []),
+                ...(profile.skills.languages || []),
+                ...(profile.skills.tools || []),
+              ];
+              setSelectedSkills(allSkills);
+            }
+          }
+
+          // Set work experience
+          if (profile.workExperience || profile.work_experience) {
+            setParsedExperience(profile.workExperience || profile.work_experience);
+          }
+
+          console.log('Loaded existing profile data');
+        }
+      } catch (error) {
+        console.error('Failed to load profile:', error);
+        // Don't show error toast - profile might not exist yet which is fine
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    if (user) {
+      loadProfile();
+    } else {
+      setIsLoadingProfile(false);
+    }
+  }, [user]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -113,20 +184,22 @@ export default function OnboardingWithParser() {
       // Update form with parsed data - check both camelCase and snake_case
       const personalInfo = parsedData.personalInfo || parsedData.personal_info || {};
 
+      // Smart merge: Only override if the parsed value exists and is not empty
       setFormData(prev => ({
         ...prev,
-        name: personalInfo.name || prev.name,
-        email: personalInfo.email || prev.email,
-        phone: personalInfo.phone || prev.phone,
-        location: personalInfo.location || prev.location,
-        linkedinUrl: personalInfo.linkedin || prev.linkedinUrl,
-        githubUrl: personalInfo.github || prev.githubUrl,
-        portfolioUrl: personalInfo.portfolio || prev.portfolioUrl,
-        summary: personalInfo.summary || prev.summary,
+        // Personal info - keep existing if parsed is empty
+        name: (personalInfo.name && personalInfo.name.trim()) ? personalInfo.name : prev.name,
+        email: (personalInfo.email && personalInfo.email.trim()) ? personalInfo.email : prev.email,
+        phone: (personalInfo.phone && personalInfo.phone.trim()) ? personalInfo.phone : prev.phone,
+        location: (personalInfo.location && personalInfo.location.trim()) ? personalInfo.location : prev.location,
+        linkedinUrl: (personalInfo.linkedin && personalInfo.linkedin.trim()) ? personalInfo.linkedin : prev.linkedinUrl,
+        githubUrl: (personalInfo.github && personalInfo.github.trim()) ? personalInfo.github : prev.githubUrl,
+        portfolioUrl: (personalInfo.portfolio && personalInfo.portfolio.trim()) ? personalInfo.portfolio : prev.portfolioUrl,
+        summary: (personalInfo.summary && personalInfo.summary.trim()) ? personalInfo.summary : prev.summary,
 
-        // Experience
-        currentRole: parsedData.experience?.[0]?.position || prev.currentRole,
-        currentCompany: parsedData.experience?.[0]?.company || prev.currentCompany,
+        // Experience - only update if new data exists
+        currentRole: (parsedData.experience?.[0]?.position) || prev.currentRole,
+        currentCompany: (parsedData.experience?.[0]?.company) || prev.currentCompany,
         // Calculate years of experience from dates or leave blank for manual entry
         experience: (() => {
           if (parsedData.experience && parsedData.experience.length > 0) {
@@ -148,41 +221,51 @@ export default function OnboardingWithParser() {
           return prev.experience;
         })(),
 
-        // Education
-        education: parsedData.education?.map((edu: any) =>
-          `${edu.degree} in ${edu.field} from ${edu.institution}`
-        ).join(', ') || prev.education,
+        // Education - only update if new education data exists
+        education: (parsedData.education && parsedData.education.length > 0)
+          ? parsedData.education.map((edu: any) =>
+              `${edu.degree} in ${edu.field} from ${edu.institution}`
+            ).join(', ')
+          : prev.education,
 
-        // Skills
-        skills: [
-          ...(parsedData.skills?.technical || []),
-          ...(parsedData.skills?.languages || []),
-          ...(parsedData.skills?.tools || []),
-        ],
+        // Skills - keep existing, don't override with empty array
+        skills: [],  // Skills handled separately below
 
-        // Preferences - check for both camelCase and snake_case
-        workType: (parsedData.preferences?.jobType || parsedData.preferences?.job_type)?.toLowerCase() || prev.workType,
+        // Preferences - only update if new values exist
+        workType: ((parsedData.preferences?.jobType || parsedData.preferences?.job_type)
+          ? (parsedData.preferences?.jobType || parsedData.preferences?.job_type)?.toLowerCase()
+          : prev.workType),
+
+        // Keep other preference fields unchanged unless explicitly in parsed data
+        expectedSalary: prev.expectedSalary,
+        availability: prev.availability,
+        preferredLocation: prev.preferredLocation,
       }));
 
-      // Update selected skills
-      const allSkills = [
+      // Smart merge for skills - combine new skills with existing ones
+      const newParsedSkills = [
         ...(parsedData.skills?.technical || []),
         ...(parsedData.skills?.languages || []),
         ...(parsedData.skills?.tools || []),
         ...(parsedData.skills?.soft || []),
       ];
 
-      if (allSkills.length > 0) {
-        setSelectedSkills(allSkills);
+      if (newParsedSkills.length > 0) {
+        // Merge new skills with existing ones, removing duplicates
+        setSelectedSkills(prev => {
+          const combined = [...prev, ...newParsedSkills];
+          return [...new Set(combined)]; // Remove duplicates
+        });
       }
 
-      // Store parsed experience for display
+      // Store parsed experience for display - merge with existing
       if (parsedData.experience && parsedData.experience.length > 0) {
+        // Replace experience only if new resume has experience data
         setParsedExperience(parsedData.experience);
       }
 
-      toast.success('Resume parsed successfully!', {
-        description: 'Your information has been extracted and filled in the form',
+      toast.success('Resume parsed and merged!', {
+        description: 'New information has been added while preserving your existing data. You can manually edit any field.',
       });
     } catch (error) {
       console.error('Resume parsing error:', error);
@@ -212,13 +295,25 @@ export default function OnboardingWithParser() {
   const handleSubmit = async () => {
     setIsUploading(true);
     try {
-      // Here you would send the data to your backend
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Prepare profile data for backend
+      const profileData = {
+        ...formData,
+        skills: selectedSkills.length > 0 ? { all: selectedSkills } : null,
+        workExperience: parsedExperience.length > 0 ? parsedExperience : null,
+      };
 
-      toast.success('Profile updated successfully!');
-      router.push('/applicant/dashboard');
+      // Save profile to backend
+      const response = await backendClient.saveProfile(profileData);
+
+      if (response.success) {
+        toast.success('Profile saved successfully!');
+        router.push('/applicant/dashboard');
+      } else {
+        throw new Error(response.error?.message || 'Failed to save profile');
+      }
     } catch (error) {
-      toast.error('Failed to update profile');
+      console.error('Profile save error:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to save profile');
     } finally {
       setIsUploading(false);
     }
@@ -229,6 +324,18 @@ export default function OnboardingWithParser() {
     animate: { opacity: 1, y: 0 },
     transition: { duration: 0.5 }
   };
+
+  // Show loading spinner while profile is being fetched
+  if (isLoadingProfile) {
+    return (
+      <div className="min-h-screen bg-[#0F0F0F] text-white flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="w-12 h-12 animate-spin text-white/60" />
+          <p className="text-white/80">Loading your profile...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#0F0F0F] text-white relative">
