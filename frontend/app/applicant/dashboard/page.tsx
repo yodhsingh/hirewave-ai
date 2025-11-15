@@ -146,11 +146,11 @@ export default function ApplicantDashboard() {
               </Button>
 
               <Button
-                onClick={() => router.push('/applicant/practice/new')}
+                onClick={() => router.push('/applicant/practice')}
                 className="gap-2 bg-black hover:bg-black/90 text-white rounded-xl font-medium shadow-sm"
               >
-                <Play className="w-4 h-4" />
-                Start Practice
+                <Brain className="w-4 h-4" />
+                Practice Interview
               </Button>
 
               {/* Only show ViewSwitcher for Admin, HR users, or demo mode */}

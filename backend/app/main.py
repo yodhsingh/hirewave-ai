@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 import logging
 
 from app.core.config import settings
-from app.api.endpoints import auth, jobs, candidates, interviews, dashboard, ai, resume, profile
+from app.api.endpoints import auth, jobs, candidates, interviews, dashboard, ai, resume, profile, practice
 
 # Configure logging
 logging.basicConfig(
@@ -109,6 +109,7 @@ app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ai.router, prefix=settings.API_V1_PREFIX)
 app.include_router(resume.router, prefix=settings.API_V1_PREFIX)
 app.include_router(profile.router, prefix=settings.API_V1_PREFIX)
+app.include_router(practice.router, prefix=settings.API_V1_PREFIX)
 
 
 # Global exception handler

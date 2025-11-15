@@ -105,7 +105,12 @@ class BackendApiClient {
       };
 
       // Add authorization header if token exists AND not a public endpoint
-      const publicEndpoints = ['/auth/register', '/auth/login'];
+      const publicEndpoints = [
+        '/auth/register',
+        '/auth/login',
+        '/text-to-speech',  // TTS is public for demo
+        '/transcribe'  // Transcription is public for demo
+      ];
       const isPublicEndpoint = publicEndpoints.some(ep => endpoint.includes(ep));
 
       if (token && !isPublicEndpoint) {
@@ -130,9 +135,10 @@ class BackendApiClient {
       const data = await response.json();
 
       if (!response.ok) {
-        // If we get 401 or 500 errors, token might be stale - clear it
-        if (response.status === 401 || response.status === 500) {
-          console.warn('Auth error detected, clearing tokens');
+        // Only clear tokens on 401 (Unauthorized) - NOT on 500 errors!
+        // 500 errors are server issues, not auth issues
+        if (response.status === 401) {
+          console.warn('401 Unauthorized - clearing tokens');
           this.removeTokens();
         }
 
@@ -519,6 +525,115 @@ class BackendApiClient {
         details?: string;
       }>;
     }>('/dashboard/applicant');
+  }
+
+  // Practice Interview APIs
+  async startPracticeSession(config: {
+    interview_type?: string;
+    difficulty?: string;
+    questions_count?: number;
+    target_role?: string;
+    focus_areas?: string[];
+  }) {
+    return this.request<{
+      success: boolean;
+      session_id: number;
+      questions: Array<{
+        id: number;
+        question: string;
+        type: string;
+        context: string | null;
+        order: number;
+      }>;
+    }>('/practice/start-session', {
+      method: 'POST',
+      body: JSON.stringify(config),
+    });
+  }
+
+  async submitPracticeAnswer(questionId: number, audioBlob: Blob, duration?: number) {
+    const formData = new FormData();
+    formData.append('audio_file', audioBlob, 'recording.webm');
+    if (duration) {
+      formData.append('duration', duration.toString());
+    }
+
+    return this.request<{
+      success: boolean;
+      feedback: {
+        score: number;
+        feedback: string;
+        strengths: string[];
+        improvements: string[];
+        key_points_covered: string[];
+        sentiment?: {
+          confidence: number;
+          clarity: number;
+          enthusiasm: number;
+        };
+      };
+    }>(`/practice/submit-answer/${questionId}`, {
+      method: 'POST',
+      body: formData,
+      headers: {}, // Let browser set Content-Type for FormData
+    });
+  }
+
+  async getPracticeSessions() {
+    return this.request<{
+      success: boolean;
+      sessions: Array<{
+        id: number;
+        type: string;
+        difficulty: string;
+        target_role: string;
+        questions_count: number;
+        completed_count: number;
+        overall_score: number | null;
+        started_at: string;
+        completed_at: string | null;
+      }>;
+    }>('/practice/sessions');
+  }
+
+  async getPracticeSession(sessionId: number) {
+    return this.request<{
+      success: boolean;
+      session: {
+        id: number;
+        type: string;
+        difficulty: string;
+        target_role: string;
+        questions_count: number;
+        completed_count: number;
+        overall_score: number | null;
+        started_at: string;
+        completed_at: string | null;
+        questions: Array<{
+          id: number;
+          question: string;
+          type: string;
+          context: string | null;
+          response?: {
+            transcript: string;
+            score: number;
+            feedback: string;
+            strengths: string[];
+            improvements: string[];
+          };
+        }>;
+      };
+    }>(`/practice/session/${sessionId}`);
+  }
+
+  async completePracticeSession(sessionId: number) {
+    return this.request<{
+      success: boolean;
+      overall_score: number;
+      feedback: string;
+    }>(`/practice/session/${sessionId}/complete`, {
+      method: 'POST',
+    });
   }
 }
 

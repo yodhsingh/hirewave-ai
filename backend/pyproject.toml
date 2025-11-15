@@ -9,24 +9,20 @@ dependencies = [
     "fastapi",
     "uvicorn[standard]",
     "python-multipart",
-
     # Database
     "sqlalchemy",
     "psycopg2-binary",
     "asyncpg",
     "greenlet",
-
     # Authentication & Security
     "python-jose[cryptography]",
     "passlib[bcrypt]",
     "python-dotenv",
     "pydantic[email]",
     "pydantic-settings",
-
     # Background Tasks
     "celery",
     "redis",
-
     # AI & ML
     "openai",
     "anthropic",
@@ -35,20 +31,17 @@ dependencies = [
     "google-generativeai",
     "PyPDF2",
     "python-docx",
-
     # Cloud Storage
     "boto3",
-
     # HTTP Client
     "httpx",
     "aiofiles",
-
     # Email
     "sendgrid",
-
     # Utilities
     "python-dateutil",
     "pytz",
+    "gtts>=2.5.4",
 ]
 
 [project.optional-dependencies]
