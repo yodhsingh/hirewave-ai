@@ -64,3 +64,30 @@ Thumbs.db
 tmp/
 temp/
 *.tmp
+
+# Test output files
+test_response.json
+*_response.json
+
+# Audio/video test files (large files)
+*.mp3
+*.mp4
+*.wav
+*.m4a
+*.webm
+*.mov
+
+# Server logs
+server.log
+nohup.out
+
+# Optional: Test scripts (uncomment if you don't want them in repo)
+# backend/test_client.py
+# test_interview_report.py
+
+# Optional: Detailed documentation (uncomment if you don't want them in repo)
+# IMPLEMENTATION_SUMMARY.md
+# TEST_RESULTS.md
+# backend/FILE_STRUCTURE.md
+# backend/FILES_DECISION.md
+# backend/GIT_COMMIT_GUIDE.md

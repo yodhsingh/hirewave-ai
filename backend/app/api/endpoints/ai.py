@@ -5,9 +5,11 @@ from app.schemas.resume import ResumeParseResponse
 from app.schemas.interview import InterviewReportResponse
 from app.api.dependencies.auth import get_current_hr_user
 from app.api.ai.resume_parser import parse_resume_with_gemini
-from app.api.ai.interview_report import generate_interview_report
+from app.api.ai.interview_report_generator import generate_interview_report
 from app.core.config import settings
 import json
+import tempfile
+import os
 
 router = APIRouter(prefix="/ai", tags=["AI"])
 
@@ -82,10 +84,74 @@ async def parse_resume(
         )
 
 
-@router.post("/generate-interview-report", response_model=ApiResponse[InterviewReportResponse])
+@router.post("/generate-interview-report-test")
+async def generate_interview_report_test_endpoint(
+    audio_file: UploadFile = File(...),
+    parsed_resume_data: str = Form(...),
+):
+    """
+    TEST ENDPOINT - No authentication required for testing
+    """
+    # Same logic as authenticated endpoint
+    if not audio_file:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Audio file is required.",
+        )
+    
+    if not parsed_resume_data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Parsed resume data (JSON) is required.",
+        )
+    
+    if isinstance(parsed_resume_data, str):
+        try:
+            resume_data_dict = json.loads(parsed_resume_data)
+        except json.JSONDecodeError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid JSON format for parsed_resume_data.",
+            )
+    else:
+        resume_data_dict = parsed_resume_data
+    
+    temp_audio_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(audio_file.filename)[1]) as temp_audio:
+            content = await audio_file.read()
+            temp_audio.write(content)
+            temp_audio_path = temp_audio.name
+        
+        report = generate_interview_report(
+            audio_path=temp_audio_path,
+            parsed_resume_data=resume_data_dict
+        )
+        
+        return {
+            "success": True,
+            "data": report,
+            "message": "Interview report generated successfully."
+        }
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating interview report: {str(e)}",
+        )
+    
+    finally:
+        if temp_audio_path and os.path.exists(temp_audio_path):
+            try:
+                os.remove(temp_audio_path)
+            except Exception as e:
+                print(f"Warning: Failed to delete temporary file: {e}")
+
+
+@router.post("/generate-interview-report")
 async def generate_interview_report_endpoint(
     audio_file: UploadFile = File(...),
-    resume_data: str = Form(...),
+    parsed_resume_data: str = Form(...),
     current_user: User = Depends(get_current_hr_user),
 ):
     """
@@ -105,75 +171,59 @@ async def generate_interview_report_endpoint(
     if not audio_file:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No audio file uploaded",
+            detail="Audio file is required.",
         )
     
-    # Validate audio file format
-    file_extension = audio_file.filename.lower().split(".")[-1] if audio_file.filename else ""
-    if file_extension not in settings.ALLOWED_AUDIO_FORMATS:
+    # Validate parsed resume data
+    if not parsed_resume_data:
         raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail=f"Unsupported audio format. Supported formats: {', '.join(settings.ALLOWED_AUDIO_FORMATS)}",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Parsed resume data (JSON) is required.",
         )
     
-    # Validate audio file size
-    audio_content = await audio_file.read()
-    file_size = len(audio_content)
+    # Parse JSON string to dict if needed
+    if isinstance(parsed_resume_data, str):
+        try:
+            resume_data_dict = json.loads(parsed_resume_data)
+        except json.JSONDecodeError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid JSON format for parsed_resume_data.",
+            )
+    else:
+        resume_data_dict = parsed_resume_data
     
-    if file_size > settings.max_audio_size_bytes:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"Audio file too large. Maximum size: {settings.MAX_AUDIO_SIZE_MB}MB",
-        )
-    
-    # Reset file pointer for processing
-    await audio_file.seek(0)
-    
-    # Validate and parse resume data JSON
+    # Save audio file temporarily
+    temp_audio_path = None
     try:
-        parsed_resume_data = json.loads(resume_data)
-    except json.JSONDecodeError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid resume data JSON: {str(e)}",
-        )
-    
-    # Validate resume data structure (basic validation)
-    if not isinstance(parsed_resume_data, dict):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Resume data must be a JSON object",
-        )
-    
-    # Check for required fields in resume data
-    required_fields = ["candidate_info"]
-    missing_fields = [field for field in required_fields if field not in parsed_resume_data]
-    if missing_fields:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Missing required fields in resume data: {', '.join(missing_fields)}",
-        )
-    
-    try:
-        # Generate interview report
-        result = await generate_interview_report(audio_file, parsed_resume_data)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(audio_file.filename)[1]) as temp_audio:
+            content = await audio_file.read()
+            temp_audio.write(content)
+            temp_audio_path = temp_audio.name
         
-        # Return standardized response
-        return ApiResponse(
-            success=True,
-            data=InterviewReportResponse(**result),
+        # Generate interview report using the same flow from finalInterviewReport.py
+        report = generate_interview_report(
+            audio_path=temp_audio_path,
+            parsed_resume_data=resume_data_dict
         )
-    
-    except ValueError as e:
-        # Handle validation and parsing errors
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e),
-        )
+        
+        # Return standardized response (same format as Django)
+        return {
+            "success": True,
+            "data": report,
+            "message": "Interview report generated successfully."
+        }
     
     except Exception as e:
-        # Handle unexpected errors
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error generating interview report: {str(e)}",
         )
+    
+    finally:
+        # Clean up temporary file
+        if temp_audio_path and os.path.exists(temp_audio_path):
+            try:
+                os.remove(temp_audio_path)
+            except Exception as e:
+                print(f"Warning: Failed to delete temporary file: {e}")

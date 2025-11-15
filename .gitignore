@@ -64,3 +64,12 @@ frontend/vercel.json
 
 Backend
 
+
+backend/test_client.py
+backend/test_interview_report.py
+backend/COMMIT_DECISION.md
+backend/IMPLEMENTATION_SUMMARY.md
+backend/INTERVIEW_REPORT_API.md
+backend/QUICK_START.md
+backend/TEST_RESULTS.md
+backend/backend
