@@ -17,12 +17,40 @@ from typing import Optional
 router = APIRouter(prefix="/interviews", tags=["Interviews"])
 
 
-@router.get("/{token}", response_model=ApiResponse[JobResponse])
+@router.get(
+    "/{token}",
+    response_model=ApiResponse[JobResponse],
+    summary="Get interview questions",
+    description="""
+    Retrieve all interview questions for a candidate using their invitation token.
+
+    **Process:**
+    1. Validate invitation token
+    2. Update candidate status to 'started' if first access
+    3. Update invite status to 'opened'
+    4. Return job details with all interview questions
+
+    **Candidate Status Flow:**
+    - invited → started (first time accessing questions)
+    - started → in_progress (when submitting first response)
+    - in_progress → submitted (when completing all questions)
+
+    **Response Includes:**
+    - Job details (title, description, department)
+    - All interview questions with:
+      - Question text and type
+      - Time limits
+      - Evaluation criteria
+      - Options (for multiple choice)
+
+    **Authentication:** Public endpoint (uses invitation token from email)
+    """,
+    response_description="Interview questions retrieved successfully",
+)
 async def get_interview_questions(
     token: str,
     db: AsyncSession = Depends(get_db),
 ):
-    """Get interview questions for a candidate (public endpoint)"""
     # Find candidate by token
     result = await db.execute(
         select(Candidate)
@@ -59,16 +87,45 @@ async def get_interview_questions(
     return ApiResponse(success=True, data=job_response)
 
 
-@router.post("/{token}/responses", response_model=ApiResponse[dict])
+@router.post(
+    "/{token}/responses",
+    response_model=ApiResponse[dict],
+    summary="Save interview response",
+    description="""
+    Save or update a candidate's response to a specific interview question.
+
+    **Process:**
+    1. Validate candidate token
+    2. Update candidate status to in_progress if first response
+    3. Save or update response for the question
+    4. Track last activity timestamp
+
+    **Parameters:**
+    - **token**: Unique invitation token from email
+    - **question_id**: ID of the question being answered
+    - **content**: Response content (text, URL, or file path)
+    - **duration**: Optional time taken to answer (seconds)
+    - **type**: Response type (text, video, audio, code, etc.)
+
+    **Response Types:**
+    - text: Plain text answer
+    - video: Video response URL (S3)
+    - audio: Audio response URL (S3)
+    - code: Code solution
+    - multiple_choice: Selected option
+
+    **Authentication:** Public endpoint (uses invitation token)
+    """,
+    response_description="Response saved successfully",
+)
 async def save_response(
     token: str,
-    question_id: str,
-    content: str = Form(...),
-    duration: Optional[int] = Form(None),
-    type: str = Form(...),
+    question_id: str = Form(..., description="ID of the question being answered"),
+    content: str = Form(..., description="Response content (text or URL)"),
+    duration: Optional[int] = Form(None, description="Time taken to answer in seconds"),
+    type: str = Form(..., description="Response type (text, video, audio, code, multiple_choice)"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Save individual interview response"""
     # Find candidate
     result = await db.execute(
         select(Candidate).filter(Candidate.invite_token == token)
@@ -121,13 +178,46 @@ async def save_response(
     )
 
 
-@router.post("/{token}/submit", response_model=ApiResponse[InterviewSubmitResponse])
+@router.post(
+    "/{token}/submit",
+    response_model=ApiResponse[InterviewSubmitResponse],
+    summary="Submit completed interview",
+    description="""
+    Submit all interview responses for AI evaluation and scoring.
+
+    **Process:**
+    1. Validate invitation token
+    2. Save/update all interview responses
+    3. Update candidate status to 'submitted'
+    4. Mark invite as 'completed'
+    5. Trigger background AI evaluation (async via Celery)
+
+    **Background Processing:**
+    After submission, a Celery task processes the interview:
+    - Transcribe video/audio responses
+    - Score each answer with AI
+    - Calculate competency breakdown
+    - Extract skills and keywords
+    - Generate comprehensive evaluation report
+    - Send notification email to HR
+
+    **Request Body:**
+    Array of response objects, each containing:
+    - question_id: ID of the answered question
+    - content: Response content (text or S3 URL)
+    - type: Response type (text, video, audio, code)
+    - duration: Time taken in seconds
+    - retries: Number of answer attempts
+
+    **Authentication:** Public endpoint (uses invitation token)
+    """,
+    response_description="Interview submitted successfully and queued for AI evaluation",
+)
 async def submit_interview(
     token: str,
     submission: InterviewSubmitRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Submit complete interview for processing"""
     # Find candidate
     result = await db.execute(
         select(Candidate).filter(Candidate.invite_token == token)

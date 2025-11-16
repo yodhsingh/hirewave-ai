@@ -30,17 +30,18 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description="""
-# GenAI Interview Platform API
+# HiveWave.ai Interview Platform API
 
-An AI-powered asynchronous interview platform that helps HR teams efficiently screen candidates.
+An AI-powered asynchronous interview platform by **HiveWave.ai** that helps HR teams efficiently screen candidates.
 
 ## Features
 
 * **Authentication** - JWT-based authentication with role-based access control
 * **Job Management** - Create, manage, and track job postings
 * **Candidate Pipeline** - Track candidates through the interview process
-* **AI Scoring** - Automatic interview analysis with GPT-4
+* **AI Scoring** - Automatic interview analysis with GPT-4, Claude, and Gemini
 * **Video Interviews** - Upload and process video responses
+* **Practice Sessions** - AI-powered interview practice with consolidated insights
 * **Email Notifications** - Automated candidate communications
 
 ## Authentication
@@ -52,18 +53,63 @@ Authorization: Bearer <your_token>
 ```
 
 Get your token by calling `/api/v1/auth/login` or `/api/v1/auth/register`.
+
+## About HiveWave.ai
+
+HiveWave.ai revolutionizes the hiring process by leveraging cutting-edge AI technology to provide
+comprehensive candidate evaluation, reduce time-to-hire, and improve hiring quality.
     """,
     lifespan=lifespan,
     docs_url="/api/docs",  # Always show Swagger UI
     redoc_url="/api/redoc",  # Always show ReDoc
     openapi_url="/api/openapi.json",  # OpenAPI JSON spec
+    openapi_tags=[
+        {
+            "name": "Authentication",
+            "description": "User authentication, registration, and JWT token management. "
+                          "Supports role-based access (HR, CANDIDATE, ADMIN)."
+        },
+        {
+            "name": "Jobs",
+            "description": "Job posting management for HR teams. Create, update, and manage job "
+                          "listings with embedded interview questions."
+        },
+        {
+            "name": "Candidates",
+            "description": "Candidate management and tracking. Handle candidate invitations, "
+                          "monitor interview progress, and manage the hiring pipeline."
+        },
+        {
+            "name": "Interviews",
+            "description": "Interview process endpoints. Candidates access questions, submit "
+                          "responses, and complete interviews using unique invitation tokens."
+        },
+        {
+            "name": "Dashboard",
+            "description": "Dashboard analytics and insights. View application statistics, "
+                          "recent activity, and performance metrics for HR and candidates."
+        },
+        {
+            "name": "AI",
+            "description": "AI-powered features. Resume parsing with Gemini, interview report "
+                          "generation with transcription and AI evaluation."
+        },
+        {
+            "name": "Practice",
+            "description": "Interview practice system. AI-generated practice questions, "
+                          "real-time feedback, and consolidated insights to improve interview skills."
+        }
+    ],
     contact={
-        "name": "GenAI Interview Platform",
-        "url": "https://github.com/yourusername/genai-interview",
+        "name": "HiveWave.ai",
+        "url": "https://github.com/just-ravina/soft-engg-project-sept-2025-se-SEP-15",
+        "email": "support@hivewave.ai",
     },
     license_info={
         "name": "MIT",
+        "url": "https://opensource.org/licenses/MIT",
     },
+    terms_of_service="https://github.com/just-ravina/soft-engg-project-sept-2025-se-SEP-15/blob/main/README.md",
 )
 
 # CORS middleware
@@ -93,11 +139,13 @@ async def health_check():
 # Root endpoint
 @app.get("/")
 async def root():
-    """Root endpoint"""
+    """Root endpoint - Welcome to HiveWave.ai"""
     return {
         "message": f"Welcome to {settings.APP_NAME}",
+        "company": "HiveWave.ai",
         "version": settings.APP_VERSION,
         "docs": "/api/docs" if settings.DEBUG else None,
+        "github": "https://github.com/just-ravina/soft-engg-project-sept-2025-se-SEP-15",
     }
 
 

@@ -18,19 +18,37 @@ SUPPORTED_FORMATS = ["pdf", "doc", "docx", "png", "jpg", "jpeg"]
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
 
-@router.post("/parse-resume", response_model=ApiResponse[ResumeParseResponse])
+@router.post(
+    "/parse-resume",
+    response_model=ApiResponse[ResumeParseResponse],
+    summary="Parse resume with AI",
+    description="""
+    Extract structured information from resume files using Google Gemini AI.
+
+    **Supported Formats:**
+    - PDF (.pdf)
+    - Microsoft Word (.doc, .docx)
+    - Images (.png, .jpg, .jpeg)
+
+    **File Requirements:**
+    - Maximum file size: 10MB
+    - Must contain valid resume content
+
+    **Extracted Information:**
+    - Personal details (name, email, phone)
+    - Work experience with dates and descriptions
+    - Educational background
+    - Skills and certifications
+    - Professional summary
+
+    **Authentication:** Requires HR or ADMIN role
+    """,
+    response_description="Resume successfully parsed with extracted structured data",
+)
 async def parse_resume(
-    file: UploadFile = File(...),
+    file: UploadFile = File(..., description="Resume file to parse (PDF, DOC, DOCX, or image)"),
     current_user: User = Depends(get_current_hr_user),
 ):
-    """
-    Parse a resume file and extract structured information using Google Gemini AI.
-    
-    Supports PDF, DOC, DOCX, and image files (PNG, JPG, JPEG).
-    Maximum file size: 10MB.
-    
-    Requires HR user authentication.
-    """
     # Validate file is provided
     if not file:
         raise HTTPException(
@@ -84,14 +102,32 @@ async def parse_resume(
         )
 
 
-@router.post("/generate-interview-report-test")
+@router.post(
+    "/generate-interview-report-test",
+    summary="[TEST] Generate interview report without authentication",
+    description="""
+    **⚠️ TEST ENDPOINT - No authentication required**
+
+    This is a testing version of the interview report generator that bypasses authentication.
+    Use this endpoint for development and testing purposes only.
+
+    **Process:**
+    Same as `/generate-interview-report` but without authentication:
+    1. Transcribe audio interview recording
+    2. Extract question-answer pairs
+    3. Generate evaluation report with AI scoring
+
+    **Supported Audio Formats:** MP3, WAV, M4A, WebM
+    **Maximum File Size:** 50MB
+
+    **Authentication:** None (public endpoint for testing)
+    """,
+    response_description="Interview report generated successfully",
+)
 async def generate_interview_report_test_endpoint(
-    audio_file: UploadFile = File(...),
-    parsed_resume_data: str = Form(...),
+    audio_file: UploadFile = File(..., description="Audio recording of the interview"),
+    parsed_resume_data: str = Form(..., description="JSON string of parsed resume data"),
 ):
-    """
-    TEST ENDPOINT - No authentication required for testing
-    """
     # Same logic as authenticated endpoint
     if not audio_file:
         raise HTTPException(
@@ -148,25 +184,46 @@ async def generate_interview_report_test_endpoint(
                 print(f"Warning: Failed to delete temporary file: {e}")
 
 
-@router.post("/generate-interview-report")
+@router.post(
+    "/generate-interview-report",
+    summary="Generate AI interview evaluation report",
+    description="""
+    Generate comprehensive interview evaluation from audio recording and resume data.
+
+    **Process:**
+    1. Transcribe audio interview recording
+    2. Extract question-answer pairs from transcript
+    3. Analyze responses against resume qualifications
+    4. Generate detailed evaluation with AI scoring
+
+    **Supported Audio Formats:**
+    - MP3 (.mp3)
+    - WAV (.wav)
+    - M4A (.m4a)
+    - WebM (.webm)
+
+    **File Requirements:**
+    - Maximum audio file size: 50MB
+    - Clear audio quality recommended for accurate transcription
+
+    **Generated Report Includes:**
+    - Full interview transcript
+    - Extracted Q&A pairs with timestamps
+    - Overall candidate score (0-100)
+    - Strengths and weaknesses analysis
+    - Technical skills assessment
+    - Cultural fit evaluation
+    - Hiring recommendations
+
+    **Authentication:** Requires HR or ADMIN role
+    """,
+    response_description="Interview report successfully generated with comprehensive evaluation",
+)
 async def generate_interview_report_endpoint(
-    audio_file: UploadFile = File(...),
-    parsed_resume_data: str = Form(...),
+    audio_file: UploadFile = File(..., description="Audio recording of the interview"),
+    parsed_resume_data: str = Form(..., description="JSON string of parsed resume data from /parse-resume endpoint"),
     current_user: User = Depends(get_current_hr_user),
 ):
-    """
-    Generate a comprehensive interview evaluation report from audio recording and resume data.
-    
-    Accepts an audio file of an interview recording and parsed resume data, then generates:
-    - Full transcript of the interview
-    - Extracted Q&A pairs
-    - Comprehensive evaluation report with scores, strengths, weaknesses, and recommendations
-    
-    Supports audio formats: mp3, wav, m4a, webm
-    Maximum file size: 50MB
-    
-    Requires HR user authentication.
-    """
     # Validate audio file is provided
     if not audio_file:
         raise HTTPException(
