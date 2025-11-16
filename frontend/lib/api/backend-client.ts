@@ -586,10 +586,17 @@ class BackendApiClient {
         id: number;
         type: string;
         difficulty: string;
-        target_role: string;
+        target_role: string | null;
         questions_count: number;
         completed_count: number;
         overall_score: number | null;
+        category_scores: {
+          communication: number;
+          technical: number;
+          problem_solving: number;
+          confidence: number;
+          completeness: number;
+        } | null;
         started_at: string;
         completed_at: string | null;
       }>;

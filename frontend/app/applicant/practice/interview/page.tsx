@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import {
   Mic, MicOff, Play, Pause, Send, Clock, CheckCircle,
   AlertCircle, ChevronRight, ChevronLeft, Loader2,
-  Brain, Sparkles, Home, Volume2, StopCircle
+  Brain, Sparkles, Home, Volume2, StopCircle, MessageSquare
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -31,12 +31,20 @@ interface SessionState {
   sessionId: number | null;
   questions: Question[];
   currentQuestionIndex: number;
-  responses: Map<number, { audioBlob: Blob; duration: number; transcript?: string }>;
+  responses: Map<number, { audioBlob?: Blob; duration?: number; transcript?: string; textAnswer?: string }>;
   feedback: Map<number, any>;
 }
 
 // Module-level flag to prevent duplicate initialization in StrictMode
 let isSessionInitializing = false;
+
+// Debug helper - allow resetting from console
+if (typeof window !== 'undefined') {
+  (window as any).resetSessionInit = () => {
+    console.log('🔧 Resetting session initialization flag');
+    isSessionInitializing = false;
+  };
+}
 
 export default function PracticeInterviewPage() {
   const router = useRouter();
@@ -62,55 +70,101 @@ export default function PracticeInterviewPage() {
   const [hasMediaPermission, setHasMediaPermission] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(true); // Try auto-speaking since user clicked to get here
+  const [responseMode, setResponseMode] = useState<'text' | 'voice'>('text'); // Default to text mode
+  const [textAnswer, setTextAnswer] = useState(''); // Text input for typing answers
 
   // Get session config from localStorage or URL params
   useEffect(() => {
     const initSession = async () => {
       // Prevent double initialization using module-level flag
-      if (isSessionInitializing || sessionState.sessionId) {
+      console.log('🔍 Checking initialization conditions:');
+      console.log('  - isSessionInitializing:', isSessionInitializing);
+      console.log('  - sessionState.sessionId:', sessionState.sessionId);
+
+      if (isSessionInitializing) {
+        console.log('⚠️ Session is already initializing, skipping...');
         return;
       }
+      if (sessionState.sessionId) {
+        console.log('✅ Session already exists with ID:', sessionState.sessionId);
+        return;
+      }
+
+      console.log('🚀 Starting session initialization...');
       isSessionInitializing = true;
 
       try {
-        // Get config from localStorage (set by the config page)
-        const configStr = localStorage.getItem('practiceSessionConfig');
-        const config = configStr ? JSON.parse(configStr) : {
-          interview_type: 'mixed',
-          difficulty: 'medium',
-          questions_count: 3
-        };
+        // First check if session data already exists (created on practice page)
+        const sessionDataStr = localStorage.getItem('practiceSessionData');
+        console.log('📋 Existing session data from localStorage:', sessionDataStr);
 
-        // Clear the config after reading
-        localStorage.removeItem('practiceSessionConfig');
+        if (sessionDataStr) {
+          // Use existing session created on practice page
+          const sessionData = JSON.parse(sessionDataStr);
+          console.log('✅ Using existing session ID:', sessionData.sessionId);
+          console.log('✅ Questions loaded:', sessionData.questions);
 
-        // Start a new session
-        const response = await backendClient.startPracticeSession(config);
-
-        if (response.success && response.data) {
           setSessionState({
-            sessionId: response.data.session_id,
-            questions: response.data.questions,
+            sessionId: sessionData.sessionId,
+            questions: sessionData.questions,
             currentQuestionIndex: 0,
             responses: new Map(),
             feedback: new Map(),
           });
 
-          // Don't auto-speak on initial load - browsers often block this
-          // User can click the speaker button or it will auto-speak when navigating
+          console.log('Session state initialized from existing data');
+
+          // Don't clear localStorage yet - keep it for page reloads/refreshes
+          // We'll clear it when the interview is submitted or user manually exits
 
           // Reset flag after successful initialization
           isSessionInitializing = false;
         } else {
+          // No existing session - redirect to practice setup page
+          console.log('❌ No existing session found, redirecting to practice setup...');
           isSessionInitializing = false;
-          throw new Error(response.error?.message || 'Failed to start session');
+
+          toast({
+            title: 'No Session Found',
+            description: 'Please start a practice session from the setup page.',
+            variant: 'destructive'
+          });
+
+          router.push('/applicant/practice');
+          return;
+
+          // Check if it's an authentication error
+          if (response.error?.message?.toLowerCase().includes('not authenticated') ||
+              response.error?.message?.toLowerCase().includes('unauthorized')) {
+            toast({
+              title: 'Authentication Required',
+              description: 'Please log in to start a practice session.',
+              variant: 'destructive',
+            });
+            // Redirect to login without clearing the session (backend client handles token cleanup)
+            router.push('/login?role=candidate&redirect=/applicant/practice');
+          } else {
+            // For other errors, show error but don't redirect or clear session
+            toast({
+              title: 'Error Starting Session',
+              description: response.error?.message || 'Failed to start practice session. Please try again.',
+              variant: 'destructive',
+            });
+            router.push('/applicant/practice');
+          }
         }
-      } catch (error) {
-        console.error('Failed to start practice session:', error);
+      } catch (error: any) {
+        console.error('❌ Exception starting practice session:', error);
+        console.error('Error details:', {
+          message: error.message,
+          stack: error.stack,
+          response: error.response,
+        });
         isSessionInitializing = false;
+        // Don't clear user session on errors - just show the error
         toast({
           title: 'Error',
-          description: 'Failed to start practice session. Please try again.',
+          description: error.message || 'An unexpected error occurred. Please try again.',
           variant: 'destructive',
         });
         router.push('/applicant/practice');
@@ -119,6 +173,9 @@ export default function PracticeInterviewPage() {
       }
     };
 
+    console.log('📍 useEffect running - Page loaded, attempting to initialize session...');
+    console.log('Current sessionState:', sessionState);
+    console.log('isSessionInitializing:', isSessionInitializing);
     initSession();
     requestMediaPermission();
 
@@ -128,6 +185,30 @@ export default function PracticeInterviewPage() {
       isSessionInitializing = false;
     };
   }, []); // Empty dependency array - run only once on mount
+
+  // Monitor responses state and log Submit button visibility
+  useEffect(() => {
+    const shouldShowSubmitButton = sessionState.responses.size > 0 && !isRecording;
+
+    console.log('📊 Session State Update:');
+    console.log('   - Responses count:', sessionState.responses.size);
+    console.log('   - Total questions:', sessionState.questions.length);
+    console.log('   - Is recording:', isRecording);
+    console.log('   - Should show Submit button:', shouldShowSubmitButton);
+
+    if (shouldShowSubmitButton) {
+      console.log('   ✅ "Submit for Evaluation" button should be VISIBLE');
+    } else {
+      console.log('   ❌ "Submit for Evaluation" button should be HIDDEN');
+      if (sessionState.responses.size === 0) {
+        console.log('      Reason: No responses saved yet');
+      }
+      if (isRecording) {
+        console.log('      Reason: Currently recording');
+      }
+    }
+    console.log('');
+  }, [sessionState.responses.size, sessionState.questions.length, isRecording]);
 
   // Request microphone permission with better error handling
   const requestMediaPermission = async () => {
@@ -354,74 +435,122 @@ export default function PracticeInterviewPage() {
     }
   };
 
-  // Submit all recordings for complete evaluation
+  // Submit all answers for complete evaluation
   const submitAllAnswers = async () => {
+    console.log('');
+    console.log('========================================');
+    console.log('🚀 SUBMIT FOR EVALUATION button clicked!');
+    console.log('========================================');
+    console.log('📊 Current session state:', {
+      sessionId: sessionState.sessionId,
+      responsesCount: sessionState.responses.size,
+      totalQuestions: sessionState.questions.length,
+      hasSessionId: !!sessionState.sessionId,
+      hasResponses: sessionState.responses.size > 0
+    });
+    console.log('');
+
     if (!sessionState.sessionId || sessionState.responses.size === 0) {
+      console.error('❌ VALIDATION FAILED:');
+      console.error('   - Has Session ID:', !!sessionState.sessionId);
+      console.error('   - Has Responses:', sessionState.responses.size > 0);
+      console.error('   - Responses count:', sessionState.responses.size);
+
       toast({
-        title: 'No recordings found',
-        description: 'Please record your answers before submitting.',
+        title: 'No Answers Found',
+        description: 'Please answer at least one question before submitting.',
         variant: 'destructive'
       });
       return;
     }
 
+    console.log('✅ Validation passed, proceeding with submission...');
+
     setIsSubmitting(true);
     try {
-      // Prepare FormData with all recordings
-      const formData = new FormData();
-      const responsesArray = [];
+      const submitUrl = `http://localhost:8000/api/v1/practice/submit-session/${sessionState.sessionId}`;
+      const token = localStorage.getItem('access_token');
 
-      // Add each recording to FormData
-      sessionState.responses.forEach((response, questionId) => {
-        const question = sessionState.questions.find(q => q.id === questionId);
-        if (question) {
-          formData.append(`audio_${questionId}`, response.audioBlob, `question_${questionId}.webm`);
-          responsesArray.push({
-            question_id: questionId,
-            duration: response.duration
-          });
-        }
+      console.log('🌐 Making HTTP request for AI evaluation:');
+      console.log('   - URL:', submitUrl);
+      console.log('   - Method: POST');
+      console.log('   - Has Token:', !!token);
+      console.log('   - Token preview:', token ? token.substring(0, 20) + '...' : 'NONE');
+      console.log('   - Note: Answers already saved in database, backend will load them');
+      console.log('');
+
+      // Submit session for AI evaluation - answers already saved incrementally
+      const result = await fetch(submitUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({})  // Empty body - backend loads answers from database
       });
 
-      // Add metadata
-      formData.append('session_id', sessionState.sessionId.toString());
-      formData.append('responses', JSON.stringify(responsesArray));
+      console.log('📥 Received HTTP response:');
+      console.log('   - Status:', result.status);
+      console.log('   - Status Text:', result.statusText);
+      console.log('   - OK:', result.ok);
+      console.log('');
 
-      // Submit all recordings for evaluation
-      const result = await backendClient.completePracticeSession(
-        sessionState.sessionId,
-        formData
-      );
+      const data = await result.json();
+      console.log('📋 Response data:', data);
+      console.log('');
 
-      if (result.success && result.data) {
+      if (result.ok && data.success) {
         // Display overall feedback
         toast({
           title: 'Evaluation Complete!',
-          description: `Overall Score: ${result.data.overall_score}/100. Redirecting to detailed feedback...`,
+          description: `Your answers have been submitted successfully!`,
           variant: 'default'
         });
 
-        // Store feedback
-        setSessionState(prev => ({
-          ...prev,
-          feedback: new Map([[sessionState.sessionId!, result.data]])
-        }));
-
-        // Navigate to feedback page after a short delay
+        // Show success message and redirect to dashboard
         setTimeout(() => {
-          router.push(`/applicant/practice/feedback?sessionId=${sessionState.sessionId}`);
+          // Clear session data from localStorage after successful submission
+          localStorage.removeItem('practiceSessionData');
+          localStorage.removeItem('practiceSessionConfig');
+
+          toast({
+            title: 'Practice Session Complete',
+            description: 'View your scores and feedback on the dashboard!',
+            variant: 'default'
+          });
+          router.push('/applicant/dashboard');
         }, 2000);
       } else {
-        throw new Error(result.error?.message || 'Failed to submit for evaluation');
+        console.error('');
+        console.error('❌ SUBMISSION FAILED');
+        console.error('================================');
+        console.error('HTTP Status:', result.status);
+        console.error('Response data:', data);
+        console.error('================================');
+        console.error('');
+
+        const errorMessage = data.detail || data.error?.message || data.message || `Server returned ${result.status}`;
+        throw new Error(errorMessage);
       }
-    } catch (error) {
-      console.error('Failed to submit session:', error);
+    } catch (error: any) {
+      console.error('');
+      console.error('💥 ERROR DURING SUBMISSION');
+      console.error('================================');
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('================================');
+      console.error('');
+
       toast({
-        title: 'Submission Error',
-        description: 'Failed to submit for evaluation. Please try again.',
-        variant: 'destructive'
+        title: 'Submission Failed',
+        description: error.message || 'An error occurred while submitting. Check console for details.',
+        variant: 'destructive',
+        duration: 10000, // Show for 10 seconds
       });
     } finally {
+      console.log('🏁 Submission attempt complete (setting isSubmitting = false)');
+      console.log('');
       setIsSubmitting(false);
     }
   };
@@ -569,6 +698,107 @@ export default function PracticeInterviewPage() {
     setIsSpeaking(false);
   };
 
+  // Save text answer
+  const saveTextAnswer = async () => {
+    console.log('');
+    console.log('====================================');
+    console.log('💾 SAVE ANSWER button clicked (SAVING TO DATABASE)');
+    console.log('====================================');
+    console.log('');
+
+    if (!textAnswer.trim()) {
+      toast({
+        title: 'Empty Answer',
+        description: 'Please type your answer before saving.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const currentQuestion = sessionState.questions[sessionState.currentQuestionIndex];
+    if (!currentQuestion) {
+      console.error('❌ No current question found');
+      return;
+    }
+
+    console.log('💾 Saving answer to database for question:', currentQuestion.id);
+    console.log('   - Answer length:', textAnswer.trim().length);
+    console.log('   - Session ID:', sessionState.sessionId);
+
+    try {
+      // Save to backend immediately
+      const token = localStorage.getItem('access_token');
+      const saveUrl = `http://localhost:8000/api/v1/practice/save-text-answer/${currentQuestion.id}`;
+
+      console.log('🌐 Making HTTP request to save answer:');
+      console.log('   - URL:', saveUrl);
+      console.log('   - Has Token:', !!token);
+
+      const response = await fetch(saveUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          answer_text: textAnswer.trim()
+        })
+      });
+
+      console.log('📥 Received response:');
+      console.log('   - Status:', response.status);
+      console.log('   - OK:', response.ok);
+
+      const data = await response.json();
+      console.log('   - Data:', data);
+
+      if (response.ok && data.success) {
+        // Also update local state
+        setSessionState(prev => {
+          const newResponses = new Map(prev.responses);
+          newResponses.set(currentQuestion.id, {
+            textAnswer: textAnswer.trim(),
+            transcript: textAnswer.trim(),
+          });
+
+          console.log('✅ Answer saved to both database and local state');
+          console.log('   - Updated responses map size:', newResponses.size);
+          console.log('   - Total questions:', prev.questions.length);
+
+          return {
+            ...prev,
+            responses: newResponses
+          };
+        });
+
+        toast({
+          title: 'Answer Saved',
+          description: 'Your answer has been saved to the database. You can resume this session later.',
+          variant: 'default',
+        });
+
+        console.log('');
+      } else {
+        throw new Error(data.detail || data.message || 'Failed to save answer');
+      }
+    } catch (error: any) {
+      console.error('');
+      console.error('💥 ERROR SAVING ANSWER');
+      console.error('================================');
+      console.error('Error:', error.message);
+      console.error('Error stack:', error.stack);
+      console.error('================================');
+      console.error('');
+
+      toast({
+        title: 'Save Failed',
+        description: error.message || 'Failed to save answer. Please try again.',
+        variant: 'destructive',
+        duration: 10000,
+      });
+    }
+  };
+
   // Navigation between questions
   const navigateToQuestion = async (index: number) => {
     if (index >= 0 && index < sessionState.questions.length) {
@@ -578,6 +808,15 @@ export default function PracticeInterviewPage() {
       setSessionState(prev => ({ ...prev, currentQuestionIndex: index }));
       setRecordingTime(0);
       setAudioLevel(0);
+
+      // Load existing text answer if switching back to a question
+      const questionId = sessionState.questions[index]?.id;
+      const existingResponse = sessionState.responses.get(questionId);
+      if (existingResponse?.textAnswer) {
+        setTextAnswer(existingResponse.textAnswer);
+      } else {
+        setTextAnswer('');
+      }
 
       // Auto-speak the new question if enabled
       if (autoSpeak && sessionState.questions[index]) {
@@ -614,44 +853,41 @@ export default function PracticeInterviewPage() {
   const hasFeedback = sessionState.feedback.has(currentQuestion?.id || 0);
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Background */}
-      <div className="fixed inset-0">
-        <div className={`absolute inset-0 bg-gradient-to-br ${gradients.bgPrimary}`} />
-        <div className={`absolute inset-0 bg-gradient-to-tr ${gradients.bgSecondary}`} />
-        <FloatingParticles />
+    <div className="min-h-screen bg-[#0F0F0F] text-white">
+      {/* Subtle Background Glow */}
+      <div className="fixed inset-0 pointer-events-none -z-10">
+        <div className="absolute inset-0 bg-gradient-to-b from-blue-950/20 via-transparent to-transparent" />
       </div>
 
       {/* Navigation */}
-      <nav className="relative z-10 border-b border-gray-800 bg-black/50 backdrop-blur-lg">
+      <nav className="relative z-10 border-b border-white/10 bg-black/40 backdrop-blur-xl">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
-            <Link href="/applicant/practice" className="flex items-center gap-2 hover:opacity-80">
+            <Link href="/applicant/practice" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
               <Home className="w-5 h-5" />
-              <span className="font-semibold">Practice Home</span>
+              <span className="font-medium">Practice Home</span>
             </Link>
 
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {/* Auto-speak Toggle */}
               <Button
                 onClick={() => setAutoSpeak(!autoSpeak)}
                 size="sm"
                 variant="ghost"
-                className={`gap-2 ${
+                className={`gap-2 transition-all ${
                   autoSpeak
-                    ? 'text-blue-400 bg-blue-500/10 hover:bg-blue-500/20'
-                    : 'text-gray-400 hover:text-white hover:bg-white/10'
-                }`}
+                    ? 'text-blue-400 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/30'
+                    : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                } rounded-lg`}
                 title="Toggle auto-speak for questions"
               >
                 <Volume2 className="w-4 h-4" />
-                <span className="hidden md:inline">Auto-speak: {autoSpeak ? 'On' : 'Off'}</span>
-                <span className="md:hidden">{autoSpeak ? 'On' : 'Off'}</span>
+                <span className="hidden md:inline text-sm">Auto-speak: {autoSpeak ? 'On' : 'Off'}</span>
               </Button>
 
-              <Badge className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-0">
+              <Badge className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white border-0 px-3 py-1.5">
                 <Brain className="w-4 h-4 mr-2" />
-                AI Practice Interview
+                <span className="font-medium">AI Practice</span>
               </Badge>
             </div>
           </div>
@@ -662,17 +898,17 @@ export default function PracticeInterviewPage() {
       <div className="relative z-10 container mx-auto px-6 py-8 max-w-4xl">
         {/* Progress Bar */}
         <div className="mb-8">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-400">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-gray-300">
               Question {sessionState.currentQuestionIndex + 1} of {sessionState.questions.length}
             </span>
-            <span className="text-sm text-gray-400">
-              Recorded: {sessionState.responses.size}/{sessionState.questions.length}
+            <span className="text-sm font-medium text-gray-300">
+              Completed: {sessionState.responses.size}/{sessionState.questions.length}
             </span>
           </div>
           <Progress
             value={(sessionState.responses.size / sessionState.questions.length) * 100}
-            className="h-2 bg-white/10"
+            className="h-2 bg-white/5 rounded-full overflow-hidden"
           />
         </div>
 
@@ -683,20 +919,20 @@ export default function PracticeInterviewPage() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.3 }}
         >
-          <Card className="bg-white/5 backdrop-blur-xl border-white/10 mb-6">
-            <CardHeader>
+          <Card className="bg-white/[0.02] backdrop-blur-xl border-white/10 mb-6 rounded-2xl overflow-hidden shadow-2xl">
+            <CardHeader className="pb-4">
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-2xl mb-2 text-white">
+                  <CardTitle className="text-2xl mb-3 text-white font-semibold">
                     Question {sessionState.currentQuestionIndex + 1}
                     {hasRecording && (
-                      <Badge className="ml-3 bg-green-500/20 text-green-400 border-green-500/30">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Recorded
+                      <Badge className="ml-3 bg-green-500/10 text-green-400 border border-green-500/30 px-2.5 py-0.5">
+                        <CheckCircle className="w-3.5 h-3.5 mr-1" />
+                        Answered
                       </Badge>
                     )}
                   </CardTitle>
-                  <Badge className="bg-blue-500/20 text-blue-300 border-blue-500/30">
+                  <Badge className="bg-blue-500/10 text-blue-300 border border-blue-500/30 px-3 py-1">
                     {currentQuestion?.type || 'General'}
                   </Badge>
                 </div>
@@ -714,9 +950,9 @@ export default function PracticeInterviewPage() {
                     variant="ghost"
                     className={`${
                       isSpeaking
-                        ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
-                        : 'text-gray-400 hover:text-white hover:bg-white/10'
-                    } transition-all`}
+                        ? 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 border border-blue-500/30'
+                        : 'text-gray-400 hover:text-white hover:bg-white/5'
+                    } transition-all rounded-lg`}
                     title={isSpeaking ? 'Stop speaking' : 'Listen to question'}
                   >
                     {isSpeaking ? (
@@ -725,16 +961,13 @@ export default function PracticeInterviewPage() {
                       <Volume2 className="w-5 h-5" />
                     )}
                   </Button>
-                  {hasFeedback && (
-                    <CheckCircle className="w-6 h-6 text-green-500" />
-                  )}
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {isSpeaking && (
-                  <div className="flex items-center gap-2 text-blue-400 text-sm">
+                  <div className="flex items-center gap-2 text-blue-400 text-sm mb-2">
                     <div className="flex gap-1">
                       {[1, 2, 3].map((i) => (
                         <motion.div
@@ -751,122 +984,203 @@ export default function PracticeInterviewPage() {
                         />
                       ))}
                     </div>
-                    <span>Speaking question...</span>
+                    <span className="font-medium">Reading question...</span>
                   </div>
                 )}
-                <p className="text-lg leading-relaxed text-white">{currentQuestion?.question}</p>
+                <p className="text-lg leading-relaxed text-gray-100">{currentQuestion?.question}</p>
               </div>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Recording Controls */}
-        <Card className="bg-white/5 backdrop-blur-xl border-white/10 mb-6">
+        {/* Answer Input Controls */}
+        <Card className="bg-white/[0.02] backdrop-blur-xl border-white/10 mb-6 rounded-2xl overflow-hidden shadow-2xl">
           <CardContent className="p-6">
-            <div className="text-center space-y-4">
-              {/* Microphone Permission Alert */}
-              {!hasMediaPermission && (
-                <Alert className="mb-4 bg-orange-500/10 border-orange-500/30">
-                  <AlertCircle className="w-5 h-5 text-orange-400" />
-                  <AlertDescription className="text-orange-200">
-                    Microphone access is required to record your answers. Click the button below to enable it.
-                  </AlertDescription>
-                </Alert>
-              )}
+            <div className="space-y-5">
+              {/* Response Mode Tabs */}
+              <div className="flex items-center gap-3 p-1 bg-white/5 rounded-xl border border-white/10">
+                <Button
+                  onClick={() => setResponseMode('text')}
+                  variant="ghost"
+                  className={`flex-1 transition-all rounded-lg ${
+                    responseMode === 'text'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
+                      : 'bg-transparent hover:bg-white/5 text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  <span className="font-medium">Type Answer</span>
+                </Button>
+                <Button
+                  onClick={() => setResponseMode('voice')}
+                  variant="ghost"
+                  className={`flex-1 transition-all rounded-lg ${
+                    responseMode === 'voice'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
+                      : 'bg-transparent hover:bg-white/5 text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <Mic className="w-4 h-4 mr-2" />
+                  <span className="font-medium">Record Answer</span>
+                </Button>
+              </div>
 
-              {/* Audio Level Indicator */}
-              {isRecording && (
-                <div className="flex items-center justify-center gap-1 h-12">
-                  {[...Array(20)].map((_, i) => (
-                    <motion.div
-                      key={i}
-                      className="w-1 bg-gradient-to-t from-blue-500 to-cyan-500 rounded-full"
-                      animate={{
-                        height: audioLevel > i * 5 ? `${20 + Math.random() * 30}px` : '4px'
-                      }}
-                      transition={{ duration: 0.1 }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Show transcript if question is already recorded */}
+              {/* Show saved answer if exists */}
               {hasRecording && sessionState.responses.get(currentQuestion?.id || 0)?.transcript && (
-                <div className="mb-6 p-4 bg-green-500/10 border border-green-500/30 rounded-lg">
-                  <div className="flex items-start gap-2">
-                    <CheckCircle className="w-5 h-5 text-green-400 mt-1" />
+                <div className="p-5 bg-green-500/5 border border-green-500/20 rounded-xl">
+                  <div className="flex items-start gap-3">
+                    <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="font-semibold text-green-400 mb-2">Your Recorded Answer:</p>
-                      <p className="text-gray-200">
+                      <p className="font-semibold text-green-400 mb-2 text-sm">Your Saved Answer</p>
+                      <p className="text-gray-200 whitespace-pre-wrap leading-relaxed">
                         {sessionState.responses.get(currentQuestion?.id || 0)?.transcript}
                       </p>
-                      <p className="text-sm text-gray-400 mt-2">
-                        Duration: {sessionState.responses.get(currentQuestion?.id || 0)?.duration}s
-                      </p>
+                      {sessionState.responses.get(currentQuestion?.id || 0)?.duration && (
+                        <p className="text-sm text-gray-500 mt-3">
+                          Duration: {sessionState.responses.get(currentQuestion?.id || 0)?.duration}s
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Recording Time */}
-              <div className="text-3xl font-mono">
-                {formatTime(recordingTime)}
-              </div>
-
-              {/* Recording Button */}
-              <div className="flex items-center justify-center gap-4">
-                {/* Show microphone permission button if no permission */}
-                {!hasMediaPermission ? (
+              {/* Text Input Mode */}
+              {responseMode === 'text' && !hasRecording && (
+                <div className="space-y-4">
+                  <textarea
+                    value={textAnswer}
+                    onChange={(e) => setTextAnswer(e.target.value)}
+                    placeholder="Type your answer here..."
+                    className="w-full h-48 px-4 py-4 bg-white/5 border border-white/10 rounded-xl
+                             focus:border-blue-500/50 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-blue-500/20
+                             text-white placeholder-gray-500 transition-all
+                             resize-none text-base leading-relaxed"
+                  />
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-400 font-medium">{textAnswer.length} characters</span>
+                    <span className="text-gray-500">Minimum 50 characters recommended</span>
+                  </div>
                   <Button
-                    onClick={requestMediaPermission}
+                    onClick={saveTextAnswer}
                     size="lg"
-                    className="bg-gradient-to-r from-orange-600 to-red-600 hover:opacity-90"
+                    disabled={!textAnswer.trim()}
+                    className="w-full h-12 rounded-xl font-semibold transition-all
+                             bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800
+                             text-white shadow-lg shadow-blue-500/20
+                             disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <AlertCircle className="w-5 h-5 mr-2" />
-                    Enable Microphone Access
+                    <CheckCircle className="w-5 h-5 mr-2" />
+                    Save Answer
                   </Button>
-                ) : !isRecording ? (
-                  <Button
-                    onClick={startRecording}
-                    size="lg"
-                    disabled={!hasMediaPermission || isSubmitting || hasRecording}
-                    className={`${
-                      hasRecording
-                        ? 'bg-gray-600 cursor-not-allowed opacity-50'
-                        : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:opacity-90'
-                    }`}
-                  >
-                    {hasRecording ? (
-                      <>
-                        <CheckCircle className="w-5 h-5 mr-2" />
-                        Already Recorded
-                      </>
+                </div>
+              )}
+
+              {/* Voice Recording Mode */}
+              {responseMode === 'voice' && (
+                <div className="text-center space-y-4">
+                  {/* Microphone Permission Alert */}
+                  {!hasMediaPermission && (
+                    <Alert className="mb-4 bg-orange-500/10 border-orange-500/30">
+                      <AlertCircle className="w-5 h-5 text-orange-400" />
+                      <AlertDescription className="text-orange-200">
+                        Microphone access is required to record your answers. Click the button below to enable it.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Audio Level Indicator */}
+                  {isRecording && (
+                    <div className="flex items-center justify-center gap-1 h-12">
+                      {[...Array(20)].map((_, i) => (
+                        <motion.div
+                          key={i}
+                          className="w-1 bg-gradient-to-t from-blue-500 to-cyan-500 rounded-full"
+                          animate={{
+                            height: audioLevel > i * 5 ? `${20 + Math.random() * 30}px` : '4px'
+                          }}
+                          transition={{ duration: 0.1 }}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Recording Time */}
+                  <div className="text-3xl font-mono">
+                    {formatTime(recordingTime)}
+                  </div>
+
+                  {/* Recording Button */}
+                  <div className="flex items-center justify-center gap-4">
+                    {/* Show microphone permission button if no permission */}
+                    {!hasMediaPermission ? (
+                      <Button
+                        onClick={requestMediaPermission}
+                        size="lg"
+                        className="bg-gradient-to-r from-orange-600 to-red-600 hover:opacity-90"
+                      >
+                        <AlertCircle className="w-5 h-5 mr-2" />
+                        Enable Microphone Access
+                      </Button>
+                    ) : !isRecording ? (
+                      <Button
+                        onClick={startRecording}
+                        size="lg"
+                        disabled={!hasMediaPermission || isSubmitting || hasRecording}
+                        className={`${
+                          hasRecording
+                            ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                            : 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:opacity-90'
+                        }`}
+                      >
+                        {hasRecording ? (
+                          <>
+                            <CheckCircle className="w-5 h-5 mr-2" />
+                            Already Recorded
+                          </>
+                        ) : (
+                          <>
+                            <Mic className="w-5 h-5 mr-2" />
+                            Start Recording
+                          </>
+                        )}
+                      </Button>
                     ) : (
-                      <>
-                        <Mic className="w-5 h-5 mr-2" />
-                        Start Recording
-                      </>
+                      <Button
+                        onClick={stopRecording}
+                        size="lg"
+                        variant="destructive"
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        <StopCircle className="w-5 h-5 mr-2" />
+                        Stop Recording
+                      </Button>
                     )}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={stopRecording}
-                    size="lg"
-                    variant="destructive"
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    <StopCircle className="w-5 h-5 mr-2" />
-                    Stop Recording
-                  </Button>
-                )}
+                  </div>
 
-                {/* Show Submit All button when all questions are recorded */}
-                {sessionState.responses.size === sessionState.questions.length && !isRecording && (
+                  {/* Status Messages for Voice Mode */}
+                  {!hasMediaPermission && (
+                    <Alert className="bg-yellow-500/10 border-yellow-500/30">
+                      <AlertCircle className="w-4 h-4 text-yellow-400" />
+                      <AlertDescription className="text-yellow-200">
+                        Please allow microphone access to record your answer
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                </div>
+              )}
+
+              {/* Submit All Button - Shows when at least one question has a response */}
+              {sessionState.responses.size > 0 && !isRecording && (
+                <div className="pt-4 border-t border-white/10">
+                  <p className="text-sm text-gray-400 mb-3">
+                    {sessionState.responses.size} of {sessionState.questions.length} questions answered
+                  </p>
                   <Button
                     onClick={submitAllAnswers}
                     size="lg"
                     disabled={isSubmitting}
-                    className="bg-gradient-to-r from-green-600 to-emerald-600 hover:opacity-90"
+                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:opacity-90 transition-all"
                   >
                     {isSubmitting ? (
                       <>
@@ -876,36 +1190,11 @@ export default function PracticeInterviewPage() {
                     ) : (
                       <>
                         <Send className="w-5 h-5 mr-2" />
-                        Submit All for Evaluation
+                        Submit {sessionState.responses.size === sessionState.questions.length ? 'All' : sessionState.responses.size} Answer{sessionState.responses.size > 1 ? 's' : ''} for Evaluation
                       </>
                     )}
                   </Button>
-                )}
-              </div>
-
-              {/* Status Messages */}
-              {!hasMediaPermission && (
-                <Alert className="bg-yellow-500/10 border-yellow-500/30">
-                  <AlertCircle className="w-4 h-4 text-yellow-400" />
-                  <AlertDescription className="text-yellow-200">
-                    Please allow microphone access to record your answer
-                  </AlertDescription>
-                </Alert>
-              )}
-
-              {hasRecording && !hasFeedback && (
-                <p className="text-green-400 text-sm">
-                  ✓ Answer recorded. Click submit to get AI feedback.
-                </p>
-              )}
-
-              {hasFeedback && (
-                <Alert className="bg-green-500/10 border-green-500/30">
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <AlertDescription className="text-green-200">
-                    Answer submitted! Score: {sessionState.feedback.get(currentQuestion?.id || 0)?.score}/100
-                  </AlertDescription>
-                </Alert>
+                </div>
               )}
             </div>
           </CardContent>

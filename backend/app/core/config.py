@@ -28,8 +28,8 @@ class Settings(BaseSettings):
     # JWT Authentication
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 525600  # 1 year for development (365 * 24 * 60)
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 365  # 1 year for development
 
     # CORS
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]

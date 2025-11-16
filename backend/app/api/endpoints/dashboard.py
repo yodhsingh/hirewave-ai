@@ -10,6 +10,7 @@ from app.api.dependencies.auth import get_current_user
 from app.models.user import User
 from app.models.candidate import Candidate, CandidateScore
 from app.models.job import Job
+from app.models.practice_interview import PracticeSession
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -93,6 +94,78 @@ async def get_applicant_dashboard(
     recent_activity.sort(key=lambda x: x['time'], reverse=True)
     recent_activity = recent_activity[:5]
 
+    # Get practice sessions for skill progress
+    practice_result = await db.execute(
+        select(PracticeSession)
+        .where(PracticeSession.user_id == current_user.id)
+        .where(PracticeSession.completed_at.isnot(None))
+        .order_by(PracticeSession.completed_at.desc())
+    )
+    practice_sessions = practice_result.scalars().all()
+
+    # Calculate skill progress from practice sessions
+    skill_progress = []
+    if practice_sessions:
+        # Aggregate category scores across all completed sessions
+        category_totals = {
+            "communication": [],
+            "technical": [],
+            "problem_solving": [],
+            "confidence": [],
+            "completeness": []
+        }
+
+        for session in practice_sessions:
+            if session.category_scores:
+                for category, score in session.category_scores.items():
+                    if category in category_totals and score is not None:
+                        category_totals[category].append(score)
+
+        # Calculate average for each category
+        for category, scores in category_totals.items():
+            if scores:
+                current_avg = sum(scores) / len(scores)
+                # Target is 15% above current or 90, whichever is higher
+                target = min(90, max(current_avg + 15, 75))
+
+                skill_progress.append({
+                    "skill": category.replace('_', ' ').title(),
+                    "current": round(current_avg, 1),
+                    "target": round(target, 0),
+                    "trend": "up" if len(scores) > 1 and scores[0] > scores[-1] else "stable"
+                })
+
+    # If no practice sessions, use placeholder data
+    if not skill_progress:
+        skill_progress = [
+            {"skill": "Communication", "current": 0, "target": 75, "trend": "stable"},
+            {"skill": "Technical", "current": 0, "target": 75, "trend": "stable"},
+            {"skill": "Problem Solving", "current": 0, "target": 75, "trend": "stable"},
+            {"skill": "Confidence", "current": 0, "target": 75, "trend": "stable"},
+            {"skill": "Completeness", "current": 0, "target": 75, "trend": "stable"},
+        ]
+
+    # Calculate practice streak
+    practice_streak = 0
+    if practice_sessions:
+        # Count consecutive days with practice
+        today = datetime.utcnow().date()
+        for session in practice_sessions:
+            session_date = session.completed_at.date()
+            days_diff = (today - session_date).days
+            if days_diff == practice_streak:
+                practice_streak += 1
+            else:
+                break
+
+    # Calculate improvement rate
+    improvement_rate = 0
+    if len(practice_sessions) >= 2:
+        recent_avg = sum(s.overall_score or 0 for s in practice_sessions[:3]) / min(3, len(practice_sessions))
+        older_avg = sum(s.overall_score or 0 for s in practice_sessions[-3:]) / min(3, len(practice_sessions))
+        if older_avg > 0:
+            improvement_rate = round(((recent_avg - older_avg) / older_avg) * 100, 1)
+
     return {
         "success": True,
         "data": {
@@ -107,11 +180,12 @@ async def get_applicant_dashboard(
                 "in_progress": in_progress,
                 "pending": pending,
                 "average_score": round(float(avg_score), 1) if avg_score else 0,
-                "readiness_score": min(100, round(float(avg_score or 60), 0)),  # Use avg score as readiness
-                "practice_streak": 0,  # Not implemented yet
-                "improvement_rate": 0,  # Not implemented yet
+                "readiness_score": min(100, round(float(avg_score or 60), 0)),
+                "practice_streak": practice_streak,
+                "improvement_rate": improvement_rate,
             },
             "recent_applications": recent_applications,
             "recent_activity": recent_activity,
+            "skill_progress": skill_progress,
         }
     }

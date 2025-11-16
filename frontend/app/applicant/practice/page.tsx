@@ -35,6 +35,7 @@ export default function PracticeHomePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user, token, logout } = useAuthStore();
+  const [isCreatingSession, setIsCreatingSession] = useState(false);
 
   const [config, setConfig] = useState({
     interview_type: 'technical',
@@ -80,12 +81,45 @@ export default function PracticeHomePage() {
     'Creativity',
   ];
 
-  const handleStartSession = () => {
-    // Save config to localStorage for the interview page
-    localStorage.setItem('practiceSessionConfig', JSON.stringify(config));
+  const handleStartSession = async () => {
+    // Create the session first, then navigate with session ID
+    setIsCreatingSession(true);
+    try {
+      console.log('Creating practice session with config:', config);
 
-    // Navigate to the interview page
-    router.push('/applicant/practice/interview');
+      const response = await backendClient.startPracticeSession(config);
+      console.log('Session creation response:', response);
+
+      if (response.success && response.data) {
+        // Save both config AND session data
+        localStorage.setItem('practiceSessionConfig', JSON.stringify(config));
+        localStorage.setItem('practiceSessionData', JSON.stringify({
+          sessionId: response.data.sessionId,  // Changed from session_id to sessionId (camelCase)
+          questions: response.data.questions
+        }));
+
+        console.log('Session created successfully, ID:', response.data.sessionId);  // Changed from session_id to sessionId
+
+        // Navigate to interview page with session already created
+        router.push('/applicant/practice/interview');
+      } else {
+        console.error('Failed to create session:', response);
+        toast({
+          title: 'Error',
+          description: response.error?.message || 'Failed to start practice session',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Exception creating session:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start practice session. Please try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsCreatingSession(false);
+    }
   };
 
   const toggleFocusArea = (area: string) => {

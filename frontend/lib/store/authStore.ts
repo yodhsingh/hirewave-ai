@@ -31,9 +31,9 @@ export const useAuthStore = create<AuthState>()(
 
         // Also store tokens in standalone localStorage keys for immediate access
         if (typeof window !== 'undefined') {
-          localStorage.setItem('auth_token', accessToken);
+          localStorage.setItem('access_token', accessToken);  // Changed from auth_token to match BackendClient
           localStorage.setItem('refresh_token', refreshToken);
-          console.log('[AuthStore.login] Tokens stored in localStorage');
+          console.log('[AuthStore.login] Tokens stored in localStorage as access_token and refresh_token');
         }
 
         set({
@@ -50,7 +50,7 @@ export const useAuthStore = create<AuthState>()(
       logout: () => {
         // Clear all auth-related data from localStorage
         if (typeof window !== 'undefined') {
-          localStorage.removeItem('auth_token');
+          localStorage.removeItem('access_token');  // Changed from auth_token
           localStorage.removeItem('refresh_token');
           localStorage.removeItem('auth-storage'); // Clear Zustand persisted state
 
