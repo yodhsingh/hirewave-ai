@@ -91,7 +91,7 @@ npm run dev
 #### Backend Setup
 ```bash
 cd backend
-uv synch
+uv sync
 ```
 
 # UI Design
