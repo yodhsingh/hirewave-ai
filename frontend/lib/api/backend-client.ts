@@ -172,9 +172,14 @@ class BackendApiClient {
       // Backend returns { success: true, data: {...} }
       // Convert snake_case to camelCase for frontend compatibility
       const responseData = data.data || data;
+      const convertedData = toCamelCase(responseData);
+
+      console.log('[BackendClient] BEFORE toCamelCase:', JSON.stringify(responseData, null, 2));
+      console.log('[BackendClient] AFTER toCamelCase:', JSON.stringify(convertedData, null, 2));
+
       return {
         success: true,
-        data: toCamelCase(responseData),
+        data: convertedData,
         meta: data.meta,
       };
     } catch (error) {
@@ -501,29 +506,35 @@ class BackendApiClient {
         role: string;
       };
       stats: {
-        total_applications: number;
-        completed_interviews: number;
-        in_progress: number;
+        totalApplications: number;
+        completedInterviews: number;
+        inProgress: number;
         pending: number;
-        average_score: number;
-        readiness_score: number;
-        practice_streak: number;
-        improvement_rate: number;
+        averageScore: number;
+        readinessScore: number;
+        practiceStreak: number;
+        improvementRate: number;
       };
-      recent_applications: Array<{
+      recentApplications: Array<{
         id: number;
-        job_title: string;
+        jobTitle: string;
         company: string;
         status: string;
-        applied_at: string | null;
-        submitted_at: string | null;
+        appliedAt: string | null;
+        submittedAt: string | null;
       }>;
-      recent_activity: Array<{
+      recentActivity: Array<{
         type: string;
         title: string;
         time: string;
         details?: string;
       }>;
+      skillProgress: Array<{
+        skill: string;
+        level: number;
+        maxLevel: number;
+      }>;
+      consolidatedInsights: string[];
     }>('/dashboard/applicant');
   }
 
@@ -640,6 +651,15 @@ class BackendApiClient {
       feedback: string;
     }>(`/practice/session/${sessionId}/complete`, {
       method: 'POST',
+    });
+  }
+
+  async deletePracticeSession(sessionId: number) {
+    return this.request<{
+      success: boolean;
+      message: string;
+    }>(`/practice/session/${sessionId}`, {
+      method: 'DELETE',
     });
   }
 }

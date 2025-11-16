@@ -40,7 +40,7 @@ export default function ApplicantDashboard() {
 
   // Fetch applicant dashboard data from backend
   const { data: dashboardResponse, isLoading } = useQuery({
-    queryKey: ['applicant-dashboard'],
+    queryKey: ['applicant-dashboard', user?.id],
     queryFn: async () => {
       console.log('Fetching applicant dashboard data from backend...');
       const response = await backendClient.getApplicantDashboard();
@@ -51,6 +51,7 @@ export default function ApplicantDashboard() {
       return response;
     },
     enabled: !!user,
+    staleTime: 0, // Always refetch to ensure fresh data
   });
 
   // Show error toast if dashboard failed to load
@@ -63,6 +64,12 @@ export default function ApplicantDashboard() {
   }, [dashboardResponse]);
 
   const dashboardData = dashboardResponse?.success ? dashboardResponse.data : null;
+
+  // Debug logging
+  console.log('Dashboard API Response:', dashboardResponse);
+  console.log('Dashboard Data:', dashboardData);
+  console.log('Consolidated Insights (snake_case):', dashboardData?.consolidated_insights);
+  console.log('Consolidated Insights (camelCase):', dashboardData?.consolidatedInsights);
 
   // Use data from backend or fallback to defaults
   const profile = dashboardData?.user || user;
@@ -80,6 +87,7 @@ export default function ApplicantDashboard() {
   const recentActivity = dashboardData?.recentActivity || [];
   const recentApplications = dashboardData?.recentApplications || [];
   const skillProgress = dashboardData?.skillProgress || [];
+  const consolidatedInsights = dashboardData?.consolidatedInsights || [];
 
   if (!profile) {
     return (
@@ -125,7 +133,7 @@ export default function ApplicantDashboard() {
               <Button
                 onClick={() => router.push('/applicant/jobs')}
                 variant="outline"
-                className="gap-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 hover:text-gray-900 rounded-xl font-medium transition-colors"
+                className="gap-2 border-white/30 hover:bg-white hover:border-white text-white hover:text-gray-900 rounded-xl font-medium transition-colors"
               >
                 <Briefcase className="w-4 h-4" />
                 Browse Jobs
@@ -134,7 +142,7 @@ export default function ApplicantDashboard() {
               <Button
                 onClick={() => router.push('/applicant/onboarding-with-parser')}
                 variant="outline"
-                className="gap-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 hover:text-gray-900 rounded-xl font-medium transition-colors"
+                className="gap-2 border-white/30 hover:bg-white hover:border-white text-white hover:text-gray-900 rounded-xl font-medium transition-colors"
               >
                 <Upload className="w-4 h-4" />
                 Upload Resume
@@ -214,231 +222,298 @@ export default function ApplicantDashboard() {
       </nav>
 
       {/* Main Content */}
-      <main className="relative z-10 container mx-auto px-6 py-8">
-        {/* Welcome Section */}
+      <main className="relative z-10 container mx-auto px-6 py-8 max-w-7xl">
+        {/* Hero Section with Key Metrics */}
         <motion.div
           {...fadeInUp}
           className="mb-8"
         >
-          <h2 className="text-3xl font-bold mb-2 text-white">
-            Welcome back, {profile?.name?.split(' ')[0] || 'User'}!
-          </h2>
-          <p className="text-gray-400">
-            Your interview readiness score is {stats.readinessScore}% - Keep practicing to improve!
-          </p>
+          <div className="flex items-start justify-between mb-6">
+            <div>
+              <h2 className="text-3xl font-bold mb-2 text-white">
+                Welcome back, {profile?.name?.split(' ')[0] || 'User'}!
+              </h2>
+              <p className="text-gray-400">
+                {stats.totalApplications > 0
+                  ? `You have ${stats.inProgress} interview${stats.inProgress !== 1 ? 's' : ''} in progress and ${stats.pending} pending`
+                  : "Start your journey by browsing available positions"}
+              </p>
+            </div>
+            {stats.practiceStreak > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 bg-orange-500/20 border border-orange-500/30 rounded-lg">
+                <Trophy className="w-5 h-5 text-orange-400" />
+                <div>
+                  <p className="text-sm font-medium text-orange-400">{stats.practiceStreak} Day Streak!</p>
+                  <p className="text-xs text-orange-300">Keep it up</p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Quick Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-xl hover:border-white/20 transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-blue-500/20 rounded-lg">
+                    <Briefcase className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-white">{stats.totalApplications}</p>
+                    <p className="text-xs text-gray-400">Applications</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-xl hover:border-white/20 transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-green-500/20 rounded-lg">
+                    <Target className="w-5 h-5 text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-white">{stats.completedInterviews}</p>
+                    <p className="text-xs text-gray-400">Completed</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-xl hover:border-white/20 transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-cyan-500/20 rounded-lg">
+                    <TrendingUp className="w-5 h-5 text-cyan-400" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-white">{stats.averageScore || 0}</p>
+                    <p className="text-xs text-gray-400">Avg Score</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/30 rounded-xl hover:border-blue-500/50 transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2.5 bg-white/20 rounded-lg">
+                    <Sparkles className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-white">{stats.readinessScore}%</p>
+                    <p className="text-xs text-blue-100">Readiness</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </motion.div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl hover:border-white/20 transition-colors">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm font-medium">Total Applications</p>
-                  <p className="text-3xl font-bold mt-2 text-white">
-                    {stats.totalApplications}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {stats.pending} pending
-                  </p>
-                </div>
-                <div className="p-3 bg-blue-500/20 rounded-lg">
-                  <Briefcase className="w-6 h-6 text-blue-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl hover:border-white/20 transition-colors">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm font-medium">Practice Streak</p>
-                  <p className="text-3xl font-bold mt-2 text-white">
-                    {stats.practiceStreak}
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    consecutive days
-                  </p>
-                </div>
-                <div className="p-3 bg-orange-500/20 rounded-lg">
-                  <Trophy className="w-6 h-6 text-orange-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl hover:border-white/20 transition-colors">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm font-medium">Average Score</p>
-                  <p className="text-3xl font-bold mt-2 text-white">
-                    {stats.averageScore}
-                  </p>
-                  <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
-                    {stats.improvementRate > 0 && '+'}
-                    {stats.improvementRate}% improvement
-                  </p>
-                </div>
-                <div className="p-3 bg-green-500/20 rounded-lg">
-                  <Target className="w-6 h-6 text-green-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl hover:border-white/20 transition-colors">
-            <CardContent className="p-6">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm font-medium">Readiness Score</p>
-                  <p className="text-3xl font-bold mt-2 text-white">
-                    {stats.readinessScore}%
-                  </p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {stats.inProgress} in progress
-                  </p>
-                </div>
-                <div className="p-3 bg-cyan-500/20 rounded-lg">
-                  <TrendingUp className="w-6 h-6 text-cyan-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Recent Applications & Activity */}
-        <div className="grid lg:grid-cols-2 gap-6 mb-8">
-          {/* Recent Applications */}
-          <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl">
+        {/* Activity & Applications Timeline */}
+        {(recentApplications.length > 0 || recentActivity.length > 0) && (
+          <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-xl mb-8">
             <CardHeader>
-              <CardTitle className="text-white">Recent Applications</CardTitle>
-              <CardDescription className="text-gray-400">Your latest job applications</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Clock className="w-5 h-5" />
+                    Recent Activity
+                  </CardTitle>
+                  <CardDescription className="text-gray-400">
+                    Your latest applications and updates
+                  </CardDescription>
+                </div>
+                {stats.totalApplications > 0 && (
+                  <Button
+                    onClick={() => router.push('/applicant/jobs')}
+                    variant="outline"
+                    size="sm"
+                    className="border-white/10 hover:bg-white/5"
+                  >
+                    View All
+                  </Button>
+                )}
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              {recentApplications.length > 0 ? (
-                recentApplications.map((app: any, index: number) => (
-                  <div key={index} className="flex items-center justify-between p-4 bg-white/[0.03] rounded-lg border border-white/5">
-                    <div>
-                      <p className="font-medium text-white">{app.jobTitle}</p>
-                      <p className="text-sm text-gray-400">{app.company}</p>
+            <CardContent>
+              <div className="space-y-3">
+                {recentApplications.slice(0, 5).map((app: any, index: number) => (
+                  <div key={`app-${index}`} className="flex items-center gap-4 p-3 bg-white/[0.03] rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+                    <div className="p-2 bg-blue-500/20 rounded-lg">
+                      <Briefcase className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-white truncate">{app.jobTitle}</p>
+                      <p className="text-xs text-gray-400">{app.company}</p>
                     </div>
                     <Badge
+                      variant="outline"
                       className={
-                        app.status === 'scored' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                        app.status === 'scored' || app.status === 'shortlisted' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
                         app.status === 'submitted' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
+                        app.status === 'in_progress' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
                         'bg-gray-500/20 text-gray-300 border-gray-500/30'
                       }
                     >
-                      {app.status}
+                      {app.status.replace('_', ' ')}
                     </Badge>
                   </div>
-                ))
-              ) : (
-                <p className="text-gray-400 text-center py-8">No applications yet</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Recent Activity */}
-          <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl">
-            <CardHeader>
-              <CardTitle className="text-white">Recent Activity</CardTitle>
-              <CardDescription className="text-gray-400">Your latest actions</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {recentActivity.length > 0 ? (
-                recentActivity.map((activity: any, index: number) => (
-                  <div key={index} className="flex items-start gap-4 p-4 bg-white/[0.03] rounded-lg border border-white/5">
-                    <div className={`p-2 rounded-lg ${
-                      activity.type === 'interview' ? 'bg-blue-500/20' :
-                      activity.type === 'started' ? 'bg-green-500/20' :
-                      'bg-orange-500/20'
-                    }`}>
-                      {activity.type === 'interview' ? <Brain className="w-5 h-5 text-blue-400" /> :
-                       activity.type === 'started' ? <Play className="w-5 h-5 text-green-400" /> :
-                       <MessageSquare className="w-5 h-5 text-orange-400" />}
+                ))}
+                {recentApplications.length === 0 && (
+                  <div className="text-center py-12">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-500/20 mb-3">
+                      <Briefcase className="w-6 h-6 text-blue-400" />
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-white">{activity.title}</p>
-                      <p className="text-sm text-gray-400">{activity.details}</p>
-                    </div>
+                    <p className="text-gray-400 mb-1">No applications yet</p>
+                    <p className="text-sm text-gray-500 mb-4">Start by browsing available positions</p>
+                    <Button
+                      onClick={() => router.push('/applicant/jobs')}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Browse Jobs
+                    </Button>
                   </div>
-                ))
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Insights & Recommendations */}
+        {(consolidatedInsights.length > 0 || (skillProgress.length > 0 && skillProgress.some(s => s.current > 0))) && (
+          <Card className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl mb-8">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5" />
+                {consolidatedInsights.length > 0 ? 'AI Insights' : 'Quick Insights'}
+              </CardTitle>
+              {consolidatedInsights.length > 0 && (
+                <CardDescription className="text-gray-400">
+                  Personalized feedback based on your practice sessions
+                </CardDescription>
+              )}
+            </CardHeader>
+            <CardContent>
+              {consolidatedInsights.length > 0 ? (
+                <div className="space-y-3">
+                  {consolidatedInsights.map((insight: string, index: number) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 p-3 bg-white/[0.05] border border-white/10 rounded-lg hover:border-blue-500/30 transition-colors"
+                    >
+                      <Brain className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-gray-300 leading-relaxed">{insight}</p>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <p className="text-gray-400 text-center py-8">No recent activity</p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {stats.improvementRate > 0 ? (
+                    <div className="flex items-start gap-3 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                      <TrendingUp className="w-5 h-5 text-green-400 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-white">Great Progress!</p>
+                        <p className="text-xs text-gray-400">
+                          You've improved by {stats.improvementRate}% in recent sessions
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start gap-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+                      <Target className="w-5 h-5 text-blue-400 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-white">Keep Practicing</p>
+                        <p className="text-xs text-gray-400">
+                          Regular practice will help you improve your scores
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {skillProgress.find(s => s.current < 60) && (
+                    <div className="flex items-start gap-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                      <AlertCircle className="w-5 h-5 text-orange-400 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-white">Focus Area</p>
+                        <p className="text-xs text-gray-400">
+                          Work on {skillProgress.find(s => s.current < 60)?.skill} to boost overall readiness
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
-        </div>
+        )}
 
-        {/* Practice Sessions */}
-        <div className="mb-8">
-          <PracticeSessionsSection />
-        </div>
+        {/* Two Column Layout: Practice Sessions + Skill Development */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Practice Sessions - Takes 2 columns */}
+          <div className="lg:col-span-2">
+            <PracticeSessionsSection />
+          </div>
 
-        {/* Skill Progress */}
-        <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
+          {/* Skill Progress - Takes 1 column */}
+          <div>
+            <Card className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-xl">
+              <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <BarChart3 className="w-5 h-5" />
-                  Skill Development
+                  Skills
                 </CardTitle>
                 <CardDescription className="text-gray-400">
-                  Track your interview skills progress from practice sessions
+                  Your progress by category
                 </CardDescription>
-              </div>
-              <Button
-                onClick={() => router.push('/applicant/practice')}
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Brain className="w-4 h-4 mr-2" />
-                Practice
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {skillProgress.length > 0 && skillProgress.some(s => s.current > 0) ? (
-              skillProgress.map((skill, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-white">{skill.skill}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-400">
-                        {skill.current}% / {skill.target}%
-                      </span>
-                      {skill.trend === 'up' && (
-                        <TrendingUp className="w-4 h-4 text-green-400" />
-                      )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {skillProgress.length > 0 && skillProgress.some(s => s.current > 0) ? (
+                  <>
+                    {skillProgress.map((skill, index) => (
+                      <div key={index} className="space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-gray-300">{skill.skill}</span>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-gray-400">
+                              {skill.current}%
+                            </span>
+                            {skill.trend === 'up' && (
+                              <TrendingUp className="w-3 h-3 text-green-400" />
+                            )}
+                          </div>
+                        </div>
+                        <Progress value={skill.current} className="h-1.5 bg-white/10" />
+                      </div>
+                    ))}
+                    <Button
+                      onClick={() => router.push('/applicant/practice')}
+                      size="sm"
+                      className="w-full mt-4 bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Brain className="w-4 h-4 mr-2" />
+                      Practice Now
+                    </Button>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-500/20 mb-3">
+                      <Brain className="w-6 h-6 text-blue-400" />
                     </div>
+                    <p className="text-sm text-gray-400 mb-3">No data yet</p>
+                    <Button
+                      onClick={() => router.push('/applicant/practice')}
+                      size="sm"
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      Start Practicing
+                    </Button>
                   </div>
-                  <Progress value={skill.current} className="h-2 bg-white/10" />
-                </div>
-              ))
-            ) : (
-              <div className="text-center py-12">
-                <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-500/20 mb-4">
-                  <Brain className="w-8 h-8 text-blue-400" />
-                </div>
-                <p className="text-gray-400 mb-2">No skill data yet</p>
-                <p className="text-sm text-gray-500 mb-4">
-                  Complete practice sessions to track your skill development
-                </p>
-                <Button
-                  onClick={() => router.push('/applicant/practice')}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Start Your First Practice
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </main>
     </div>
   );

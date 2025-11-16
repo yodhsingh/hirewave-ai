@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Brain, Play, Trophy, TrendingUp, ChevronRight, Clock } from 'lucide-react';
+import { Brain, Play, Trophy, TrendingUp, ChevronRight, Clock, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,26 @@ export function PracticeSessionsSection() {
     } else {
       // Resume session - load it into localStorage and navigate
       router.push(`/applicant/practice/interview?sessionId=${sessionId}`);
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: number) => {
+    if (!confirm('Are you sure you want to delete this practice session? This cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const response = await backendClient.deletePracticeSession(sessionId);
+      if (response.success) {
+        toast.success('Practice session deleted successfully');
+        // Reload sessions
+        loadPracticeSessions();
+      } else {
+        toast.error('Failed to delete practice session');
+      }
+    } catch (error) {
+      console.error('Failed to delete practice session:', error);
+      toast.error('Failed to delete practice session');
     }
   };
 
@@ -167,25 +187,39 @@ export function PracticeSessionsSection() {
                   />
                 )}
 
-                <Button
-                  onClick={() => handleResumeSession(session.id, isCompleted)}
-                  variant="outline"
-                  size="sm"
-                  className="w-full border-white/10 hover:bg-white/5"
-                >
-                  {isCompleted ? (
-                    <>
-                      <Trophy className="w-4 h-4 mr-2" />
-                      View Results
-                    </>
-                  ) : (
-                    <>
+                {/* Action buttons */}
+                {isCompleted ? (
+                  <Button
+                    onClick={() => handleResumeSession(session.id, isCompleted)}
+                    variant="outline"
+                    size="sm"
+                    className="w-full border-white/10 hover:bg-white/5"
+                  >
+                    <Trophy className="w-4 h-4 mr-2" />
+                    View Results
+                    <ChevronRight className="w-4 h-4 ml-auto" />
+                  </Button>
+                ) : (
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => handleResumeSession(session.id, isCompleted)}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 border-white/10 hover:bg-white/5"
+                    >
                       <Play className="w-4 h-4 mr-2" />
-                      Resume Session
-                    </>
-                  )}
-                  <ChevronRight className="w-4 h-4 ml-auto" />
-                </Button>
+                      Resume
+                    </Button>
+                    <Button
+                      onClick={() => handleDeleteSession(session.id)}
+                      variant="outline"
+                      size="sm"
+                      className="border-red-500/30 hover:bg-red-500/10 text-red-400 hover:text-red-300"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
               </div>
             );
           })

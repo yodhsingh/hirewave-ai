@@ -1,5 +1,6 @@
 from datetime import datetime
 from sqlalchemy import Column, String, DateTime, Enum, Integer
+from sqlalchemy.orm import relationship
 from app.db.base import Base
 import enum
 
@@ -27,6 +28,9 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     last_login = Column(DateTime, nullable=True)
+
+    # Relationships
+    insights = relationship("UserInsight", back_populates="user", uselist=False)
 
     def __repr__(self):
         return f"<User {self.email}>"

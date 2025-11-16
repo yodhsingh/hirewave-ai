@@ -11,6 +11,7 @@ from app.models.user import User
 from app.models.candidate import Candidate, CandidateScore
 from app.models.job import Job
 from app.models.practice_interview import PracticeSession
+from app.models.user_insights import UserInsight
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
@@ -166,6 +167,40 @@ async def get_applicant_dashboard(
         if older_avg > 0:
             improvement_rate = round(((recent_avg - older_avg) / older_avg) * 100, 1)
 
+    # Calculate readiness score from practice sessions and interviews combined
+    readiness_score = 0
+
+    # Get practice session average
+    practice_avg = 0
+    if practice_sessions:
+        practice_scores = [s.overall_score for s in practice_sessions if s.overall_score is not None]
+        if practice_scores:
+            practice_avg = sum(practice_scores) / len(practice_scores)
+
+    # Get interview average (avg_score already calculated above)
+    interview_avg = float(avg_score) if avg_score else 0
+
+    # Calculate combined readiness score
+    if interview_avg > 0 and practice_avg > 0:
+        # Both available: 70% interview, 30% practice (interview performance weighs more)
+        readiness_score = round((interview_avg * 0.7) + (practice_avg * 0.3))
+    elif interview_avg > 0:
+        # Only interview scores available
+        readiness_score = round(interview_avg)
+    elif practice_avg > 0:
+        # Only practice scores available (multiply by 0.85 to indicate it's practice, not real)
+        readiness_score = round(practice_avg * 0.85)
+    else:
+        # No scores available
+        readiness_score = 0
+
+    # Get consolidated insights
+    insight_result = await db.execute(
+        select(UserInsight).where(UserInsight.user_id == current_user.id)
+    )
+    user_insight = insight_result.scalar_one_or_none()
+    consolidated_insights = user_insight.insights if user_insight else []
+
     return {
         "success": True,
         "data": {
@@ -180,12 +215,13 @@ async def get_applicant_dashboard(
                 "in_progress": in_progress,
                 "pending": pending,
                 "average_score": round(float(avg_score), 1) if avg_score else 0,
-                "readiness_score": min(100, round(float(avg_score or 60), 0)),
+                "readiness_score": min(100, readiness_score),
                 "practice_streak": practice_streak,
                 "improvement_rate": improvement_rate,
             },
             "recent_applications": recent_applications,
             "recent_activity": recent_activity,
             "skill_progress": skill_progress,
+            "consolidated_insights": consolidated_insights,
         }
     }

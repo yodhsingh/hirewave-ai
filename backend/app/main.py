@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from contextlib import asynccontextmanager
 import logging
+import yaml
 
 from app.core.config import settings
-from app.api.endpoints import auth, jobs, candidates, interviews, dashboard, ai
+from app.api.endpoints import auth, jobs, candidates, interviews, dashboard, ai, practice
 
 # Configure logging
 logging.basicConfig(
@@ -100,6 +101,15 @@ async def root():
     }
 
 
+# OpenAPI YAML endpoint
+@app.get("/api/openapi.yaml")
+async def get_openapi_yaml():
+    """Get OpenAPI specification in YAML format"""
+    openapi_schema = app.openapi()
+    yaml_content = yaml.dump(openapi_schema, sort_keys=False, default_flow_style=False)
+    return Response(content=yaml_content, media_type="application/x-yaml")
+
+
 # Include routers
 app.include_router(auth.router, prefix=settings.API_V1_PREFIX)
 app.include_router(jobs.router, prefix=settings.API_V1_PREFIX)
@@ -107,6 +117,7 @@ app.include_router(candidates.router, prefix=settings.API_V1_PREFIX)
 app.include_router(interviews.router, prefix=settings.API_V1_PREFIX)
 app.include_router(dashboard.router, prefix=settings.API_V1_PREFIX)
 app.include_router(ai.router, prefix=settings.API_V1_PREFIX)
+app.include_router(practice.router, prefix=settings.API_V1_PREFIX)
 
 
 # Global exception handler

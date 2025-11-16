@@ -7,7 +7,7 @@ import {
   Brain, Mic, Target, Trophy, Clock, ChevronRight,
   Sparkles, GraduationCap, Zap, BarChart, Home,
   Settings, Play, AlertCircle, User, LogOut,
-  Bell, Briefcase, Upload
+  Bell, Briefcase, Upload, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -159,7 +159,7 @@ export default function PracticeHomePage() {
               <Button
                 onClick={() => router.push('/applicant/jobs')}
                 variant="outline"
-                className="gap-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 hover:text-gray-900 rounded-xl font-medium transition-colors"
+                className="gap-2 border-white/30 hover:bg-white hover:border-white text-white hover:text-gray-900 rounded-xl font-medium transition-colors"
               >
                 <Briefcase className="w-4 h-4" />
                 Browse Jobs
@@ -168,7 +168,7 @@ export default function PracticeHomePage() {
               <Button
                 onClick={() => router.push('/applicant/onboarding-with-parser')}
                 variant="outline"
-                className="gap-2 border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 hover:text-gray-900 rounded-xl font-medium transition-colors"
+                className="gap-2 border-white/30 hover:bg-white hover:border-white text-white hover:text-gray-900 rounded-xl font-medium transition-colors"
               >
                 <Upload className="w-4 h-4" />
                 Upload Resume
@@ -470,10 +470,20 @@ export default function PracticeHomePage() {
             <Button
               onClick={handleStartSession}
               size="lg"
-              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:opacity-90"
+              disabled={isCreatingSession}
+              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <Play className="w-5 h-5 mr-2" />
-              Start Practice Session
+              {isCreatingSession ? (
+                <>
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  Creating Session...
+                </>
+              ) : (
+                <>
+                  <Play className="w-5 h-5 mr-2" />
+                  Start Practice Session
+                </>
+              )}
             </Button>
 
             {/* Tips */}
