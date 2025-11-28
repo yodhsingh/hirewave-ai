@@ -419,7 +419,11 @@ class MockStore {
 
     activeJobs.forEach(job => {
       
-      const requiredSkills = job.requirements || [];
+      // Parse requirements - handle both string and array formats
+      const reqString = job.requirements || '';
+      const requiredSkills = typeof reqString === 'string'
+        ? reqString.split(',').map(s => s.trim()).filter(s => s.length > 0)
+        : reqString;
       const applicantSkills = applicant.skills || [];
 
       const matchingSkills = requiredSkills.filter(skill =>

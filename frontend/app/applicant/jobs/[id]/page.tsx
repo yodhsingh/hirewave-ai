@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -8,7 +8,7 @@ import {
   ChevronRight, Home, ArrowLeft, Star, Target, Brain,
   Play, CheckCircle, AlertCircle, Calendar, Globe,
   Heart, Shield, TrendingUp, BookOpen, MessageSquare,
-  Sparkles, Award, Zap
+  Sparkles, Award, Zap, Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,22 +20,64 @@ import { FloatingParticles } from '@/components/FloatingParticles';
 import { gradients } from '@/lib/theme';
 import { formatRoleType } from '@/lib/utils/format';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { apiClient } from '@/lib/api/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { backendClient, apiKeys } from '@/lib/api/backend-client';
+import { useAuthStore } from '@/lib/store/authStore';
 
 export default function JobDetailPage() {
   const router = useRouter();
   const params = useParams();
   const jobId = params.id as string;
-  const [isApplied, setIsApplied] = useState(false);
+  const queryClient = useQueryClient();
+  const { isAuthenticated, user } = useAuthStore();
+  const [applyError, setApplyError] = useState<string | null>(null);
 
-  // Fetch job details
+  // Fetch job details from public endpoint
   const { data: jobResponse, isLoading } = useQuery({
-    queryKey: ['job', jobId],
-    queryFn: () => apiClient.getJobById(jobId),
+    queryKey: ['public-job', jobId],
+    queryFn: () => backendClient.getPublicJob(jobId),
   });
 
+  // Check if user has already applied (only for authenticated users)
+  const { data: applicationStatusResponse } = useQuery({
+    queryKey: apiKeys.applications.status(jobId),
+    queryFn: () => backendClient.getApplicationStatus(jobId),
+    enabled: isAuthenticated,
+  });
+
+  const applicationStatus = applicationStatusResponse?.data;
+  const isApplied = applicationStatus?.applied || false;
+  const applicationState = applicationStatus?.status || null;
+  const inviteToken = applicationStatus?.inviteToken || null;
+
+  // Check if interview is available (only if applied but not yet submitted/scored)
+  const canStartInterview = isApplied && inviteToken &&
+    ['invited', 'started', 'in_progress', 'INVITED', 'STARTED', 'IN_PROGRESS'].includes(applicationState || '');
+
+  // Apply mutation
+  const applyMutation = useMutation({
+    mutationFn: () => backendClient.applyToJob(jobId),
+    onSuccess: () => {
+      setApplyError(null);
+      queryClient.invalidateQueries({ queryKey: apiKeys.applications.status(jobId) });
+      queryClient.invalidateQueries({ queryKey: apiKeys.applications.list() });
+    },
+    onError: (error: any) => {
+      setApplyError(error?.message || 'Failed to submit application');
+    },
+  });
+
+  const handleApply = () => {
+    if (!isAuthenticated) {
+      router.push('/auth/login?redirect=/applicant/jobs/' + jobId);
+      return;
+    }
+    setApplyError(null);
+    applyMutation.mutate();
+  };
+
   const job = jobResponse?.data;
+  const companyName = (job as any)?.companyName || 'Company';
 
   // Mock data for demonstration
   const matchScore = 85;
@@ -48,11 +90,11 @@ export default function JobDetailPage() {
   ];
 
   const companyInfo = {
-    name: 'TechCorp Inc.',
+    name: companyName,
     size: '500-1000 employees',
     industry: 'Technology',
     founded: '2010',
-    website: 'www.techcorp.com',
+    website: 'www.company.com',
     culture: 'Innovation-driven with focus on work-life balance'
   };
 
@@ -267,14 +309,25 @@ export default function JobDetailPage() {
                       <div>
                         <h3 className="font-semibold mb-3">Technical Skills</h3>
                         <div className="flex flex-wrap gap-2">
-                          {job.requirements?.map(req => (
-                            <Badge
-                              key={req}
-                              className="bg-blue-500/20 text-blue-300 border-blue-500/30"
-                            >
-                              {req}
-                            </Badge>
-                          ))}
+                          {job.requirements && (
+                            typeof job.requirements === 'string'
+                              ? job.requirements.split(',').map((req: string, idx: number) => (
+                                  <Badge
+                                    key={idx}
+                                    className="bg-blue-500/20 text-blue-300 border-blue-500/30"
+                                  >
+                                    {req.trim()}
+                                  </Badge>
+                                ))
+                              : (job.requirements as string[]).map((req: string) => (
+                                  <Badge
+                                    key={req}
+                                    className="bg-blue-500/20 text-blue-300 border-blue-500/30"
+                                  >
+                                    {req}
+                                  </Badge>
+                                ))
+                          )}
                         </div>
                       </div>
 
@@ -395,14 +448,81 @@ export default function JobDetailPage() {
                     </p>
                   </div>
 
-                  {!isApplied ? (
+                  {isApplied ? (
+                    <div className="space-y-3">
+                      <Alert className="bg-green-500/20 border-green-500/30">
+                        <CheckCircle className="w-4 h-4" />
+                        <AlertDescription>
+                          Application submitted!
+                        </AlertDescription>
+                      </Alert>
+                      {applicationState && (
+                        <div className="text-center">
+                          <Badge className={`${
+                            applicationState === 'SHORTLISTED' || applicationState === 'shortlisted' ? 'bg-green-500/20 text-green-300' :
+                            applicationState === 'REJECTED' || applicationState === 'rejected' ? 'bg-red-500/20 text-red-300' :
+                            applicationState === 'SCORED' || applicationState === 'scored' ? 'bg-blue-500/20 text-blue-300' :
+                            applicationState === 'SUBMITTED' || applicationState === 'submitted' ? 'bg-cyan-500/20 text-cyan-300' :
+                            'bg-yellow-500/20 text-yellow-300'
+                          }`}>
+                            Status: {applicationState.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                      )}
+
+                      {/* Start AI Interview Button - only show if not yet submitted */}
+                      {canStartInterview && (
+                        <Button
+                          className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white mb-2"
+                          onClick={() => router.push(`/applicant/interview/${inviteToken}`)}
+                        >
+                          <Play className="w-4 h-4 mr-2" />
+                          Start AI Interview
+                        </Button>
+                      )}
+
+                      {/* Show interview completed message if already submitted */}
+                      {isApplied && ['submitted', 'scored', 'shortlisted', 'SUBMITTED', 'SCORED', 'SHORTLISTED'].includes(applicationState || '') && (
+                        <Alert className="bg-blue-500/10 border-blue-500/30">
+                          <Award className="w-4 h-4 text-blue-400" />
+                          <AlertDescription className="text-blue-200">
+                            Interview completed! Your responses are being evaluated.
+                          </AlertDescription>
+                        </Alert>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        className="w-full border-white/20 bg-transparent hover:bg-white/10"
+                        onClick={() => router.push('/applicant/dashboard')}
+                      >
+                        View My Applications
+                      </Button>
+                    </div>
+                  ) : (
                     <>
+                      {applyError && (
+                        <Alert className="bg-red-500/20 border-red-500/30 mb-3">
+                          <AlertCircle className="w-4 h-4" />
+                          <AlertDescription>{applyError}</AlertDescription>
+                        </Alert>
+                      )}
                       <Button
                         className="w-full bg-white text-black hover:bg-gray-100 mb-3"
-                        onClick={() => setIsApplied(true)}
+                        onClick={handleApply}
+                        disabled={applyMutation.isPending}
                       >
-                        Apply Now
-                        <ChevronRight className="w-4 h-4 ml-2" />
+                        {applyMutation.isPending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Applying...
+                          </>
+                        ) : (
+                          <>
+                            Apply Now
+                            <ChevronRight className="w-4 h-4 ml-2" />
+                          </>
+                        )}
                       </Button>
                       <Button
                         variant="outline"
@@ -413,13 +533,6 @@ export default function JobDetailPage() {
                         Practice First
                       </Button>
                     </>
-                  ) : (
-                    <Alert className="bg-green-500/20 border-green-500/30">
-                      <CheckCircle className="w-4 h-4" />
-                      <AlertDescription>
-                        Application submitted successfully!
-                      </AlertDescription>
-                    </Alert>
                   )}
                 </CardContent>
               </Card>

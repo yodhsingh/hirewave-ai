@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, String, DateTime, Enum, Integer
+from sqlalchemy import Column, String, DateTime, Enum, Integer, ForeignKey
 from sqlalchemy.orm import relationship
 from app.db.base import Base
 import enum
@@ -23,7 +23,7 @@ class User(Base):
     name = Column(String(255), nullable=False)
     password_hash = Column(String(255), nullable=False)
     role = Column(Enum(UserRole, name='user_role', native_enum=True, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=UserRole.CANDIDATE)
-    company_id = Column(Integer, nullable=True)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -31,6 +31,7 @@ class User(Base):
 
     # Relationships
     insights = relationship("UserInsight", back_populates="user", uselist=False)
+    company = relationship("Company", back_populates="users")
 
     def __repr__(self):
         return f"<User {self.email}>"

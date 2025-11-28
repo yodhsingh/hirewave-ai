@@ -99,6 +99,7 @@ export default function LoginPage() {
           name: formData.name,
           password: formData.password,
           role: userType as 'hr' | 'candidate',
+          companyName: userType === 'hr' ? formData.company : undefined,
         });
 
         if (response.success && response.data) {

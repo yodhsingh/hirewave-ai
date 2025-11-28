@@ -4,7 +4,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from app.core.security import verify_password, get_password_hash, create_access_token, create_refresh_token
 from app.db.base import get_db
-from app.models.user import User
+from app.models.user import User, UserRole
+from app.models.company import Company
 from app.schemas.user import UserCreate, UserLogin, UserResponse, TokenResponse
 from app.schemas.common import ApiResponse
 
@@ -123,12 +124,25 @@ async def register(
             detail="Email already registered",
         )
 
+    # Handle company for HR users
+    company_id = None
+    if user_data.role == UserRole.HR and user_data.company_name:
+        # Check if company exists, create if not
+        result = await db.execute(select(Company).filter(Company.name == user_data.company_name))
+        company = result.scalar_one_or_none()
+        if not company:
+            company = Company(name=user_data.company_name)
+            db.add(company)
+            await db.flush()  # Get the ID without committing
+        company_id = company.id
+
     # Create new user
     user = User(
         email=user_data.email,
         name=user_data.name,
         role=user_data.role,
         password_hash=get_password_hash(user_data.password),
+        company_id=company_id,
     )
 
     db.add(user)

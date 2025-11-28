@@ -172,17 +172,22 @@ export default function OnboardingWithParser() {
       const response = await backendClient.parseResume(file);
 
       if (!response.success || !response.data) {
-        throw new Error(response.error?.message || 'Failed to parse resume');
+        const errorMessage = response.error?.message || 'Failed to parse resume';
+        console.error('Resume parsing failed:', response.error);
+        throw new Error(errorMessage);
       }
 
       const parsedData = response.data;
 
       // Debug: Log the parsed data structure
       console.log('Parsed data received:', parsedData);
-      console.log('Personal info:', parsedData.personalInfo || parsedData.personal_info);
+      console.log('Full response:', response);
+      console.log('Personal info (camelCase):', parsedData.personalInfo);
+      console.log('Personal info (snake_case):', parsedData.personal_info);
 
       // Update form with parsed data - check both camelCase and snake_case
       const personalInfo = parsedData.personalInfo || parsedData.personal_info || {};
+      console.log('Using personalInfo:', personalInfo);
 
       // Smart merge: Only override if the parsed value exists and is not empty
       setFormData(prev => ({
@@ -243,18 +248,22 @@ export default function OnboardingWithParser() {
       }));
 
       // Smart merge for skills - combine new skills with existing ones
+      console.log('Skills data:', parsedData.skills);
       const newParsedSkills = [
         ...(parsedData.skills?.technical || []),
         ...(parsedData.skills?.languages || []),
         ...(parsedData.skills?.tools || []),
         ...(parsedData.skills?.soft || []),
       ];
+      console.log('New parsed skills:', newParsedSkills);
 
       if (newParsedSkills.length > 0) {
         // Merge new skills with existing ones, removing duplicates
         setSelectedSkills(prev => {
           const combined = [...prev, ...newParsedSkills];
-          return [...new Set(combined)]; // Remove duplicates
+          const unique = [...new Set(combined)]; // Remove duplicates
+          console.log('Updated skills:', unique);
+          return unique;
         });
       }
 
@@ -264,8 +273,20 @@ export default function OnboardingWithParser() {
         setParsedExperience(parsedData.experience);
       }
 
-      toast.success('Resume parsed and merged!', {
-        description: 'New information has been added while preserving your existing data. You can manually edit any field.',
+      // Count populated fields
+      let populatedCount = 0;
+      if (personalInfo.name) populatedCount++;
+      if (personalInfo.email) populatedCount++;
+      if (personalInfo.phone) populatedCount++;
+      if (personalInfo.location) populatedCount++;
+      if (personalInfo.linkedin) populatedCount++;
+      if (personalInfo.github) populatedCount++;
+      if (parsedData.experience?.length > 0) populatedCount++;
+      if (parsedData.education?.length > 0) populatedCount++;
+      if (newParsedSkills.length > 0) populatedCount++;
+
+      toast.success('Resume parsed successfully!', {
+        description: `Populated ${populatedCount} fields from your resume. You can review and edit the information below.`,
       });
     } catch (error) {
       console.error('Resume parsing error:', error);

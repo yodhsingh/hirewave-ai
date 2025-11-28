@@ -53,28 +53,28 @@ interface QuestionBuilderProps {
 
 const QUESTION_TYPES = [
   {
-    type: 'phone' as const,
+    type: 'PHONE' as const,
     icon: Phone,
     title: 'AI Phone Interview',
     description: 'Automated AI voice call for technical screening',
     recommended: true,
   },
   {
-    type: 'video' as const,
+    type: 'VIDEO' as const,
     icon: Video,
     title: 'Video Response',
     description: 'Candidates record video answers',
     recommended: false,
   },
   {
-    type: 'text' as const,
+    type: 'TEXT' as const,
     icon: FileText,
     title: 'Text Response',
     description: 'Written answers in paragraph form',
     recommended: false,
   },
   {
-    type: 'multiple_choice' as const,
+    type: 'MULTIPLE_CHOICE' as const,
     icon: CheckSquare,
     title: 'Multiple Choice',
     description: 'Select from predefined options',
@@ -83,26 +83,26 @@ const QUESTION_TYPES = [
 ];
 
 const SUGGESTED_QUESTIONS: Record<string, string[]> = {
-  phone: [
+  PHONE: [
     'Explain your experience with the key technologies mentioned in the job description',
     'Describe a complex technical problem you solved and walk me through your approach',
     'What is your experience with system design and architecture?',
     'How do you approach debugging and troubleshooting production issues?',
     'Explain a recent project where you had to learn new technologies quickly',
   ],
-  video: [
+  VIDEO: [
     'Tell us about yourself and why you are interested in this role.',
     'Describe a challenging project you worked on and how you overcame obstacles.',
     'What are your greatest strengths and how do they align with this position?',
     'Where do you see yourself professionally in the next 3-5 years?',
   ],
-  text: [
+  TEXT: [
     'What specific skills and experiences make you a good fit for this role?',
     'Describe your approach to problem-solving with a specific example.',
     'How do you stay updated with industry trends and technologies?',
     'What motivates you in your professional career?',
   ],
-  multiple_choice: [
+  MULTIPLE_CHOICE: [
     'How many years of relevant experience do you have?',
     'What is your preferred work arrangement?',
     'When can you start if selected?',
@@ -111,19 +111,19 @@ const SUGGESTED_QUESTIONS: Record<string, string[]> = {
 };
 
 const TIME_LIMITS = [
-  { value: '300', label: '5 minutes', type: 'phone' },
-  { value: '600', label: '10 minutes', type: 'phone' },
-  { value: '900', label: '15 minutes', type: 'phone' },
-  { value: '1200', label: '20 minutes', type: 'phone' },
-  { value: '1800', label: '30 minutes', type: 'phone' },
-  { value: '30', label: '30 seconds', type: 'video' },
-  { value: '60', label: '1 minute', type: 'video' },
-  { value: '90', label: '90 seconds', type: 'video' },
-  { value: '120', label: '2 minutes', type: 'video' },
-  { value: '180', label: '3 minutes', type: 'video' },
-  { value: '300', label: '5 minutes', type: 'text' },
-  { value: '600', label: '10 minutes', type: 'text' },
-  { value: '900', label: '15 minutes', type: 'text' },
+  { value: '300', label: '5 minutes', type: 'PHONE' },
+  { value: '600', label: '10 minutes', type: 'PHONE' },
+  { value: '900', label: '15 minutes', type: 'PHONE' },
+  { value: '1200', label: '20 minutes', type: 'PHONE' },
+  { value: '1800', label: '30 minutes', type: 'PHONE' },
+  { value: '30', label: '30 seconds', type: 'VIDEO' },
+  { value: '60', label: '1 minute', type: 'VIDEO' },
+  { value: '90', label: '90 seconds', type: 'VIDEO' },
+  { value: '120', label: '2 minutes', type: 'VIDEO' },
+  { value: '180', label: '3 minutes', type: 'VIDEO' },
+  { value: '300', label: '5 minutes', type: 'TEXT' },
+  { value: '600', label: '10 minutes', type: 'TEXT' },
+  { value: '900', label: '15 minutes', type: 'TEXT' },
   { value: '0', label: 'No limit', type: 'all' },
 ];
 
@@ -134,7 +134,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
 
   const [newQuestion, setNewQuestion] = useState<Partial<QuestionCreate>>({
     question: '',
-    type: 'phone',
+    type: 'PHONE',
     timeLimit: 900,
     required: true,
   });
@@ -145,11 +145,11 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
     if (newQuestion.question?.trim()) {
       const questionToAdd: QuestionCreate = {
         question: newQuestion.question,
-        type: newQuestion.type || 'phone',
+        type: newQuestion.type || 'PHONE',
         timeLimit: newQuestion.timeLimit || 900,
         required: newQuestion.required !== false,
-        options: newQuestion.type === 'multiple_choice' ? mcOptions.filter(o => o.trim()) : undefined,
-        order: editingIndex !== null ? editingIndex : questions.length,
+        options: newQuestion.type === 'MULTIPLE_CHOICE' ? mcOptions.filter(o => o.trim()) : undefined,
+        order: editingIndex !== null ? editingIndex + 1 : questions.length + 1,
       };
 
       if (editingIndex !== null) {
@@ -166,7 +166,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
   };
 
   const resetForm = () => {
-    setNewQuestion({ question: '', type: 'video', timeLimit: 60, required: true });
+    setNewQuestion({ question: '', type: 'VIDEO', timeLimit: 60, required: true });
     setMcOptions(['']);
     setIsAddingQuestion(false);
     setEditingIndex(null);
@@ -201,47 +201,47 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
       const aiGeneratedQuestions: QuestionCreate[] = [
         {
           question: "Tell us about yourself and your experience with the key technologies mentioned in this job description.",
-          type: 'phone',
-          timeLimit: 900,
-          required: true,
-          order: 0,
-        },
-        {
-          question: "Describe a complex technical problem you've solved recently. Walk through your approach step by step.",
-          type: 'phone',
+          type: 'PHONE',
           timeLimit: 900,
           required: true,
           order: 1,
         },
         {
-          question: "What's your experience with system design and architecture? Can you describe a system you've designed or worked on?",
-          type: 'phone',
+          question: "Describe a complex technical problem you've solved recently. Walk through your approach step by step.",
+          type: 'PHONE',
           timeLimit: 900,
           required: true,
           order: 2,
         },
         {
-          question: "How do you approach debugging and troubleshooting production issues? Give us a specific example.",
-          type: 'phone',
-          timeLimit: 600,
+          question: "What's your experience with system design and architecture? Can you describe a system you've designed or worked on?",
+          type: 'PHONE',
+          timeLimit: 900,
           required: true,
           order: 3,
         },
         {
-          question: "What are your salary expectations for this role?",
-          type: 'multiple_choice',
-          timeLimit: 60,
+          question: "How do you approach debugging and troubleshooting production issues? Give us a specific example.",
+          type: 'PHONE',
+          timeLimit: 600,
           required: true,
-          options: ['₹10L - ₹15L', '₹15L - ₹20L', '₹20L - ₹30L', '₹30L+', 'Negotiable'],
           order: 4,
         },
         {
+          question: "What are your salary expectations for this role?",
+          type: 'MULTIPLE_CHOICE',
+          timeLimit: 60,
+          required: true,
+          options: ['₹10L - ₹15L', '₹15L - ₹20L', '₹20L - ₹30L', '₹30L+', 'Negotiable'],
+          order: 5,
+        },
+        {
           question: "When would you be available to start if selected?",
-          type: 'multiple_choice',
+          type: 'MULTIPLE_CHOICE',
           timeLimit: 30,
           required: true,
           options: ['Immediately', 'Within 2 weeks', 'Within 1 month', 'Need to discuss'],
-          order: 5,
+          order: 6,
         },
       ];
 
@@ -266,13 +266,13 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
 
   const getQuestionIcon = (type: QuestionCreate['type']) => {
     switch (type) {
-      case 'phone':
+      case 'PHONE':
         return <Phone className="w-4 h-4" />;
-      case 'video':
+      case 'VIDEO':
         return <Video className="w-4 h-4" />;
-      case 'text':
+      case 'TEXT':
         return <FileText className="w-4 h-4" />;
-      case 'multiple_choice':
+      case 'MULTIPLE_CHOICE':
         return <CheckSquare className="w-4 h-4" />;
       default:
         return <FileText className="w-4 h-4" />;
@@ -355,7 +355,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
                   <Phone className="w-3 h-3 text-purple-400" />
                 </div>
                 <span className="font-medium text-white">
-                  {questions.filter(q => q.type === 'phone').length}
+                  {questions.filter(q => q.type === 'PHONE').length}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -363,7 +363,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
                   <Video className="w-3 h-3 text-blue-400" />
                 </div>
                 <span className="font-medium text-white">
-                  {questions.filter(q => q.type === 'video').length}
+                  {questions.filter(q => q.type === 'VIDEO').length}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -371,7 +371,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
                   <FileText className="w-3 h-3 text-gray-400" />
                 </div>
                 <span className="font-medium text-white">
-                  {questions.filter(q => q.type === 'text').length}
+                  {questions.filter(q => q.type === 'TEXT').length}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -379,7 +379,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
                   <CheckSquare className="w-3 h-3 text-green-400" />
                 </div>
                 <span className="font-medium text-white">
-                  {questions.filter(q => q.type === 'multiple_choice').length}
+                  {questions.filter(q => q.type === 'MULTIPLE_CHOICE').length}
                 </span>
               </div>
             </div>
@@ -549,7 +549,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
                     Suggested questions:
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {SUGGESTED_QUESTIONS[newQuestion.type || 'video'].slice(0, 3).map((q, i) => (
+                    {SUGGESTED_QUESTIONS[newQuestion.type || 'VIDEO'].slice(0, 3).map((q, i) => (
                       <Button
                         key={i}
                         variant="outline"
@@ -565,7 +565,7 @@ export function QuestionBuilder({ questions, onQuestionsChange }: QuestionBuilde
               </div>
 
               {/* Multiple Choice Options */}
-              {newQuestion.type === 'multiple_choice' && (
+              {newQuestion.type === 'MULTIPLE_CHOICE' && (
                 <div>
                   <Label className="font-bold text-white">Answer Options</Label>
                   <div className="space-y-2 mt-2">

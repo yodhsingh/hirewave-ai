@@ -1,29 +1,20 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
-import Image from 'next/image';
-import Navigation from '@/components/layout/Navigation';
 import Footer from '@/components/layout/Footer';
 import {
   ArrowLeft,
   Users,
-  Calendar,
-  MapPin,
-  Building,
   Phone,
   Video,
   FileText,
   Code,
   MessageSquare,
-  Send,
-  Download,
   Filter,
   Search,
   MoreVertical,
-  ChevronRight,
   UserPlus,
   Mail,
   Trash2,
@@ -33,16 +24,19 @@ import {
   XCircle,
   AlertCircle,
   TrendingUp,
-  BarChart3,
   Eye,
   Sparkles,
   Bell,
   Settings,
   LogOut,
-  Home,
   User,
-  HelpCircle,
-  UserCheck
+  MapPin,
+  Building,
+  Briefcase,
+  Calendar,
+  Edit,
+  Copy,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -99,11 +93,11 @@ const PIPELINE_STAGES = [
 ];
 
 const QUESTION_TYPE_ICONS = {
-  phone: Phone,
-  video: Video,
-  text: FileText,
-  code: Code,
-  multiple_choice: MessageSquare,
+  PHONE: Phone,
+  VIDEO: Video,
+  TEXT: FileText,
+  CODE: Code,
+  MULTIPLE_CHOICE: MessageSquare,
 };
 
 export default function JobDetailsPage() {
@@ -289,304 +283,152 @@ export default function JobDetailsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
-      {/* White Background Section - Matching Home Page */}
-      <div className="relative bg-white">
-        {/* Background SVG - fixed aspect, full viewport width, no cropping */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 min-[1400px]:-translate-y-[150px] z-0 pointer-events-none">
-          <div className="relative w-screen aspect-[1920/1172]">
-            {/* Mask that crops from the TOP after 1400px while preserving bottom integrity */}
-            <div className="absolute inset-x-0 bottom-0 h-full min-[1400px]:h-[calc(100%_-_150px)] overflow-hidden">
-              <Image
-                src="/Background.svg"
-                alt="Background"
-                fill
-                sizes="100vw"
-                className="object-cover object-bottom"
-                priority
-              />
+    <div className="min-h-screen bg-[#0F0F0F] text-white">
+      {/* Header - Same style as HR Dashboard */}
+      <nav className="relative z-10 border-b border-black/10 bg-white/90 backdrop-blur-xl shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push('/hr/dashboard')}
+                className="gap-2 text-black hover:bg-black/10"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Dashboard
+              </Button>
+              <div className="h-8 w-px bg-black/10" />
+              <div>
+                <h1 className="text-xl font-medium text-gray-900">{job.title}</h1>
+                <p className="text-sm text-gray-500">{job.department} • {job.location}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <Button
+                onClick={() => router.push(`/hr/jobs/invite?jobId=${params.id}`)}
+                className="gap-2 bg-black hover:bg-black/90 text-white rounded-xl font-medium"
+              >
+                <UserPlus className="w-4 h-4" />
+                Invite Candidates
+              </Button>
+
+              <Button variant="ghost" className="relative p-2 bg-black/5 hover:bg-black/10 border border-black/10 rounded-xl">
+                <Bell className="w-5 h-5 text-gray-900" />
+              </Button>
+
+              {/* User Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="flex items-center gap-2 hover:bg-black/10">
+                    <div className="flex items-center gap-3">
+                      <div className="text-right hidden md:block">
+                        <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
+                        <p className="text-xs text-gray-600">HR Manager</p>
+                      </div>
+                      <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${gradients.primary} flex items-center justify-center`}>
+                        <span className="text-white text-sm font-bold">
+                          {user?.name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                        </span>
+                      </div>
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="bg-gray-900 border-gray-800 text-white w-56" align="end">
+                  <div className="px-3 py-2 border-b border-gray-800">
+                    <p className="text-sm font-medium">{user?.name || 'User'}</p>
+                    <p className="text-xs text-gray-400">{user?.email || ''}</p>
+                  </div>
+                  <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/hr/profile')}>
+                    <User className="w-4 h-4 mr-2" />
+                    View Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem className="hover:bg-gray-800" onClick={() => router.push('/hr/settings')}>
+                    <Settings className="w-4 h-4 mr-2" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator className="bg-gray-800" />
+                  <DropdownMenuItem
+                    className="text-red-400 hover:bg-gray-800"
+                    onClick={() => {
+                      logout();
+                      router.push('/login');
+                    }}
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
+      </nav>
 
-        {/* Custom Navigation with Profile Dropdown */}
-        <nav className="relative z-50 px-6 lg:px-16 py-6">
-          <div className="max-w-[1400px] mx-auto relative flex items-center justify-between">
-            {/* Logo */}
-            <Link href="/" className="flex items-center space-x-2">
-              <Image src="/Brain.svg" alt="Logo" width={24} height={24} />
-              <span className="text-xl font-semibold text-black">
-                HireWave.ai
-              </span>
-            </Link>
-
-            {/* Navigation Links - centered */}
-            <div className="hidden md:flex items-center space-x-10 absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
-              <Link href="/about" className="transition-colors text-sm text-black/60 hover:text-black">
-                About
-              </Link>
-              <Link href="/pricing" className="transition-colors text-sm text-black/60 hover:text-black">
-                Pricing
-              </Link>
-              <Link href="/features" className="transition-colors text-sm text-black/60 hover:text-black">
-                Features
-              </Link>
-            </div>
-
-            {/* Right actions - Profile Dropdown for HR users */}
-            <div className="flex items-center gap-3">
-              {isAuthenticated && user?.role === 'hr' ? (
-                <>
-                  {/* Notifications */}
-                  <Button variant="ghost" className="relative p-2 hover:bg-black/5">
-                    <Bell className="w-5 h-5 text-black/60" />
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-                  </Button>
-
-                  {/* User Profile Dropdown */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="flex items-center gap-2 hover:bg-black/5">
-                        <div className="flex items-center gap-3">
-                          <div className="text-right hidden md:block">
-                            <p className="text-sm font-medium text-black">{user.name || 'HR Manager'}</p>
-                            <p className="text-xs text-black/60">HR Manager</p>
-                          </div>
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-cyan-600 flex items-center justify-center">
-                            <span className="text-white text-sm font-bold">
-                              {(user.name || user.email || 'HR').charAt(0).toUpperCase()}
-                            </span>
-                          </div>
-                        </div>
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent className="bg-white border-black/10 text-black w-56 shadow-lg" align="end">
-                      <div className="px-3 py-2 border-b border-black/10">
-                        <p className="text-sm font-medium text-black">{user.name || 'HR Manager'}</p>
-                        <p className="text-xs text-black/60">{user.email}</p>
-                      </div>
-                      <DropdownMenuItem className="text-black hover:bg-black/5 focus:bg-black/5" onClick={() => router.push('/hr/profile')}>
-                        <User className="w-4 h-4 mr-2 text-black" />
-                        View Profile
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-black hover:bg-black/5 focus:bg-black/5" onClick={() => router.push('/hr/settings')}>
-                        <Settings className="w-4 h-4 mr-2 text-black" />
-                        Settings
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-black/10" />
-                      <DropdownMenuItem className="text-black hover:bg-black/5 focus:bg-black/5" onClick={() => router.push('/hr/team')}>
-                        <UserCheck className="w-4 h-4 mr-2 text-black" />
-                        Team Members
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-black hover:bg-black/5 focus:bg-black/5" onClick={() => router.push('/hr/help')}>
-                        <HelpCircle className="w-4 h-4 mr-2 text-black" />
-                        Help & Support
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator className="bg-black/10" />
-                      <DropdownMenuItem
-                        className="text-red-600 hover:bg-red-50 focus:bg-red-50"
-                        onClick={() => {
-                          logout();
-                          router.push('/');
-                        }}
-                      >
-                        <LogOut className="w-4 h-4 mr-2 text-red-600" />
-                        Sign Out
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </>
-              ) : (
-                <Button
-                  onClick={() => router.push('/login')}
-                  className="bg-[#2D2D2D] text-white hover:bg-[#1a1a1a] rounded-lg px-6 py-2.5 text-sm font-normal"
-                >
-                  Sign in
-                </Button>
-              )}
-            </div>
+      {/* Compact Stats Header */}
+      <div className="container mx-auto px-6 py-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl p-4 text-center">
+            <div className="text-2xl font-light text-white">{candidates.length}</div>
+            <div className="text-white/60 text-sm">Total Candidates</div>
           </div>
-        </nav>
-
-        {/* Hero Section - Matching Home Page Style */}
-        <section className="relative z-10 px-6 lg:px-16 pt-12 pb-28 lg:pt-12 lg:pb-32 min-h-[720px] lg:min-h-[780px] xl:min-h-[840px]">
-          {/* Mobile-only white backdrop to ensure sufficient white area under hero text */}
-          <div className="absolute inset-x-0 translate-y-[-200px] bottom-0 h-full overflow-hidden lg:hidden">
-            <Image
-              src="/Background.svg"
-              alt="Background"
-              fill
-              sizes="100vw"
-              className="object-cover object-bottom"
-              priority
-            />
+          <div className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl p-4 text-center">
+            <div className="text-2xl font-light text-green-400">{job.stats?.shortlisted || 0}</div>
+            <div className="text-white/60 text-sm">Shortlisted</div>
           </div>
-          <div className="relative z-[2] max-w-[1400px] mx-auto">
-            {/* Full-width vector curve behind heading */}
-            <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -translate-y-[calc(100%-180px)] top-[clamp(300px,23vw,440px)] pb-20 w-screen opacity-40 z-[1] hidden sm:block">
-              <Image
-                src="/Vector 1.svg"
-                alt=""
-                width={1920}
-                height={160}
-                className="w-screen h-auto"
-              />
-            </div>
-            <div className="text-center space-y-8">
-              {/* Badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="inline-flex items-center gap-2 text-left"
-              >
-                <span className="text-[10px] font-light text-black/50 uppercase tracking-[0.35em]">
-                  HIRING DASHBOARD
-                </span>
-              </motion.div>
-
-              {/* Main Heading with decorative elements */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="relative"
-              >
-                {/* Left-aligned text */}
-                <h1 className="relative text-center text-[32px] md:text-[56px] lg:text-[72px] font-light leading-[1.07] tracking-tight text-black">
-                  MANAGE
-                  <span className="ml-2 font-medium inline-flex items-baseline relative overflow-visible">
-                    {candidates.length}+
-                  </span>
-                  <br />
-                  CANDIDATES FOR
-                  <br />
-                  <span className="font-medium">{job.title.toUpperCase()}</span>
-                </h1>
-              </motion.div>
-
-              {/* CTA Buttons */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
-                className="flex flex-col sm:flex-row gap-4 pt-8 justify-center"
-              >
-                <Button
-                  onClick={() => router.push(`/hr/jobs/invite?jobId=${params.id}`)}
-                  className="bg-[#2D2D2D] text-white hover:bg-[#1a1a1a] rounded-lg px-8 py-3 text-sm font-normal inline-flex items-center gap-2"
-                >
-                  <span>Invite More Candidates</span>
-                  <Image src="/Forward.svg" alt="" width={16} height={16} className="opacity-90" />
-                </Button>
-
-                <Button
-                  onClick={() => setActiveTab('analytics')}
-                  variant="outline"
-                  className="border border-black/20 bg-transparent hover:bg-black/5 text-black rounded-lg px-8 py-3 text-sm font-normal transition-all inline-flex items-center gap-2"
-                >
-                  <span>View Analytics</span>
-                  <Image src="/Double Right.svg" alt="" width={18} height={18} className="opacity-90" />
-                </Button>
-              </motion.div>
-
-              {/* Stats Row - Bottom Center */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.6 }}
-                className="flex items-center justify-center gap-8 pt-8"
-              >
-                {/* Key Stats */}
-                <div className="flex flex-col gap-2 text-center">
-                  <p className="text-[10px] text-black/40 uppercase tracking-wider">Pipeline Progress</p>
-                  <div className="flex items-center gap-6">
-                    <div className="text-center">
-                      <div className="text-xl font-normal text-black">{job.stats?.shortlisted || 0}</div>
-                      <div className="text-xs text-black/60">Shortlisted</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-normal text-black">{job.stats?.scored || 0}</div>
-                      <div className="text-xs text-black/60">AI Scored</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-xl font-normal text-black">
-                        {job.stats?.total ? Math.round((job.stats.submitted / job.stats.total) * 100) : 0}%
-                      </div>
-                      <div className="text-xs text-black/60">Completion</div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
+          <div className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl p-4 text-center">
+            <div className="text-2xl font-light text-cyan-400">{job.stats?.scored || 0}</div>
+            <div className="text-white/60 text-sm">AI Scored</div>
           </div>
-        </section>
+          <div className="bg-white/[0.05] backdrop-blur-xl border border-white/10 rounded-2xl p-4 text-center">
+            <div className="text-2xl font-light text-white">
+              {job.stats?.total ? Math.round((job.stats.submitted / job.stats.total) * 100) : 0}%
+            </div>
+            <div className="text-white/60 text-sm">Completion Rate</div>
+          </div>
+        </div>
       </div>
 
-      {/* Main Content - Dark Section - Matching Home Page */}
-      <section className="relative bg-[#0F0F0F] py-24 z-10 overflow-hidden text-white">
+      {/* Main Content */}
+      <section className="relative bg-[#0F0F0F] pb-12 z-10 overflow-hidden text-white">
         <div className="relative max-w-[1400px] mx-auto px-6 lg:px-16">
-          {/* Quick Stats Bar */}
+          {/* Pipeline Section */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-16"
+            className="mb-8"
           >
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-              <div className="relative bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-[20px] p-6 text-center">
-                <div className="text-3xl font-light text-white mb-2">{candidates.length}</div>
-                <div className="text-white/70 text-sm">Total Candidates</div>
-              </div>
-              <div className="relative bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-[20px] p-6 text-center">
-                <div className="text-3xl font-light text-green-400 mb-2">{job.stats?.shortlisted || 0}</div>
-                <div className="text-white/70 text-sm">Shortlisted</div>
-              </div>
-              <div className="relative bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-[20px] p-6 text-center">
-                <div className="text-3xl font-light text-cyan-400 mb-2">{job.stats?.scored || 0}</div>
-                <div className="text-white/70 text-sm">AI Scored</div>
-              </div>
-              <div className="relative bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-[20px] p-6 text-center">
-                <div className="text-3xl font-light text-white mb-2">
-                  {job.stats?.total ? Math.round((job.stats.submitted / job.stats.total) * 100) : 0}%
-                </div>
-                <div className="text-white/70 text-sm">Completion Rate</div>
-              </div>
-            </div>
+            <h2 className="text-2xl font-light text-white mb-6">Candidate Pipeline</h2>
 
-            <h2 className="text-4xl lg:text-5xl font-light text-white mb-12">Candidate Pipeline</h2>
-
-            {/* Simplified Pipeline View */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+            {/* Compact Pipeline View */}
+            <div className="grid grid-cols-3 md:grid-cols-7 gap-3">
               {PIPELINE_STAGES.map((stage) => {
                 const count = candidates.filter(c => c.status === stage.id).length;
                 const percentage = candidates.length > 0 ? (count / candidates.length) * 100 : 0;
 
                 return (
-                  <motion.div
+                  <div
                     key={stage.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    className="relative group"
+                    className="relative bg-white/[0.04] border border-white/10 rounded-xl p-3 text-center"
                   >
-                    <div className="relative bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-[20px] p-6 text-center">
-                      <div className="text-2xl font-light text-white mb-2">{count}</div>
-                      <div className="text-white/70 text-xs font-light mb-3">{stage.label}</div>
-                      <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full bg-gradient-to-r ${stage.color} transition-all duration-500 ease-in-out`}
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
+                    <div className="text-xl font-light text-white">{count}</div>
+                    <div className="text-white/60 text-xs">{stage.label}</div>
+                    <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mt-2">
+                      <div
+                        className={`h-full bg-gradient-to-r ${stage.color}`}
+                        style={{ width: `${percentage}%` }}
+                      />
                     </div>
-                  </motion.div>
+                  </div>
                 );
               })}
             </div>
           </motion.div>
 
-          {/* Main Content Tabs - Modern Design */}
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-16">
+          {/* Main Content Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
             <div className="flex items-center justify-center">
               <TabsList className="bg-white/[0.06] backdrop-blur-xl border border-white/20 rounded-2xl p-1.5 shadow-2xl">
                 <TabsTrigger
@@ -623,79 +465,235 @@ export default function JobDetailsPage() {
             </div>
 
             {/* Overview Tab */}
-            <TabsContent value="overview" className="space-y-16">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="grid md:grid-cols-2 gap-8"
-              >
-                {/* Job Description Card */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  className="relative group"
-                >
-                  <div className="relative bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-[28px] p-8 md:p-12 min-h-[400px] flex flex-col">
-                    <h3 className="text-2xl lg:text-3xl font-light text-white leading-snug mb-6">
-                      Job Description
-                    </h3>
-                    <p className="text-white/70 leading-relaxed mb-8 flex-1">{job.description}</p>
-                    {job.requirements && (
-                      <div>
-                        <h4 className="text-lg font-light mb-4 text-white">Requirements</h4>
-                        <div className="text-sm text-white/70 whitespace-pre-wrap">
-                          {job.requirements}
-                        </div>
+            <TabsContent value="overview" className="space-y-6">
+              {/* Job Details Card */}
+              <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
+                <CardHeader className="pb-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-2xl text-white">{job.title}</CardTitle>
+                      <div className="flex items-center gap-4 mt-2">
+                        <Badge
+                          className={
+                            job.status === 'ACTIVE'
+                              ? 'bg-green-500/10 text-green-400 border-green-500/30'
+                              : job.status === 'DRAFT'
+                              ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/30'
+                              : 'bg-gray-500/10 text-gray-400 border-gray-500/30'
+                          }
+                        >
+                          {job.status}
+                        </Badge>
+                        <span className="text-white/50 text-sm">
+                          Created {new Date(job.createdAt).toLocaleDateString()}
+                        </span>
                       </div>
-                    )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => router.push(`/hr/jobs/${job.id}/edit`)}
+                        className="gap-2 bg-white/[0.04] border-white/10 text-white hover:bg-white/[0.08]"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit Job
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}/jobs/${job.id}/apply`);
+                          alert('Job link copied to clipboard!');
+                        }}
+                        className="gap-2 bg-white/[0.04] border-white/10 text-white hover:bg-white/[0.08]"
+                      >
+                        <Copy className="w-4 h-4" />
+                        Copy Link
+                      </Button>
+                    </div>
                   </div>
-                </motion.div>
-
-                {/* Key Metrics Card */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: 0.1 }}
-                  className="relative group"
-                >
-                  <div className="relative bg-white/[0.04] backdrop-blur-xl border border-white/10 rounded-[28px] p-8 md:p-12 min-h-[400px] flex flex-col">
-                    <h3 className="text-2xl lg:text-3xl font-light text-white leading-snug mb-8">
-                      Key Metrics
-                    </h3>
-                    <div className="space-y-8 flex-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/70">Total Applications</span>
-                        <span className="text-3xl md:text-4xl font-light text-white">{job.stats?.total || 0}</span>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Job Meta Info */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-white/[0.02] rounded-xl border border-white/5">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-blue-500/10 rounded-lg">
+                        <Building className="w-4 h-4 text-blue-400" />
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/70">Completion Rate</span>
-                        <div className="flex items-center gap-3">
-                          <div className="w-24 h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-blue-600 to-cyan-600 transition-all duration-300 ease-in-out"
-                              style={{ width: `${job.stats?.total ? (job.stats.submitted / job.stats.total) * 100 : 0}%` }}
-                            />
-                          </div>
-                          <span className="text-lg font-light text-white">
-                            {job.stats?.total ? Math.round((job.stats.submitted / job.stats.total) * 100) : 0}%
-                          </span>
-                        </div>
+                      <div>
+                        <p className="text-xs text-white/50">Department</p>
+                        <p className="text-sm text-white font-medium">{job.department}</p>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/70">AI Scored</span>
-                        <span className="text-2xl font-light text-cyan-400">{job.stats?.scored || 0}</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-green-500/10 rounded-lg">
+                        <MapPin className="w-4 h-4 text-green-400" />
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-white/70">Shortlisted</span>
-                        <span className="text-2xl font-light text-green-400">{job.stats?.shortlisted || 0}</span>
+                      <div>
+                        <p className="text-xs text-white/50">Location</p>
+                        <p className="text-sm text-white font-medium">{job.location}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-purple-500/10 rounded-lg">
+                        <Briefcase className="w-4 h-4 text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-white/50">Employment Type</p>
+                        <p className="text-sm text-white font-medium">{job.roleType.replace('_', ' ')}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-cyan-500/10 rounded-lg">
+                        <MessageSquare className="w-4 h-4 text-cyan-400" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-white/50">Questions</p>
+                        <p className="text-sm text-white font-medium">{job.questions?.length || 0} interview questions</p>
                       </div>
                     </div>
                   </div>
-                </motion.div>
-              </motion.div>
+
+                  {/* Description */}
+                  <div>
+                    <h4 className="text-lg font-medium text-white mb-3">Job Description</h4>
+                    <p className="text-white/70 leading-relaxed whitespace-pre-wrap">{job.description}</p>
+                  </div>
+
+                  {/* Requirements */}
+                  {job.requirements && (
+                    <div>
+                      <h4 className="text-lg font-medium text-white mb-3">Requirements</h4>
+                      <div className="text-white/70 leading-relaxed whitespace-pre-wrap">{job.requirements}</div>
+                    </div>
+                  )}
+
+                  {/* Interview Questions Summary */}
+                  {job.questions && job.questions.length > 0 && (
+                    <div>
+                      <h4 className="text-lg font-medium text-white mb-3">Interview Questions Summary</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        {['PHONE', 'VIDEO', 'TEXT', 'MULTIPLE_CHOICE', 'CODE'].map((type) => {
+                          const count = job.questions.filter(q => q.type === type).length;
+                          const Icon = QUESTION_TYPE_ICONS[type as keyof typeof QUESTION_TYPE_ICONS];
+                          return (
+                            <div key={type} className="p-3 bg-white/[0.02] rounded-lg border border-white/5 text-center">
+                              <Icon className="w-5 h-5 text-white/60 mx-auto mb-1" />
+                              <p className="text-xl font-light text-white">{count}</p>
+                              <p className="text-xs text-white/50">{type.replace('_', ' ')}</p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Metrics Row */}
+              <div className="grid md:grid-cols-3 gap-4">
+                {/* Application Funnel */}
+                <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base text-white">Application Funnel</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 text-sm">Invited</span>
+                      <span className="text-white font-medium">{job.stats?.invited || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 text-sm">Started</span>
+                      <span className="text-white font-medium">{job.stats?.started || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 text-sm">Submitted</span>
+                      <span className="text-white font-medium">{job.stats?.submitted || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 text-sm">AI Scored</span>
+                      <span className="text-cyan-400 font-medium">{job.stats?.scored || 0}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Outcomes */}
+                <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base text-white">Outcomes</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 text-sm">Shortlisted</span>
+                      <span className="text-green-400 font-medium">{job.stats?.shortlisted || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 text-sm">Rejected</span>
+                      <span className="text-red-400 font-medium">{job.stats?.rejected || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 text-sm">In Progress</span>
+                      <span className="text-yellow-400 font-medium">{job.stats?.inProgress || 0}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-white/60 text-sm">Total</span>
+                      <span className="text-white font-medium">{job.stats?.total || 0}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Rates */}
+                <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base text-white">Performance</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-white/60 text-sm">Completion Rate</span>
+                        <span className="text-white font-medium">
+                          {job.stats?.total ? Math.round((job.stats.submitted / job.stats.total) * 100) : 0}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-blue-600 to-cyan-600"
+                          style={{ width: `${job.stats?.total ? (job.stats.submitted / job.stats.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-white/60 text-sm">Shortlist Rate</span>
+                        <span className="text-white font-medium">
+                          {job.stats?.submitted ? Math.round((job.stats.shortlisted / job.stats.submitted) * 100) : 0}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-green-600 to-green-400"
+                          style={{ width: `${job.stats?.submitted ? (job.stats.shortlisted / job.stats.submitted) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-white/60 text-sm">Rejection Rate</span>
+                        <span className="text-white font-medium">
+                          {job.stats?.submitted ? Math.round((job.stats.rejected / job.stats.submitted) * 100) : 0}%
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-red-600 to-red-400"
+                          style={{ width: `${job.stats?.submitted ? (job.stats.rejected / job.stats.submitted) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             {/* Candidates Tab */}
@@ -1520,7 +1518,22 @@ export default function JobDetailsPage() {
                     <CardTitle className="text-base text-white">Time to Complete</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-2xl md:text-3xl font-bold text-white">24 min</div>
+                    <div className="text-2xl md:text-3xl font-bold text-white">
+                      {(() => {
+                        const completedCandidates = candidates.filter(c => c.startedAt && c.submittedAt);
+                        if (completedCandidates.length === 0) return '—';
+                        const totalMinutes = completedCandidates.reduce((sum, c) => {
+                          const started = new Date(c.startedAt!);
+                          const submitted = new Date(c.submittedAt!);
+                          return sum + Math.round((submitted.getTime() - started.getTime()) / (1000 * 60));
+                        }, 0);
+                        const avgMinutes = Math.round(totalMinutes / completedCandidates.length);
+                        if (avgMinutes < 60) return `${avgMinutes} min`;
+                        const hours = Math.floor(avgMinutes / 60);
+                        const mins = avgMinutes % 60;
+                        return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+                      })()}
+                    </div>
                     <p className="text-xs text-gray-400 mt-1">Average completion time</p>
                   </CardContent>
                 </Card>
@@ -1542,13 +1555,13 @@ export default function JobDetailsPage() {
 
               {/* Analytics Charts */}
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6 mb-6">
-                <HiringFunnelChart />
-                <TimeToHireChart />
+                <HiringFunnelChart stats={job.stats} />
+                <TimeToHireChart candidates={candidates} />
               </div>
 
               <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
-                <CandidateSourcesChart />
-                <ApplicationsOverTimeChart />
+                <CandidateSourcesChart candidates={candidates} />
+                <ApplicationsOverTimeChart candidates={candidates} />
               </div>
             </TabsContent>
           </Tabs>

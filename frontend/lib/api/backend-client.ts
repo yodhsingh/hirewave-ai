@@ -132,7 +132,21 @@ class BackendApiClient {
         headers,
       });
 
-      const data = await response.json();
+      let data: any;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        console.error('[BackendClient] Failed to parse JSON response:', jsonError);
+        // Return a proper error response even if JSON parsing fails
+        return {
+          success: false,
+          error: {
+            code: response.status.toString(),
+            message: `Server returned invalid response (status ${response.status})`,
+            details: 'Failed to parse response from server',
+          },
+        };
+      }
 
       if (!response.ok) {
         // Only clear tokens on 401 (Unauthorized) - NOT on 500 errors!
@@ -144,27 +158,42 @@ class BackendApiClient {
 
         // Handle validation errors from FastAPI (422 status)
         let errorMessage = 'An error occurred';
-        if (data.detail) {
-          if (Array.isArray(data.detail)) {
-            // Parse validation errors from FastAPI
-            errorMessage = data.detail.map((err: any) =>
-              err.msg || err.message || 'Validation error'
-            ).join(', ');
-          } else if (typeof data.detail === 'string') {
-            errorMessage = data.detail;
+        if (data && typeof data === 'object') {
+          if (data.detail) {
+            if (Array.isArray(data.detail)) {
+              // Parse validation errors from FastAPI
+              errorMessage = data.detail.map((err: any) =>
+                err.msg || err.message || 'Validation error'
+              ).join(', ');
+            } else if (typeof data.detail === 'string') {
+              errorMessage = data.detail;
+            }
+          } else if (data.error?.message) {
+            errorMessage = data.error.message;
+          } else if (data.message) {
+            errorMessage = data.message;
           }
-        } else if (data.error?.message) {
-          errorMessage = data.error.message;
-        } else if (data.message) {
-          errorMessage = data.message;
+        }
+
+        // Provide more specific error messages based on status code
+        if (response.status === 401) {
+          errorMessage = 'Authentication required. Please log in again.';
+        } else if (response.status === 403) {
+          errorMessage = 'You do not have permission to perform this action.';
+        } else if (response.status === 404) {
+          errorMessage = 'The requested resource was not found.';
+        } else if (response.status === 503) {
+          errorMessage = 'Service temporarily unavailable. Please try again.';
+        } else if (errorMessage === 'An error occurred') {
+          errorMessage = `Server error (${response.status}). Please try again.`;
         }
 
         return {
           success: false,
           error: {
-            code: data.error?.code || response.status.toString(),
+            code: data?.error?.code || response.status.toString(),
             message: errorMessage,
-            details: data.error?.details || data.details || data.detail,
+            details: data?.error?.details || data?.details || data?.detail,
           },
         };
       }
@@ -194,12 +223,19 @@ class BackendApiClient {
   }
 
   // Authentication
-  async register(data: { email: string; name: string; password: string; role: 'hr' | 'candidate' }) {
-    // Convert role to uppercase for backend compatibility
-    const requestData = {
-      ...data,
-      role: data.role === 'hr' ? 'HR' : 'CANDIDATE'
+  async register(data: { email: string; name: string; password: string; role: 'hr' | 'candidate'; companyName?: string }) {
+    // Convert role to uppercase for backend compatibility and map companyName to company_name
+    const requestData: Record<string, unknown> = {
+      email: data.email,
+      name: data.name,
+      password: data.password,
+      role: data.role === 'hr' ? 'HR' : 'CANDIDATE',
     };
+
+    // Add company_name for HR users (backend expects snake_case)
+    if (data.companyName) {
+      requestData.company_name = data.companyName;
+    }
 
     const response = await this.request<{
       accessToken: string;  // Already converted to camelCase
@@ -245,7 +281,7 @@ class BackendApiClient {
     return this.request<User>('/auth/me');
   }
 
-  // Jobs
+  // Jobs (HR endpoints - require auth)
   async getJobs() {
     return this.request<Job[]>('/jobs');
   }
@@ -271,6 +307,33 @@ class BackendApiClient {
   async deleteJob(id: string) {
     return this.request<void>(`/jobs/${id}`, {
       method: 'DELETE',
+    });
+  }
+
+  // Public Jobs (for candidates - no auth required)
+  async getPublicJobs(params?: { search?: string; department?: string; location?: string; roleType?: string }) {
+    const queryParams = new URLSearchParams();
+    if (params?.search) queryParams.append('search', params.search);
+    if (params?.department) queryParams.append('department', params.department);
+    if (params?.location) queryParams.append('location', params.location);
+    if (params?.roleType) queryParams.append('role_type', params.roleType);
+    const queryString = queryParams.toString();
+    return this.request<Job[]>(`/jobs/public${queryString ? `?${queryString}` : ''}`);
+  }
+
+  async getPublicJob(id: string) {
+    return this.request<Job>(`/jobs/public/${id}`);
+  }
+
+  // Job Matches (for logged-in candidates - with match scores)
+  async getJobsWithMatches(recalculate?: boolean) {
+    const queryString = recalculate ? '?recalculate=true' : '';
+    return this.request<any[]>(`/job-matches/my-matches${queryString}`);
+  }
+
+  async calculateJobMatch(jobId: number) {
+    return this.request<any>(`/job-matches/calculate/${jobId}`, {
+      method: 'POST',
     });
   }
 
@@ -662,6 +725,40 @@ class BackendApiClient {
       method: 'DELETE',
     });
   }
+
+  // Job Applications
+  async applyToJob(jobId: number | string) {
+    return this.request<{
+      id: number;
+      jobId: number;
+      jobTitle: string;
+      companyName: string | null;
+      status: string;
+      appliedAt: string;
+    }>(`/jobs/public/${jobId}/apply`, {
+      method: 'POST',
+    });
+  }
+
+  async getMyApplications() {
+    return this.request<Array<{
+      id: number;
+      jobId: number;
+      jobTitle: string;
+      companyName: string | null;
+      status: string;
+      appliedAt: string;
+    }>>('/jobs/my-applications');
+  }
+
+  async getApplicationStatus(jobId: number | string) {
+    return this.request<{
+      applied: boolean;
+      status: string | null;
+      appliedAt: string | null;
+      inviteToken: string | null;
+    }>(`/jobs/public/${jobId}/application-status`);
+  }
 }
 
 export const backendClient = new BackendApiClient();
@@ -694,5 +791,10 @@ export const apiKeys = {
   auth: {
     all: ['auth'] as const,
     user: () => [...apiKeys.auth.all, 'user'] as const,
+  },
+  applications: {
+    all: ['applications'] as const,
+    list: () => [...apiKeys.applications.all, 'list'] as const,
+    status: (jobId: string) => [...apiKeys.applications.all, 'status', jobId] as const,
   },
 };

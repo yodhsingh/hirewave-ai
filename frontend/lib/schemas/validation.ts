@@ -7,29 +7,28 @@ export const jobCreateSchema = z.object({
   location: z.string().min(2).max(100),
   roleType: z.enum(['FULL_TIME', 'PART_TIME', 'CONTRACT', 'INTERNSHIP', 'FREELANCE', 'TEMPORARY']),
   questions: z.array(z.object({
-    type: z.enum(['phone', 'video', 'text', 'multiple_choice', 'code']),
+    type: z.enum(['PHONE', 'VIDEO', 'TEXT', 'MULTIPLE_CHOICE', 'CODE']),
     question: z.string().min(10, 'Question must be at least 10 characters'),
     timeLimit: z.number().min(30).max(1800).optional(),
     options: z.array(z.string()).min(2).max(6).optional(),
     codeTemplate: z.string().optional(),
     correctAnswer: z.string().optional(),
     required: z.boolean(),
-    order: z.number().min(0).optional(),
-  })).min(3, 'At least 3 questions required').max(10, 'Maximum 10 questions allowed'),
+    order: z.number().min(1).optional(),
+  })).max(15, 'Maximum 15 questions allowed').optional(),
   requirements: z.string().optional(),
-  status: z.enum(['draft', 'active', 'closed']).optional(),
+  status: z.enum(['DRAFT', 'ACTIVE', 'CLOSED']).optional(),
 });
 
 export const questionSchema = z.object({
-  type: z.enum(['video', 'text', 'multiple_choice', 'code']),
+  type: z.enum(['PHONE', 'VIDEO', 'TEXT', 'MULTIPLE_CHOICE', 'CODE']),
   prompt: z.string().min(10).max(500),
-  description: z.string().max(1000).optional(),
   timeLimit: z.number().min(30).max(300).optional(),
-  maxLength: z.number().min(100).max(2000).optional(),
   options: z.array(z.string()).optional(),
+  codeTemplate: z.string().optional(),
+  correctAnswer: z.string().optional(),
   required: z.boolean(),
-  order: z.number(),
-  scoreWeight: z.number().min(0).max(10).optional(),
+  order: z.number().min(1),
 });
 
 export const candidateInviteSchema = z.object({
@@ -40,7 +39,7 @@ export const candidateInviteSchema = z.object({
 
 export const interviewResponseSchema = z.object({
   questionId: z.string(),
-  type: z.enum(['video', 'text', 'multiple_choice', 'code']),
+  type: z.enum(['VIDEO', 'TEXT', 'MULTIPLE_CHOICE', 'CODE']),
   content: z.string(),
   duration: z.number().optional(),
   retries: z.number().min(0).max(3),

@@ -45,10 +45,10 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { FloatingParticles } from '@/components/FloatingParticles';
 import { backendClient, apiKeys } from '@/lib/api/backend-client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import type { Job } from '@/types';
 import { DM_Sans } from 'next/font/google';
-import { toast } from 'sonner';
 import { ViewSwitcher } from '@/components/ViewSwitcher';
 
 const dmSans = DM_Sans({
@@ -59,8 +59,21 @@ const dmSans = DM_Sans({
 
 export default function HRDashboard() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
   const { user, logout } = useAuthStore();
+
+  // Archive job mutation
+  const archiveJobMutation = useMutation({
+    mutationFn: (jobId: number) => backendClient.updateJob(String(jobId), { status: 'CLOSED' }),
+    onSuccess: () => {
+      toast.success('Job archived successfully');
+      queryClient.invalidateQueries({ queryKey: apiKeys.jobs.lists() });
+    },
+    onError: () => {
+      toast.error('Failed to archive job');
+    },
+  });
 
   // Fetch jobs from backend API
   const { data: jobsResponse, isLoading: isLoadingJobs, error } = useQuery({
@@ -441,7 +454,10 @@ export default function HRDashboard() {
                                 Share Link
                               </DropdownMenuItem>
                               <DropdownMenuSeparator className="bg-gray-800" />
-                              <DropdownMenuItem className="text-red-400">
+                              <DropdownMenuItem
+                                className="text-red-400"
+                                onClick={() => archiveJobMutation.mutate(job.id)}
+                              >
                                 Archive Job
                               </DropdownMenuItem>
                             </DropdownMenuContent>

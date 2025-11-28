@@ -35,6 +35,7 @@ class UserCreate(UserBase):
     Schema for creating a new user account.
 
     Requires email, name, role, and password. Password must be at least 8 characters.
+    For HR users, company_name is required to associate them with a company.
     """
 
     password: str = Field(
@@ -44,6 +45,13 @@ class UserCreate(UserBase):
         description="User password (min 8 characters, will be securely hashed)",
         example="SecureP@ssw0rd"
     )
+    company_name: Optional[str] = Field(
+        None,
+        min_length=2,
+        max_length=255,
+        description="Company name (required for HR users)",
+        example="TechCorp Inc."
+    )
 
     class Config:
         json_schema_extra = {
@@ -51,7 +59,8 @@ class UserCreate(UserBase):
                 "email": "jane.smith@example.com",
                 "name": "Jane Smith",
                 "role": "HR",
-                "password": "SecureP@ssw0rd123"
+                "password": "SecureP@ssw0rd123",
+                "company_name": "TechCorp Inc."
             }
         }
 

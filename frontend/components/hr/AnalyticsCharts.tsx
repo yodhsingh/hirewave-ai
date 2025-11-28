@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AreaChart,
@@ -13,45 +14,26 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts';
-import { gradients } from '@/lib/theme';
+import { JobStats, Candidate } from '@/types';
 
-// Sample data for hiring funnel
-const funnelData = [
-  { stage: 'Applied', count: 245, percentage: 100 },
-  { stage: 'Screened', count: 180, percentage: 73 },
-  { stage: 'Interview', count: 95, percentage: 39 },
-  { stage: 'Offer', count: 32, percentage: 13 },
-  { stage: 'Hired', count: 28, percentage: 11 },
-];
+// Props interfaces
+interface HiringFunnelChartProps {
+  stats?: JobStats;
+}
 
-// Sample data for time-to-hire trend
-const timeToHireData = [
-  { month: 'Jan', days: 28 },
-  { month: 'Feb', days: 32 },
-  { month: 'Mar', days: 25 },
-  { month: 'Apr', days: 30 },
-  { month: 'May', days: 22 },
-  { month: 'Jun', days: 24 },
-];
+interface ApplicationsOverTimeChartProps {
+  candidates: Candidate[];
+}
 
-// Sample data for candidate sources with theme-consistent colors
-const sourceData = [
-  { name: 'LinkedIn', value: 45, color: '#3b82f6' },
-  { name: 'Indeed', value: 28, color: '#06b6d4' },
-  { name: 'Referrals', value: 18, color: '#10b981' },
-  { name: 'Company Site', value: 9, color: '#f97316' },
-];
+interface TimeToHireChartProps {
+  candidates: Candidate[];
+}
 
-// Sample data for applications over time
-const applicationsData = [
-  { date: 'Week 1', applications: 45 },
-  { date: 'Week 2', applications: 52 },
-  { date: 'Week 3', applications: 38 },
-  { date: 'Week 4', applications: 68 },
-];
+interface CandidateSourcesChartProps {
+  candidates: Candidate[];
+}
 
 // Custom tooltip
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -70,7 +52,34 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function HiringFunnelChart() {
+export function HiringFunnelChart({ stats }: HiringFunnelChartProps) {
+  const funnelData = useMemo(() => {
+    if (!stats || stats.total === 0) {
+      return [
+        { stage: 'Invited', count: 0, percentage: 0 },
+        { stage: 'Started', count: 0, percentage: 0 },
+        { stage: 'Submitted', count: 0, percentage: 0 },
+        { stage: 'Scored', count: 0, percentage: 0 },
+        { stage: 'Shortlisted', count: 0, percentage: 0 },
+      ];
+    }
+
+    const total = stats.total;
+    const invited = stats.invited + stats.started + stats.inProgress + stats.submitted + stats.scored + stats.shortlisted + stats.rejected;
+    const started = stats.started + stats.inProgress + stats.submitted + stats.scored + stats.shortlisted;
+    const submitted = stats.submitted + stats.scored + stats.shortlisted;
+    const scored = stats.scored + stats.shortlisted;
+    const shortlisted = stats.shortlisted;
+
+    return [
+      { stage: 'Invited', count: total, percentage: 100 },
+      { stage: 'Started', count: started, percentage: total > 0 ? Math.round((started / total) * 100) : 0 },
+      { stage: 'Submitted', count: submitted, percentage: total > 0 ? Math.round((submitted / total) * 100) : 0 },
+      { stage: 'Scored', count: scored, percentage: total > 0 ? Math.round((scored / total) * 100) : 0 },
+      { stage: 'Shortlisted', count: shortlisted, percentage: total > 0 ? Math.round((shortlisted / total) * 100) : 0 },
+    ];
+  }, [stats]);
+
   return (
     <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
       <CardHeader className="border-b border-white/10">
@@ -98,7 +107,7 @@ export function HiringFunnelChart() {
           </BarChart>
         </ResponsiveContainer>
         <div className="mt-4 grid grid-cols-5 gap-2">
-          {funnelData.map((stage, index) => (
+          {funnelData.map((stage) => (
             <div key={stage.stage} className="text-center">
               <p className="text-xs text-gray-400">{stage.stage}</p>
               <p className="text-lg font-bold text-white">{stage.percentage}%</p>
@@ -110,44 +119,126 @@ export function HiringFunnelChart() {
   );
 }
 
-export function TimeToHireChart() {
+export function TimeToHireChart({ candidates }: TimeToHireChartProps) {
+  // Calculate average time from invitation to submission
+  const { timeToHireData, avgDays, trend } = useMemo(() => {
+    const completedCandidates = candidates.filter(c => c.submittedAt && c.invitedAt);
+
+    if (completedCandidates.length === 0) {
+      return {
+        timeToHireData: [],
+        avgDays: 0,
+        trend: 0
+      };
+    }
+
+    // Group by month and calculate average days to complete
+    const monthlyData: Record<string, { totalDays: number; count: number }> = {};
+
+    completedCandidates.forEach(candidate => {
+      const invitedDate = new Date(candidate.invitedAt);
+      const submittedDate = new Date(candidate.submittedAt!);
+      const daysToComplete = Math.ceil((submittedDate.getTime() - invitedDate.getTime()) / (1000 * 60 * 60 * 24));
+
+      const monthKey = invitedDate.toLocaleDateString('en-US', { month: 'short' });
+
+      if (!monthlyData[monthKey]) {
+        monthlyData[monthKey] = { totalDays: 0, count: 0 };
+      }
+      monthlyData[monthKey].totalDays += daysToComplete;
+      monthlyData[monthKey].count += 1;
+    });
+
+    const chartData = Object.entries(monthlyData).map(([month, data]) => ({
+      month,
+      days: Math.round(data.totalDays / data.count)
+    }));
+
+    // Calculate overall average
+    const totalDays = completedCandidates.reduce((sum, c) => {
+      const invited = new Date(c.invitedAt);
+      const submitted = new Date(c.submittedAt!);
+      return sum + Math.ceil((submitted.getTime() - invited.getTime()) / (1000 * 60 * 60 * 24));
+    }, 0);
+    const average = Math.round(totalDays / completedCandidates.length);
+
+    // Calculate trend (compare recent vs older)
+    const sortedByDate = [...completedCandidates].sort((a, b) =>
+      new Date(b.submittedAt!).getTime() - new Date(a.submittedAt!).getTime()
+    );
+
+    let trendDiff = 0;
+    if (sortedByDate.length >= 2) {
+      const recentHalf = sortedByDate.slice(0, Math.ceil(sortedByDate.length / 2));
+      const olderHalf = sortedByDate.slice(Math.ceil(sortedByDate.length / 2));
+
+      const recentAvg = recentHalf.reduce((sum, c) => {
+        const invited = new Date(c.invitedAt);
+        const submitted = new Date(c.submittedAt!);
+        return sum + Math.ceil((submitted.getTime() - invited.getTime()) / (1000 * 60 * 60 * 24));
+      }, 0) / recentHalf.length;
+
+      const olderAvg = olderHalf.reduce((sum, c) => {
+        const invited = new Date(c.invitedAt);
+        const submitted = new Date(c.submittedAt!);
+        return sum + Math.ceil((submitted.getTime() - invited.getTime()) / (1000 * 60 * 60 * 24));
+      }, 0) / olderHalf.length;
+
+      trendDiff = Math.round(recentAvg - olderAvg);
+    }
+
+    return {
+      timeToHireData: chartData,
+      avgDays: average,
+      trend: trendDiff
+    };
+  }, [candidates]);
+
   return (
     <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
       <CardHeader className="border-b border-white/10">
-        <CardTitle className="text-white">Time to Hire Trend</CardTitle>
-        <p className="text-sm text-gray-400">Average days to complete hiring</p>
+        <CardTitle className="text-white">Time to Complete Trend</CardTitle>
+        <p className="text-sm text-gray-400">Average days to complete interview</p>
       </CardHeader>
       <CardContent className="p-4 md:p-6">
-        <ResponsiveContainer width="100%" height={280}>
-          <AreaChart data={timeToHireData}>
-            <defs>
-              <linearGradient id="colorDays" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8}/>
-                <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-            <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
-            <YAxis stroke="#9ca3af" fontSize={12} label={{ value: 'Days', angle: -90, position: 'insideLeft', fill: '#9ca3af' }} />
-            <Tooltip content={<CustomTooltip />} />
-            <Area
-              type="monotone"
-              dataKey="days"
-              stroke="#06b6d4"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorDays)"
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        {timeToHireData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={280}>
+            <AreaChart data={timeToHireData}>
+              <defs>
+                <linearGradient id="colorDays" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+              <XAxis dataKey="month" stroke="#9ca3af" fontSize={12} />
+              <YAxis stroke="#9ca3af" fontSize={12} label={{ value: 'Days', angle: -90, position: 'insideLeft', fill: '#9ca3af' }} />
+              <Tooltip content={<CustomTooltip />} />
+              <Area
+                type="monotone"
+                dataKey="days"
+                stroke="#06b6d4"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorDays)"
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-[280px] flex items-center justify-center text-gray-400">
+            No completed interviews yet
+          </div>
+        )}
         <div className="mt-4 flex items-center justify-between px-2">
           <div>
             <p className="text-xs text-gray-400">Current Average</p>
-            <p className="text-2xl font-bold text-cyan-400">24 days</p>
+            <p className="text-2xl font-bold text-cyan-400">{avgDays} days</p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-400">vs Last Month</p>
-            <p className="text-lg font-semibold text-green-400">-8 days</p>
+            <p className="text-xs text-gray-400">vs Previous</p>
+            <p className={`text-lg font-semibold ${trend <= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              {trend === 0 ? '-' : `${trend > 0 ? '+' : ''}${trend} days`}
+            </p>
           </div>
         </div>
       </CardContent>
@@ -155,14 +246,66 @@ export function TimeToHireChart() {
   );
 }
 
-export function CandidateSourcesChart() {
-  // Custom label render function with proper styling
+export function CandidateSourcesChart({ candidates }: CandidateSourcesChartProps) {
+  // Since source tracking isn't implemented in the backend, show status distribution instead
+  const statusData = useMemo(() => {
+    const statusCounts: Record<string, number> = {
+      'Invited': 0,
+      'In Progress': 0,
+      'Submitted': 0,
+      'Scored': 0,
+      'Shortlisted': 0,
+      'Rejected': 0,
+    };
+
+    candidates.forEach(candidate => {
+      switch (candidate.status) {
+        case 'invited':
+          statusCounts['Invited']++;
+          break;
+        case 'started':
+        case 'in_progress':
+          statusCounts['In Progress']++;
+          break;
+        case 'submitted':
+        case 'under_review':
+          statusCounts['Submitted']++;
+          break;
+        case 'scored':
+          statusCounts['Scored']++;
+          break;
+        case 'shortlisted':
+        case 'hired':
+          statusCounts['Shortlisted']++;
+          break;
+        case 'rejected':
+          statusCounts['Rejected']++;
+          break;
+      }
+    });
+
+    const total = candidates.length || 1;
+    const colors = ['#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#22c55e', '#ef4444'];
+
+    return Object.entries(statusCounts)
+      .filter(([_, count]) => count > 0)
+      .map(([name, value], index) => ({
+        name,
+        value: Math.round((value / total) * 100),
+        count: value,
+        color: colors[index % colors.length]
+      }));
+  }, [candidates]);
+
+  // Custom label render function
   const renderLabel = (props: any) => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, percent, name } = props;
+    const { cx, cy, midAngle, outerRadius, percent, name } = props;
     const RADIAN = Math.PI / 180;
     const radius = outerRadius + 20;
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
+
+    if (percent < 0.05) return null; // Don't show label for small slices
 
     return (
       <text
@@ -181,68 +324,107 @@ export function CandidateSourcesChart() {
   return (
     <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
       <CardHeader className="border-b border-white/10">
-        <CardTitle className="text-white">Candidate Sources</CardTitle>
-        <p className="text-sm text-gray-400">Where candidates are coming from</p>
+        <CardTitle className="text-white">Candidate Status Distribution</CardTitle>
+        <p className="text-sm text-gray-400">Current pipeline breakdown</p>
       </CardHeader>
       <CardContent className="p-4 md:p-6">
-        <ResponsiveContainer width="100%" height={280}>
-          <PieChart>
-            <Pie
-              data={sourceData}
-              cx="50%"
-              cy="50%"
-              labelLine={false}
-              label={renderLabel}
-              outerRadius={90}
-              fill="#8884d8"
-              dataKey="value"
-            >
-              {sourceData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.color} />
+        {statusData.length > 0 ? (
+          <>
+            <ResponsiveContainer width="100%" height={280}>
+              <PieChart>
+                <Pie
+                  data={statusData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={renderLabel}
+                  outerRadius={90}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {statusData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              {statusData.map((source) => (
+                <div key={source.name} className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: source.color }}></div>
+                  <div className="flex-1">
+                    <p className="text-sm text-gray-300">{source.name}</p>
+                    <p className="text-xs text-gray-500">{source.count} candidates ({source.value}%)</p>
+                  </div>
+                </div>
               ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} />
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="mt-6 grid grid-cols-2 gap-4">
-          {sourceData.map((source) => (
-            <div key={source.name} className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: source.color }}></div>
-              <div className="flex-1">
-                <p className="text-sm text-gray-300">{source.name}</p>
-                <p className="text-xs text-gray-500">{source.value}% of total</p>
-              </div>
             </div>
-          ))}
-        </div>
+          </>
+        ) : (
+          <div className="h-[280px] flex items-center justify-center text-gray-400">
+            No candidates yet
+          </div>
+        )}
       </CardContent>
     </Card>
   );
 }
 
-export function ApplicationsOverTimeChart() {
+export function ApplicationsOverTimeChart({ candidates }: ApplicationsOverTimeChartProps) {
+  const applicationsData = useMemo(() => {
+    if (candidates.length === 0) return [];
+
+    // Group candidates by week based on invitedAt
+    const weeklyData: Record<string, number> = {};
+
+    candidates.forEach(candidate => {
+      const invitedDate = new Date(candidate.invitedAt);
+      // Get the start of the week (Sunday)
+      const startOfWeek = new Date(invitedDate);
+      startOfWeek.setDate(invitedDate.getDate() - invitedDate.getDay());
+      const weekKey = startOfWeek.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      weeklyData[weekKey] = (weeklyData[weekKey] || 0) + 1;
+    });
+
+    // Convert to array and sort by date
+    const sortedWeeks = Object.entries(weeklyData)
+      .map(([date, applications]) => ({ date, applications }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .slice(-8); // Show last 8 weeks max
+
+    return sortedWeeks;
+  }, [candidates]);
+
   return (
     <Card className="bg-white/[0.04] backdrop-blur-md border-white/10">
       <CardHeader className="border-b border-white/10">
-        <CardTitle className="text-white">Applications Over Time</CardTitle>
-        <p className="text-sm text-gray-400">Weekly application volume</p>
+        <CardTitle className="text-white">Invitations Over Time</CardTitle>
+        <p className="text-sm text-gray-400">Weekly candidate invitation volume</p>
       </CardHeader>
       <CardContent className="p-4 md:p-6">
-        <ResponsiveContainer width="100%" height={280}>
-          <BarChart data={applicationsData}>
-            <defs>
-              <linearGradient id="applicationsGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#3b82f6" />
-                <stop offset="100%" stopColor="#06b6d4" />
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-            <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
-            <YAxis stroke="#9ca3af" fontSize={12} />
-            <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="applications" fill="url(#applicationsGradient)" radius={[8, 8, 0, 0]} />
-          </BarChart>
-        </ResponsiveContainer>
+        {applicationsData.length > 0 ? (
+          <ResponsiveContainer width="100%" height={280}>
+            <BarChart data={applicationsData}>
+              <defs>
+                <linearGradient id="applicationsGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" />
+                  <stop offset="100%" stopColor="#06b6d4" />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+              <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} />
+              <YAxis stroke="#9ca3af" fontSize={12} />
+              <Tooltip content={<CustomTooltip />} />
+              <Bar dataKey="applications" fill="url(#applicationsGradient)" radius={[8, 8, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        ) : (
+          <div className="h-[280px] flex items-center justify-center text-gray-400">
+            No invitations yet
+          </div>
+        )}
       </CardContent>
     </Card>
   );

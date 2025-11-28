@@ -7,9 +7,9 @@ import enum
 
 # Enum class to represent different statuses of a job
 class JobStatus(str, enum.Enum):
-    DRAFT = "draft" # Job is created but not yet published
-    ACTIVE = "active" # Job is live and accepting applications
-    CLOSED = "closed" # Job is no longer open for applications
+    DRAFT = "DRAFT" # Job is created but not yet published
+    ACTIVE = "ACTIVE" # Job is live and accepting applications
+    CLOSED = "CLOSED" # Job is no longer open for applications
 
 
 
@@ -24,11 +24,11 @@ class RoleType(str, enum.Enum):
 
 # Enum defining the type of question used in an interview or application
 class QuestionType(str, enum.Enum):
-    PHONE = "phone" # Phone-based interview question
-    VIDEO = "video" # Video response question
-    TEXT = "text" # Text or written response question
-    MULTIPLE_CHOICE = "multiple_choice" # Objective question with predefined choices
-    CODE = "code" # Coding question requiring code input
+    PHONE = "PHONE" # Phone-based interview question
+    VIDEO = "VIDEO" # Video response question
+    TEXT = "TEXT" # Text or written response question
+    MULTIPLE_CHOICE = "MULTIPLE_CHOICE" # Objective question with predefined choices
+    CODE = "CODE" # Coding question requiring code input
 
 
 class Job(Base):
@@ -39,10 +39,10 @@ class Job(Base):
     description = Column(Text, nullable=False)
     department = Column(String(100), nullable=False)
     location = Column(String(255), nullable=False)
-    role_type = Column(Enum(RoleType, native_enum=True, values_callable=lambda obj: [e.value for e in obj]), nullable=False)
-    status = Column(Enum(JobStatus, native_enum=True, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=JobStatus.ACTIVE)
+    role_type = Column(String(50), nullable=False)
+    status = Column(String(20), nullable=False, default='ACTIVE')
 
-    company_id = Column(Integer, nullable=True)
+    company_id = Column(Integer, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
 
     requirements = Column(Text, nullable=True)
@@ -54,6 +54,7 @@ class Job(Base):
     # Relationships
     questions = relationship("Question", back_populates="job", cascade="all, delete-orphan")
     candidates = relationship("Candidate", back_populates="job")
+    company = relationship("Company", back_populates="jobs")
 
     def __repr__(self):
         return f"<Job {self.title}>"
@@ -65,7 +66,7 @@ class Question(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
 
-    type = Column(Enum(QuestionType, native_enum=True, values_callable=lambda obj: [e.value for e in obj]), nullable=False)
+    type = Column(String(50), nullable=False)
     question = Column("question_text", Text, nullable=False)
 
     time_limit = Column(Integer, nullable=True)  # seconds for video

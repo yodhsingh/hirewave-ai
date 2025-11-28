@@ -31,7 +31,7 @@ class Candidate(Base):
     job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
     invite_token = Column(String(255), unique=True, nullable=False, index=True)
 
-    status = Column(Enum(CandidateStatus, native_enum=True, values_callable=lambda obj: [e.value for e in obj]), nullable=False, default=CandidateStatus.INVITED)
+    status = Column(Enum(CandidateStatus, name="candidate_status", native_enum=True, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False, default=CandidateStatus.INVITED)
 
     invited_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     started_at = Column(DateTime, nullable=True)

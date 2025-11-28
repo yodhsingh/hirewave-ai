@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
   ArrowLeft,
@@ -42,6 +42,7 @@ const WIZARD_STEPS = [
 
 export default function NewJobPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -53,7 +54,7 @@ export default function NewJobPage() {
     location: '',
     roleType: 'FULL_TIME',
     questions: [],
-    requirements: [],
+    requirements: '',
   });
 
   const form = useForm<JobCreateInput>({
@@ -65,7 +66,7 @@ export default function NewJobPage() {
       location: '',
       roleType: 'FULL_TIME',
       questions: [],
-      requirements: [],
+      requirements: '',
     },
     mode: 'onChange',
   });
@@ -76,11 +77,13 @@ export default function NewJobPage() {
     onSuccess: (response) => {
       if (response.success && response.data) {
         const status = response.data.status;
-        if (status === 'active') {
+        if (status === 'ACTIVE') {
           toast.success('Job published successfully!');
         } else {
           toast.success('Job saved as draft!');
         }
+        // Invalidate jobs query so dashboard shows new job
+        queryClient.invalidateQueries({ queryKey: ['jobs'] });
         router.push('/hr/dashboard');
       }
     },
@@ -113,12 +116,8 @@ export default function NewJobPage() {
     }
 
     if (currentStep === 2) {
-      // Validate questions
-      const questions = form.getValues('questions');
-      if (!questions || questions.length < 3) {
-        toast.error('Please add at least 3 interview questions');
-        return;
-      }
+      // Validate questions (optional)
+      const questions = form.getValues('questions') || [];
 
       // Ensure questions are properly set in form
       form.setValue('questions', questions, { shouldValidate: true });
@@ -140,22 +139,21 @@ export default function NewJobPage() {
     }
   };
 
-  const handleSubmit = async (status: 'draft' | 'active') => {
+  const handleSubmit = async (status: 'DRAFT' | 'ACTIVE') => {
     setIsSubmitting(true);
 
     // Final validation
     const isValid = await form.trigger();
     const formValues = form.getValues();
 
-    // Check questions explicitly
-    if (!formValues.questions || formValues.questions.length < 3) {
-      toast.error('Please add at least 3 interview questions');
-      setIsSubmitting(false);
-      return;
+    // Ensure questions array exists (even if empty)
+    if (!formValues.questions) {
+      formValues.questions = [];
     }
 
     if (!isValid) {
       const errors = form.formState.errors;
+      console.log('Form validation errors:', JSON.stringify(errors, null, 2));
 
       // Show specific error messages
       if (errors.title) toast.error(`Title: ${errors.title.message}`);
@@ -163,7 +161,28 @@ export default function NewJobPage() {
       if (errors.department) toast.error(`Department: ${errors.department.message}`);
       if (errors.location) toast.error(`Location: ${errors.location.message}`);
       if (errors.roleType) toast.error(`Employment Type: ${errors.roleType.message}`);
-      if (errors.questions) toast.error(`Questions: ${errors.questions.message}`);
+      if (errors.questions) {
+        // Questions error can be array-level or item-level
+        const questionsError = errors.questions as any;
+        console.log('Questions error:', questionsError);
+        if (questionsError.message) {
+          toast.error(`Questions: ${questionsError.message}`);
+        } else if (questionsError.root?.message) {
+          toast.error(`Questions: ${questionsError.root.message}`);
+        } else if (Array.isArray(questionsError)) {
+          // Find first error in array
+          for (let i = 0; i < questionsError.length; i++) {
+            if (questionsError[i]) {
+              const qErr = questionsError[i];
+              const fieldErrors = Object.entries(qErr).map(([key, val]: [string, any]) => `${key}: ${val?.message}`).join(', ');
+              toast.error(`Question ${i + 1}: ${fieldErrors}`);
+              break;
+            }
+          }
+        } else {
+          toast.error('Questions: Please check your interview questions for errors');
+        }
+      }
 
       setIsSubmitting(false);
       return;
@@ -347,7 +366,7 @@ export default function NewJobPage() {
               {currentStep === WIZARD_STEPS.length && (
                 <Button
                   variant="outline"
-                  onClick={() => handleSubmit('draft')}
+                  onClick={() => handleSubmit('DRAFT')}
                   disabled={isSubmitting}
                   className="gap-2 bg-gray-800 text-white border-gray-600 hover:bg-gray-700 hover:text-white disabled:opacity-50"
                 >
@@ -363,7 +382,7 @@ export default function NewJobPage() {
                 </Button>
               ) : (
                 <Button
-                  onClick={() => handleSubmit('active')}
+                  onClick={() => handleSubmit('ACTIVE')}
                   disabled={isSubmitting}
                   className={`gap-2 bg-gradient-to-r ${gradients.primary} hover:from-blue-700 hover:to-cyan-700 text-white disabled:opacity-50`}
                 >

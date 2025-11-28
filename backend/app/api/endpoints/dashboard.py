@@ -10,6 +10,7 @@ from app.api.dependencies.auth import get_current_user
 from app.models.user import User
 from app.models.candidate import Candidate, CandidateScore
 from app.models.job import Job
+from app.models.company import Company
 from app.models.practice_interview import PracticeSession
 from app.models.user_insights import UserInsight
 
@@ -59,18 +60,24 @@ async def get_applicant_dashboard(
     recent_applications = []
     for candidate in applications[:5]:  # Last 5 applications
         job_result = await db.execute(
-            select(Job).where(Job.id == candidate.job_id)
+            select(Job, Company.name.label('company_name'))
+            .outerjoin(Company, Job.company_id == Company.id)
+            .where(Job.id == candidate.job_id)
         )
-        job = job_result.scalar_one_or_none()
+        row = job_result.first()
 
-        if job:
+        if row:
+            job = row[0]
+            company_name = row[1] or "Company"
             recent_applications.append({
                 "id": candidate.id,
-                "job_title": job.title,
-                "company": "HireWave.AI",  # You can add company field to Job model
+                "jobId": job.id,
+                "jobTitle": job.title,
+                "company": company_name,
                 "status": candidate.status,
-                "applied_at": candidate.invited_at.isoformat() if candidate.invited_at else None,
-                "submitted_at": candidate.submitted_at.isoformat() if candidate.submitted_at else None,
+                "inviteToken": candidate.invite_token,
+                "appliedAt": candidate.invited_at.isoformat() if candidate.invited_at else None,
+                "submittedAt": candidate.submitted_at.isoformat() if candidate.submitted_at else None,
             })
 
     # Get recent activity

@@ -19,7 +19,7 @@ export interface AuthSession {
   expiresAt: Date;
 }
 
-export type JobStatus = 'draft' | 'active' | 'closed';
+export type JobStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED';
 export type RoleType = 'FULL_TIME' | 'PART_TIME' | 'CONTRACT' | 'INTERNSHIP' | 'FREELANCE' | 'TEMPORARY';
 
 export interface Job {
@@ -62,7 +62,7 @@ export interface JobCreate {
   status?: JobStatus;
 }
 
-export type QuestionType = 'phone' | 'video' | 'text' | 'multiple_choice' | 'code';
+export type QuestionType = 'PHONE' | 'VIDEO' | 'TEXT' | 'MULTIPLE_CHOICE' | 'CODE';
 
 export interface Question {
   id: ID;
@@ -81,13 +81,12 @@ export interface Question {
 export interface QuestionCreate {
   type: QuestionType;
   question: string;
-  description?: string;
   timeLimit?: number;
-  maxLength?: number;
   options?: string[];
+  codeTemplate?: string;
+  correctAnswer?: string;
   required: boolean;
   order?: number;
-  scoreWeight?: number;
 }
 
 export type CandidateStatus =
@@ -142,10 +141,10 @@ export interface InterviewResponse {
   id: ID;
   candidateId: ID;
   questionId: ID;
-  type: 'phone' | 'video' | 'text' | 'multiple_choice' | 'code';
-  content: string; 
-  duration?: number; 
-  videoBlobUrl?: string; 
+  type: 'PHONE' | 'VIDEO' | 'TEXT' | 'MULTIPLE_CHOICE' | 'CODE';
+  content: string;
+  duration?: number;
+  videoBlobUrl?: string;
   retries: number;
   submittedAt: Date;
   score?: QuestionScore;
@@ -153,7 +152,7 @@ export interface InterviewResponse {
 
 export interface ResponseCreate {
   questionId: ID;
-  type: 'video' | 'text' | 'multiple_choice' | 'code';
+  type: 'VIDEO' | 'TEXT' | 'MULTIPLE_CHOICE' | 'CODE';
   content: string;
   duration?: number;
   retries: number;

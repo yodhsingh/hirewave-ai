@@ -32,9 +32,9 @@ interface JobPreviewProps {
 }
 
 export function JobPreview({ jobData }: JobPreviewProps) {
-  const videoQuestions = jobData.questions?.filter(q => q.type === 'video') || [];
-  const textQuestions = jobData.questions?.filter(q => q.type === 'text') || [];
-  const mcQuestions = jobData.questions?.filter(q => q.type === 'multiple_choice') || [];
+  const videoQuestions = jobData.questions?.filter(q => q.type === 'VIDEO') || [];
+  const textQuestions = jobData.questions?.filter(q => q.type === 'TEXT') || [];
+  const mcQuestions = jobData.questions?.filter(q => q.type === 'MULTIPLE_CHOICE') || [];
 
   const totalQuestions = jobData.questions?.length || 0;
   const estimatedTime = jobData.questions?.reduce((acc, q) => {
@@ -215,9 +215,9 @@ export function JobPreview({ jobData }: JobPreviewProps) {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        {question.type === 'video' && <Video className="w-4 h-4 text-purple-400" />}
-                        {question.type === 'text' && <FileText className="w-4 h-4 text-blue-400" />}
-                        {question.type === 'multiple_choice' && <CheckSquare className="w-4 h-4 text-green-400" />}
+                        {question.type === 'VIDEO' && <Video className="w-4 h-4 text-purple-400" />}
+                        {question.type === 'TEXT' && <FileText className="w-4 h-4 text-blue-400" />}
+                        {question.type === 'MULTIPLE_CHOICE' && <CheckSquare className="w-4 h-4 text-green-400" />}
                         <Badge variant="outline" className="text-xs border-white-100 text-gray-300">
                           {question.timeLimit ? formatTime(question.timeLimit) : 'No limit'}
                         </Badge>

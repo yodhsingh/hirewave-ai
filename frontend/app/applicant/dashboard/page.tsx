@@ -338,28 +338,45 @@ export default function ApplicantDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {recentApplications.slice(0, 5).map((app: any, index: number) => (
-                  <div key={`app-${index}`} className="flex items-center gap-4 p-3 bg-white/[0.03] rounded-lg border border-white/5 hover:border-white/10 transition-colors">
-                    <div className="p-2 bg-blue-500/20 rounded-lg">
-                      <Briefcase className="w-4 h-4 text-blue-400" />
+                {recentApplications.slice(0, 5).map((app: any, index: number) => {
+                  const canStartInterview = app.inviteToken &&
+                    ['invited', 'started', 'in_progress'].includes(app.status?.toLowerCase() || '');
+
+                  return (
+                    <div key={`app-${index}`} className="flex items-center gap-4 p-3 bg-white/[0.03] rounded-lg border border-white/5 hover:border-white/10 transition-colors">
+                      <div className="p-2 bg-blue-500/20 rounded-lg">
+                        <Briefcase className="w-4 h-4 text-blue-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-white truncate">{app.jobTitle}</p>
+                        <p className="text-xs text-gray-400">{app.company}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {canStartInterview && (
+                          <Button
+                            size="sm"
+                            onClick={() => router.push(`/applicant/interview/${app.inviteToken}`)}
+                            className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-7"
+                          >
+                            <Play className="w-3 h-3 mr-1" />
+                            {app.status === 'invited' ? 'Start' : 'Continue'}
+                          </Button>
+                        )}
+                        <Badge
+                          variant="outline"
+                          className={
+                            app.status === 'scored' || app.status === 'shortlisted' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                            app.status === 'submitted' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
+                            app.status === 'in_progress' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
+                            'bg-gray-500/20 text-gray-300 border-gray-500/30'
+                          }
+                        >
+                          {app.status?.replace('_', ' ') || 'unknown'}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-white truncate">{app.jobTitle}</p>
-                      <p className="text-xs text-gray-400">{app.company}</p>
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={
-                        app.status === 'scored' || app.status === 'shortlisted' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
-                        app.status === 'submitted' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
-                        app.status === 'in_progress' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
-                        'bg-gray-500/20 text-gray-300 border-gray-500/30'
-                      }
-                    >
-                      {app.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                ))}
+                  );
+                })}
                 {recentApplications.length === 0 && (
                   <div className="text-center py-12">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-500/20 mb-3">

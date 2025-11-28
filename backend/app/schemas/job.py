@@ -206,10 +206,9 @@ class JobCreate(JobBase):
     """
 
     questions: List[QuestionCreate] = Field(
-        ...,
-        min_items=3,
+        default=[],
         max_items=15,
-        description="Interview questions (minimum 3, maximum 15)"
+        description="Interview questions (maximum 15)"
     )
     status: Optional[JobStatus] = Field(
         JobStatus.DRAFT,
@@ -348,3 +347,34 @@ class JobListResponse(BaseModel):
                 }
             }
         }
+
+
+class PublicJobListResponse(BaseModel):
+    """
+    Public job listing for candidates browsing jobs.
+
+    Includes company name and basic job info.
+    """
+
+    id: int = Field(..., description="Job ID", example=45)
+    title: str = Field(..., description="Job title", example="Senior Backend Engineer")
+    description: str = Field(..., description="Job description")
+    department: str = Field(..., description="Department", example="Engineering")
+    location: str = Field(..., description="Location", example="San Francisco, CA")
+    role_type: RoleType = Field(..., alias="roleType", description="Employment type", example="FULL_TIME")
+    requirements: Optional[str] = Field(None, description="Job requirements")
+    company_name: Optional[str] = Field(None, alias="companyName", description="Company name", example="TechCorp Inc.")
+    created_at: datetime = Field(..., alias="createdAt", description="Creation date")
+    applicant_count: int = Field(0, alias="applicantCount", description="Number of applicants")
+
+    class Config:
+        from_attributes = True
+        populate_by_name = True
+
+
+class PublicJobResponse(PublicJobListResponse):
+    """
+    Full public job details with questions for candidates.
+    """
+
+    questions: List[QuestionResponse] = Field(default_factory=list, description="Interview questions")

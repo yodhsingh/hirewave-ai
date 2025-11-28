@@ -9,6 +9,7 @@ from app.db.base import get_db
 from app.api.dependencies.auth import get_current_user
 from app.models.user import User
 from app.services.resume_parser import resume_parser
+from app.services.resume_parser_openai import openai_resume_parser
 
 logger = logging.getLogger(__name__)
 
@@ -51,16 +52,25 @@ async def parse_resume(
                 detail="File too large. Maximum size is 10MB"
             )
 
-        # Check if resume parser is available
-        if not resume_parser:
+        # Check which resume parser is available (prefer OpenAI over Gemini)
+        parser = None
+        parser_name = "Unknown"
+
+        if openai_resume_parser:
+            parser = openai_resume_parser
+            parser_name = "OpenAI"
+        elif resume_parser:
+            parser = resume_parser
+            parser_name = "Gemini"
+        else:
             raise HTTPException(
                 status_code=503,
-                detail="Resume parsing service is not configured. Please set up Google Gemini API key."
+                detail="Resume parsing service is not configured. Please set up OpenAI or Google Gemini API key."
             )
 
         # Parse the resume
-        logger.info(f"Parsing resume for user {current_user.id}: {file.filename}")
-        parsed_data = await resume_parser.parse_resume(contents, file.filename)
+        logger.info(f"Parsing resume for user {current_user.id} using {parser_name}: {file.filename}")
+        parsed_data = await parser.parse_resume(contents, file.filename)
 
         # Log successful parsing
         logger.info(f"Successfully parsed resume for user {current_user.id}")

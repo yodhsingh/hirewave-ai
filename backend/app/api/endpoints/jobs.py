@@ -1,18 +1,295 @@
-from typing import List
+from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from app.db.base import get_db
 from app.models.user import User
-from app.models.job import Job, Question
+from app.models.company import Company
+from app.models.job import Job, Question, JobStatus
 from app.models.candidate import Candidate, CandidateStatus
-from app.schemas.job import JobCreate, JobUpdate, JobResponse, JobListResponse, JobStats
+from app.schemas.job import JobCreate, JobUpdate, JobResponse, JobListResponse, JobStats, PublicJobResponse, PublicJobListResponse, QuestionResponse
 from app.schemas.common import ApiResponse
-from app.api.dependencies.auth import get_current_hr_user
+from app.api.dependencies.auth import get_current_hr_user, get_current_user
+from pydantic import BaseModel
+from datetime import datetime
+import secrets
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
+
+# ========== PUBLIC ENDPOINTS (No Auth Required) ==========
+
+@router.get("/public", response_model=ApiResponse[List[PublicJobListResponse]])
+async def list_public_jobs(
+    db: AsyncSession = Depends(get_db),
+    skip: int = 0,
+    limit: int = 50,
+    search: Optional[str] = None,
+    department: Optional[str] = None,
+    location: Optional[str] = None,
+    role_type: Optional[str] = None,
+):
+    """
+    List all active jobs for candidates to browse.
+
+    This is a public endpoint - no authentication required.
+    Only returns jobs with status=ACTIVE.
+    """
+    query = (
+        select(Job, Company.name.label('company_name'))
+        .outerjoin(Company, Job.company_id == Company.id)
+        .filter(Job.status == 'ACTIVE')
+        .order_by(Job.created_at.desc())
+    )
+
+    # Apply filters
+    if search:
+        search_filter = f"%{search}%"
+        query = query.filter(
+            (Job.title.ilike(search_filter)) |
+            (Job.description.ilike(search_filter)) |
+            (Job.department.ilike(search_filter))
+        )
+    if department:
+        query = query.filter(Job.department.ilike(f"%{department}%"))
+    if location:
+        query = query.filter(Job.location.ilike(f"%{location}%"))
+    if role_type:
+        query = query.filter(Job.role_type == role_type)
+
+    query = query.offset(skip).limit(limit)
+    result = await db.execute(query)
+    rows = result.all()
+
+    # Build response with company name and applicant count
+    jobs_response = []
+    for row in rows:
+        job = row[0]
+        company_name = row[1]
+
+        # Get applicant count
+        count_result = await db.execute(
+            select(func.count(Candidate.id)).filter(Candidate.job_id == job.id)
+        )
+        applicant_count = count_result.scalar() or 0
+
+        jobs_response.append(PublicJobListResponse(
+            id=job.id,
+            title=job.title,
+            description=job.description,
+            department=job.department,
+            location=job.location,
+            role_type=job.role_type,
+            requirements=job.requirements,
+            company_name=company_name,
+            created_at=job.created_at,
+            applicant_count=applicant_count,
+        ))
+
+    return ApiResponse(success=True, data=jobs_response)
+
+
+@router.get("/public/{job_id}", response_model=ApiResponse[PublicJobResponse])
+async def get_public_job(
+    job_id: int,
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get public job details for candidates.
+
+    This is a public endpoint - no authentication required.
+    Only returns jobs with status=ACTIVE.
+    """
+    result = await db.execute(
+        select(Job, Company.name.label('company_name'))
+        .outerjoin(Company, Job.company_id == Company.id)
+        .options(selectinload(Job.questions))
+        .filter(Job.id == job_id)
+        .filter(Job.status == 'ACTIVE')
+    )
+    row = result.first()
+
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found or not active",
+        )
+
+    job = row[0]
+    company_name = row[1]
+
+    # Get applicant count
+    count_result = await db.execute(
+        select(func.count(Candidate.id)).filter(Candidate.job_id == job.id)
+    )
+    applicant_count = count_result.scalar() or 0
+
+    return ApiResponse(success=True, data=PublicJobResponse(
+        id=job.id,
+        title=job.title,
+        description=job.description,
+        department=job.department,
+        location=job.location,
+        role_type=job.role_type,
+        requirements=job.requirements,
+        company_name=company_name,
+        created_at=job.created_at,
+        applicant_count=applicant_count,
+        questions=[QuestionResponse.model_validate(q) for q in job.questions],
+    ))
+
+
+# ========== APPLICANT ENDPOINTS (Auth Required) ==========
+
+class ApplicationResponse(BaseModel):
+    id: int
+    job_id: int
+    job_title: str
+    company_name: Optional[str]
+    status: str
+    applied_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class MyApplicationsResponse(BaseModel):
+    applications: List[ApplicationResponse]
+
+
+@router.post("/public/{job_id}/apply", response_model=ApiResponse[ApplicationResponse])
+async def apply_to_job(
+    job_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Apply to a job as a logged-in candidate.
+    Creates a new candidate record linked to the job.
+    """
+    # Check if job exists and is active
+    result = await db.execute(
+        select(Job, Company.name.label('company_name'))
+        .outerjoin(Company, Job.company_id == Company.id)
+        .filter(Job.id == job_id)
+        .filter(Job.status == 'ACTIVE')
+    )
+    row = result.first()
+
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Job not found or not active",
+        )
+
+    job = row[0]
+    company_name = row[1]
+
+    # Check if already applied
+    existing = await db.execute(
+        select(Candidate).filter(
+            Candidate.job_id == job_id,
+            Candidate.email == current_user.email
+        )
+    )
+    existing_candidate = existing.scalar_one_or_none()
+
+    if existing_candidate:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="You have already applied to this job",
+        )
+
+    # Create candidate record
+    invite_token = secrets.token_urlsafe(32)
+    candidate = Candidate(
+        email=current_user.email,
+        name=current_user.name,
+        job_id=job_id,
+        invite_token=invite_token,
+        status=CandidateStatus.INVITED,
+        invited_at=datetime.utcnow(),
+    )
+
+    db.add(candidate)
+    await db.commit()
+    await db.refresh(candidate)
+
+    return ApiResponse(success=True, data=ApplicationResponse(
+        id=candidate.id,
+        job_id=job_id,
+        job_title=job.title,
+        company_name=company_name,
+        status=candidate.status,
+        applied_at=candidate.invited_at,
+    ))
+
+
+@router.get("/my-applications", response_model=ApiResponse[List[ApplicationResponse]])
+async def get_my_applications(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Get all job applications for the current user.
+    """
+    result = await db.execute(
+        select(Candidate, Job.title, Company.name)
+        .join(Job, Candidate.job_id == Job.id)
+        .outerjoin(Company, Job.company_id == Company.id)
+        .filter(Candidate.email == current_user.email)
+        .order_by(Candidate.invited_at.desc())
+    )
+    rows = result.all()
+
+    applications = []
+    for row in rows:
+        candidate = row[0]
+        job_title = row[1]
+        company_name = row[2]
+
+        applications.append(ApplicationResponse(
+            id=candidate.id,
+            job_id=candidate.job_id,
+            job_title=job_title,
+            company_name=company_name,
+            status=candidate.status,
+            applied_at=candidate.invited_at,
+        ))
+
+    return ApiResponse(success=True, data=applications)
+
+
+@router.get("/public/{job_id}/application-status")
+async def get_application_status(
+    job_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Check if the current user has applied to a specific job.
+    """
+    result = await db.execute(
+        select(Candidate).filter(
+            Candidate.job_id == job_id,
+            Candidate.email == current_user.email
+        )
+    )
+    candidate = result.scalar_one_or_none()
+
+    if not candidate:
+        return ApiResponse(success=True, data={"applied": False, "status": None})
+
+    return ApiResponse(success=True, data={
+        "applied": True,
+        "status": candidate.status,
+        "applied_at": candidate.invited_at,
+        "invite_token": candidate.invite_token,
+    })
+
+
+# ========== HR ENDPOINTS (Auth Required) ==========
 
 @router.post("", response_model=ApiResponse[JobResponse], status_code=status.HTTP_201_CREATED)
 async def create_job(
@@ -43,18 +320,24 @@ async def create_job(
             job_id=job.id,
             type=q_data.type,
             question=q_data.question,
-            description=q_data.description,
             time_limit=q_data.time_limit,
-            max_length=q_data.max_length,
             options=q_data.options,
+            code_template=q_data.code_template,
+            correct_answer=q_data.correct_answer,
             required=q_data.required,
             order=q_data.order,
-            score_weight=q_data.score_weight,
         )
         db.add(question)
 
     await db.commit()
-    await db.refresh(job)
+
+    # Re-fetch job with questions loaded
+    result = await db.execute(
+        select(Job)
+        .options(selectinload(Job.questions))
+        .filter(Job.id == job.id)
+    )
+    job = result.scalar_one()
 
     # Get stats
     stats = await _get_job_stats(job.id, db)

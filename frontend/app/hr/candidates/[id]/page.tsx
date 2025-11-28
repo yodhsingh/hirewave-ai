@@ -70,11 +70,11 @@ import {
 } from 'recharts';
 
 const QUESTION_TYPE_ICONS = {
-  phone: Phone,
-  video: Video,
-  text: FileText,
-  code: Code,
-  multiple_choice: MessageSquare,
+  PHONE: Phone,
+  VIDEO: Video,
+  TEXT: FileText,
+  CODE: Code,
+  MULTIPLE_CHOICE: MessageSquare,
 };
 
 // Helper to format duration in seconds to MM:SS
