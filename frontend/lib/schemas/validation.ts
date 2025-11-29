@@ -96,15 +96,15 @@ export const exportRequestSchema = z.object({
 
 export const filterSchema = z.object({
   status: z.array(z.enum([
-    'invited',
-    'started',
-    'in_progress',
-    'submitted',
-    'under_review',
-    'scored',
-    'shortlisted',
-    'rejected',
-    'hired'
+    'INVITED',
+    'STARTED',
+    'IN_PROGRESS',
+    'SUBMITTED',
+    'UNDER_REVIEW',
+    'SCORED',
+    'SHORTLISTED',
+    'REJECTED',
+    'HIRED'
   ])).optional(),
   scoreRange: z.tuple([z.number().min(0).max(100), z.number().min(0).max(100)]).optional(),
   dateRange: z.tuple([z.date(), z.date()]).optional(),

@@ -202,7 +202,7 @@ class MockStore {
 
       
       const invite = generateInvite(jobId, email);
-      const candidate = generateCandidate(jobId, 'invited');
+      const candidate = generateCandidate(jobId, 'INVITED');
       candidate.email = email;
       candidate.inviteToken = invite.token;
 
@@ -237,7 +237,7 @@ class MockStore {
       candidate.responses = this.data.responses.filter(
         r => r.candidateId === response.candidateId
       );
-      candidate.status = 'in_progress';
+      candidate.status = 'IN_PROGRESS';
       candidate.lastActivityAt = new Date();
     }
 
@@ -252,7 +252,7 @@ class MockStore {
     const candidate = this.getCandidateById(candidateId);
     if (!candidate) return false;
 
-    candidate.status = 'submitted';
+    candidate.status = 'SUBMITTED';
     candidate.submittedAt = new Date();
 
     
@@ -275,22 +275,22 @@ class MockStore {
 
     job.stats = {
       total: candidates.length,
-      invited: candidates.filter(c => c.status === 'invited').length,
-      started: candidates.filter(c => c.status === 'started').length,
-      inProgress: candidates.filter(c => c.status === 'in_progress').length,
-      submitted: candidates.filter(c => c.status === 'submitted').length,
-      scored: candidates.filter(c => c.status === 'scored').length,
-      shortlisted: candidates.filter(c => c.status === 'shortlisted').length,
-      rejected: candidates.filter(c => c.status === 'rejected').length,
+      invited: candidates.filter(c => c.status === 'INVITED').length,
+      started: candidates.filter(c => c.status === 'STARTED').length,
+      inProgress: candidates.filter(c => c.status === 'IN_PROGRESS').length,
+      submitted: candidates.filter(c => c.status === 'SUBMITTED').length,
+      scored: candidates.filter(c => c.status === 'SCORED').length,
+      shortlisted: candidates.filter(c => c.status === 'SHORTLISTED').length,
+      rejected: candidates.filter(c => c.status === 'REJECTED').length,
     };
   }
 
   private scoreCandidate(candidateId: string) {
     const candidate = this.getCandidateById(candidateId);
-    if (!candidate || candidate.status !== 'submitted') return;
+    if (!candidate || candidate.status !== 'SUBMITTED') return;
 
-    
-    candidate.status = 'scored';
+
+    candidate.status = 'SCORED';
     candidate.scores = {
       overall: Math.floor(Math.random() * 40) + 60, 
       aiScore: Math.floor(Math.random() * 40) + 60,
@@ -547,7 +547,7 @@ class MockStore {
     applicant.applications.push(application);
 
     
-    const candidate = generateCandidate(jobId, 'invited');
+    const candidate = generateCandidate(jobId, 'INVITED');
     candidate.email = applicant.email;
     candidate.name = applicant.name;
     candidate.resumeUrl = applicant.resumeUrl;

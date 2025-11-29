@@ -259,26 +259,27 @@ export function CandidateSourcesChart({ candidates }: CandidateSourcesChartProps
     };
 
     candidates.forEach(candidate => {
-      switch (candidate.status) {
-        case 'invited':
+      const statusUpper = candidate.status?.toUpperCase() || '';
+      switch (statusUpper) {
+        case 'INVITED':
           statusCounts['Invited']++;
           break;
-        case 'started':
-        case 'in_progress':
+        case 'STARTED':
+        case 'IN_PROGRESS':
           statusCounts['In Progress']++;
           break;
-        case 'submitted':
-        case 'under_review':
+        case 'SUBMITTED':
+        case 'UNDER_REVIEW':
           statusCounts['Submitted']++;
           break;
-        case 'scored':
+        case 'SCORED':
           statusCounts['Scored']++;
           break;
-        case 'shortlisted':
-        case 'hired':
+        case 'SHORTLISTED':
+        case 'HIRED':
           statusCounts['Shortlisted']++;
           break;
-        case 'rejected':
+        case 'REJECTED':
           statusCounts['Rejected']++;
           break;
       }

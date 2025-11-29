@@ -270,25 +270,25 @@ let candidateIndex = 0;
 
 export const generateCandidate = (jobId: string, status?: CandidateStatus): Candidate => {
   const invitedDate = faker.date.past({ years: 0.5 });
-  const startedDate = status && status !== 'invited'
+  const startedDate = status && status !== 'INVITED'
     ? faker.date.between({ from: invitedDate, to: new Date() })
     : undefined;
-  const submittedDate = status && ['submitted', 'scored', 'shortlisted', 'rejected', 'hired'].includes(status)
+  const submittedDate = status && ['SUBMITTED', 'SCORED', 'SHORTLISTED', 'REJECTED', 'HIRED'].includes(status)
     ? faker.date.between({ from: startedDate || invitedDate, to: new Date() })
     : undefined;
 
   const candidateStatus = status || faker.helpers.arrayElement<CandidateStatus>([
-    'invited',
-    'started',
-    'in_progress',
-    'submitted',
-    'scored',
-    'shortlisted',
-    'rejected',
+    'INVITED',
+    'STARTED',
+    'IN_PROGRESS',
+    'SUBMITTED',
+    'SCORED',
+    'SHORTLISTED',
+    'REJECTED',
   ]);
 
-  
-  const hasScore = ['scored', 'shortlisted', 'rejected', 'hired'].includes(candidateStatus);
+
+  const hasScore = ['SCORED', 'SHORTLISTED', 'REJECTED', 'HIRED'].includes(candidateStatus);
 
   const overallScore = faker.number.int({ min: 40, max: 95 });
   const technicalScore = faker.number.int({ min: 40, max: 100 });
@@ -735,20 +735,20 @@ export const generateMockData = () => {
 
   jobs.forEach(job => {
     if (job.status === 'active' || job.status === 'closed') {
-      
+
       const statuses: CandidateStatus[] = [
-        'invited', 'invited', 'started',
-        'in_progress', 'submitted', 'submitted',
-        'scored', 'scored', 'shortlisted',
-        'rejected',
+        'INVITED', 'INVITED', 'STARTED',
+        'IN_PROGRESS', 'SUBMITTED', 'SUBMITTED',
+        'SCORED', 'SCORED', 'SHORTLISTED',
+        'REJECTED',
       ];
 
       statuses.forEach(status => {
         const candidate = generateCandidate(job.id, status);
         candidates.push(candidate);
 
-        
-        if (['submitted', 'scored', 'shortlisted', 'rejected'].includes(status)) {
+
+        if (['SUBMITTED', 'SCORED', 'SHORTLISTED', 'REJECTED'].includes(status)) {
           candidate.responses = generateInterviewResponses(candidate.id, job.questions);
         }
 

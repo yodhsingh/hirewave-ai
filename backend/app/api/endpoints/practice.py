@@ -6,7 +6,7 @@ import tempfile
 import os
 import io
 from typing import Dict, Any, List, Optional
-from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, delete
@@ -27,6 +27,28 @@ from app.models.practice_interview import (
     InterviewDifficulty
 )
 from app.core.config import settings
+from app.schemas.common import ApiResponse
+from app.schemas.practice import (
+    PracticeSessionRequest,
+    TextAnswerRequest,
+    SessionSubmitRequest,
+    TextToSpeechRequest,
+    PracticeSessionData,
+    PracticeQuestionData,
+    AnswerSubmitData,
+    FeedbackData,
+    TextAnswerSaveData,
+    SessionListData,
+    SessionListItemData,
+    SessionDetailsResponseData,
+    SessionDetailData,
+    QuestionDetailData,
+    ResponseDetailData,
+    SessionSubmitData,
+    SessionCompleteData,
+    TranscriptionData,
+    DeleteSessionData,
+)
 # Import existing interview report functions for transcription and evaluation
 from app.api.ai.interview_report import (
     generate_transcript,
@@ -52,28 +74,40 @@ def get_gemini_model():
     return genai.GenerativeModel(settings.GEMINI_MODEL)
 
 
-@router.post("/start-session")
+@router.post("/start-session", response_model=ApiResponse[PracticeSessionData])
 async def start_practice_session(
-    session_config: Dict[str, Any],
+    session_config: PracticeSessionRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> Dict[str, Any]:
+) -> ApiResponse[PracticeSessionData]:
     """
     Start a new practice interview session with AI-generated questions
-    based on user's profile and preferences
+    based on user's profile and preferences.
+
+    **Request Body:**
+    - interview_type: Type of interview (technical, behavioral, situational, mixed)
+    - difficulty: Difficulty level (easy, medium, hard)
+    - target_role: Target job role for personalized questions
+    - questions_count: Number of questions (1-10)
+    - focus_areas: Specific areas to focus on
+    - skills: Technical skills for context
+
+    **Returns:**
+    - session_id: ID of the created session
+    - questions: List of generated practice questions
     """
     try:
         # Extract session configuration from request
-        interview_type = session_config.get("interview_type", "technical")
-        difficulty = session_config.get("difficulty", "medium")
-        target_role = session_config.get("target_role", "Software Engineer")
-        questions_count = session_config.get("questions_count", 3)
-        focus_areas = session_config.get("focus_areas", [])
+        interview_type = session_config.interview_type.value
+        difficulty = session_config.difficulty.value
+        target_role = session_config.target_role
+        questions_count = session_config.questions_count
+        focus_areas = session_config.focus_areas
 
         # Optional: Get user-provided experience and education from request
-        years_of_experience = session_config.get("years_of_experience")
-        education = session_config.get("education")
-        skills = session_config.get("skills", [])
+        years_of_experience = session_config.years_of_experience
+        education = session_config.education
+        skills = session_config.skills
 
         # Use the authenticated user's ID
         session_user_id = current_user.id
@@ -160,20 +194,22 @@ async def start_practice_session(
         )
         saved_questions = result.scalars().all()
 
-        return {
-            "success": True,
-            "session_id": new_session.id,
-            "questions": [
-                {
-                    "id": q.id,
-                    "question": q.question_text,
-                    "type": q.question_type,
-                    "context": q.context,
-                    "order": q.order_index
-                }
-                for q in saved_questions
-            ]
-        }
+        return ApiResponse[PracticeSessionData](
+            success=True,
+            data=PracticeSessionData(
+                session_id=new_session.id,
+                questions=[
+                    PracticeQuestionData(
+                        id=q.id,
+                        question=q.question_text,
+                        type=q.question_type,
+                        context=q.context,
+                        order=q.order_index
+                    )
+                    for q in saved_questions
+                ]
+            )
+        )
 
     except Exception as e:
         logger.error(f"Error starting practice session: {e}")
@@ -307,17 +343,26 @@ def generate_fallback_questions(interview_type: str, count: int) -> List[Dict[st
         return all_questions[:count]
 
 
-@router.post("/submit-answer/{question_id}")
+@router.post("/submit-answer/{question_id}", response_model=ApiResponse[AnswerSubmitData])
 async def submit_practice_answer(
     question_id: int,
     audio_file: UploadFile = File(...),
     duration: Optional[int] = Form(None),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> Dict[str, Any]:
+) -> ApiResponse[AnswerSubmitData]:
     """
-    Submit an audio answer for a practice question and get AI feedback
-    Uses the existing interview_report module for transcription
+    Submit an audio answer for a practice question and get AI feedback.
+
+    **Path Parameters:**
+    - question_id: ID of the question to answer
+
+    **Form Data:**
+    - audio_file: Audio file (webm format)
+    - duration: Recording duration in seconds (optional)
+
+    **Returns:**
+    - feedback: AI-generated feedback including score, strengths, and improvements
     """
     temp_file_path = None
     try:
@@ -400,10 +445,19 @@ async def submit_practice_answer(
 
         await db.commit()
 
-        return {
-            "success": True,
-            "feedback": feedback_data
-        }
+        return ApiResponse[AnswerSubmitData](
+            success=True,
+            data=AnswerSubmitData(
+                feedback=FeedbackData(
+                    score=feedback_data["score"],
+                    feedback=feedback_data["feedback"],
+                    strengths=feedback_data.get("strengths", []),
+                    improvements=feedback_data.get("improvements", []),
+                    key_points_covered=feedback_data.get("key_points_covered", []),
+                    sentiment=feedback_data.get("sentiment")
+                )
+            )
+        )
 
     except Exception as e:
         logger.error(f"Error submitting answer: {e}")
@@ -418,17 +472,27 @@ async def submit_practice_answer(
                 logger.warning(f"Failed to delete temporary file: {e}")
 
 
-@router.post("/save-text-answer/{question_id}")
+@router.post("/save-text-answer/{question_id}", response_model=ApiResponse[TextAnswerSaveData])
 async def save_text_answer(
     question_id: int,
-    request: Dict[str, Any],
+    request: TextAnswerRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> Dict[str, Any]:
+) -> ApiResponse[TextAnswerSaveData]:
     """
     Save a text answer for a practice question immediately (without AI scoring).
+
     This allows users to save progress and resume sessions later.
     AI scoring will happen when the user submits the full session.
+
+    **Path Parameters:**
+    - question_id: ID of the question to save answer for
+
+    **Request Body:**
+    - answer_text: The text answer (1-10000 characters)
+
+    **Returns:**
+    - message: Confirmation that answer was saved
     """
     try:
         logger.info(f"[Save Text] Saving text answer for question {question_id}")
@@ -447,10 +511,8 @@ async def save_text_answer(
         if not question:
             raise HTTPException(status_code=404, detail="Question not found or not accessible")
 
-        # Get text answer from request
-        answer_text = request.get("answer_text", "").strip()
-        if not answer_text:
-            raise HTTPException(status_code=400, detail="Answer text cannot be empty")
+        # Get text answer from request (already validated by Pydantic)
+        answer_text = request.answer_text.strip()
 
         logger.info(f"[Save Text] Answer length: {len(answer_text)} characters")
 
@@ -488,10 +550,12 @@ async def save_text_answer(
 
         logger.info(f"[Save Text] ✅ Text answer saved successfully for question {question_id}")
 
-        return {
-            "success": True,
-            "message": "Answer saved successfully. Submit the session to get AI evaluation."
-        }
+        return ApiResponse[TextAnswerSaveData](
+            success=True,
+            data=TextAnswerSaveData(
+                message="Answer saved successfully. Submit the session to get AI evaluation."
+            )
+        )
 
     except HTTPException:
         raise
@@ -587,12 +651,17 @@ async def generate_answer_feedback(
         }
 
 
-@router.get("/sessions")
+@router.get("/sessions", response_model=ApiResponse[SessionListData])
 async def get_practice_sessions(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> Dict[str, Any]:
-    """Get all practice sessions for the current user"""
+) -> ApiResponse[SessionListData]:
+    """
+    Get all practice sessions for the current user.
+
+    **Returns:**
+    - sessions: List of practice sessions with their scores and status
+    """
     try:
         result = await db.execute(
             select(PracticeSession)
@@ -601,36 +670,46 @@ async def get_practice_sessions(
         )
         sessions = result.scalars().all()
 
-        return {
-            "success": True,
-            "sessions": [
-                {
-                    "id": s.id,
-                    "type": s.session_type.value if s.session_type else None,
-                    "difficulty": s.difficulty.value if s.difficulty else None,
-                    "target_role": s.target_role,
-                    "questions_count": s.questions_count,
-                    "completed_count": s.completed_count,
-                    "overall_score": s.overall_score,
-                    "category_scores": s.category_scores,
-                    "started_at": s.started_at.isoformat() if s.started_at else None,
-                    "completed_at": s.completed_at.isoformat() if s.completed_at else None
-                }
-                for s in sessions
-            ]
-        }
+        return ApiResponse[SessionListData](
+            success=True,
+            data=SessionListData(
+                sessions=[
+                    SessionListItemData(
+                        id=s.id,
+                        type=s.session_type.value if s.session_type else None,
+                        difficulty=s.difficulty.value if s.difficulty else None,
+                        target_role=s.target_role,
+                        questions_count=s.questions_count,
+                        completed_count=s.completed_count,
+                        overall_score=s.overall_score,
+                        category_scores=s.category_scores,
+                        started_at=s.started_at.isoformat() if s.started_at else None,
+                        completed_at=s.completed_at.isoformat() if s.completed_at else None
+                    )
+                    for s in sessions
+                ]
+            )
+        )
     except Exception as e:
         logger.error(f"Error fetching sessions: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/session/{session_id}")
+@router.get("/session/{session_id}", response_model=ApiResponse[SessionDetailsResponseData])
 async def get_session_details(
     session_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> Dict[str, Any]:
-    """Get detailed information about a specific practice session"""
+) -> ApiResponse[SessionDetailsResponseData]:
+    """
+    Get detailed information about a specific practice session.
+
+    **Path Parameters:**
+    - session_id: ID of the session to retrieve
+
+    **Returns:**
+    - session: Session details including questions and responses
+    """
     try:
         # Get session with questions and responses
         result = await db.execute(
@@ -662,32 +741,34 @@ async def get_session_details(
         responses = result.scalars().all()
         response_map = {r.question_id: r for r in responses}
 
-        return {
-            "success": True,
-            "session": {
-                "id": session.id,
-                "type": session.session_type.value if session.session_type else None,
-                "difficulty": session.difficulty.value if session.difficulty else None,
-                "target_role": session.target_role,
-                "overall_score": session.overall_score,
-                "started_at": session.started_at.isoformat() if session.started_at else None,
-                "questions": [
-                    {
-                        "id": q.id,
-                        "question": q.question_text,
-                        "type": q.question_type,
-                        "response": {
-                            "transcript": response_map[q.id].transcript,
-                            "score": response_map[q.id].ai_score,
-                            "feedback": response_map[q.id].ai_feedback,
-                            "strengths": response_map[q.id].strengths,
-                            "improvements": response_map[q.id].improvements
-                        } if q.id in response_map else None
-                    }
-                    for q in questions
-                ]
-            }
-        }
+        return ApiResponse[SessionDetailsResponseData](
+            success=True,
+            data=SessionDetailsResponseData(
+                session=SessionDetailData(
+                    id=session.id,
+                    type=session.session_type.value if session.session_type else None,
+                    difficulty=session.difficulty.value if session.difficulty else None,
+                    target_role=session.target_role,
+                    overall_score=session.overall_score,
+                    started_at=session.started_at.isoformat() if session.started_at else None,
+                    questions=[
+                        QuestionDetailData(
+                            id=q.id,
+                            question=q.question_text,
+                            type=q.question_type,
+                            response=ResponseDetailData(
+                                transcript=response_map[q.id].transcript,
+                                score=response_map[q.id].ai_score,
+                                feedback=response_map[q.id].ai_feedback,
+                                strengths=response_map[q.id].strengths,
+                                improvements=response_map[q.id].improvements
+                            ) if q.id in response_map else None
+                        )
+                        for q in questions
+                    ]
+                )
+            )
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -695,13 +776,22 @@ async def get_session_details(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/session/{session_id}")
+@router.delete("/session/{session_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_practice_session(
     session_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> Dict[str, Any]:
-    """Delete a practice session (only if it belongs to the current user)"""
+) -> Response:
+    """
+    Delete a practice session (only if it belongs to the current user).
+
+    **Path Parameters:**
+    - session_id: ID of the session to delete
+
+    **Returns:**
+    - 204 No Content on success
+    - 404 if session not found or unauthorized
+    """
     try:
         # Get the session
         result = await db.execute(
@@ -720,10 +810,7 @@ async def delete_practice_session(
 
         logger.info(f"Deleted practice session {session_id} for user {current_user.id}")
 
-        return {
-            "success": True,
-            "message": "Practice session deleted successfully"
-        }
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
     except HTTPException:
         raise
     except Exception as e:
@@ -1013,16 +1100,29 @@ You answered {len(responses)} out of {session.questions_count} questions in this
     return feedback
 
 
-@router.post("/submit-session/{session_id}")
+@router.post("/submit-session/{session_id}", response_model=ApiResponse[SessionSubmitData])
 async def submit_session_answers(
     session_id: int,
-    request: Dict[str, Any] = None,
+    request: Optional[SessionSubmitRequest] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> Dict[str, Any]:
+) -> ApiResponse[SessionSubmitData]:
     """
     Submit practice session for AI evaluation.
-    Can either load existing responses from DB (if saved incrementally) or accept new responses in request.
+
+    Can either load existing responses from DB (if saved incrementally)
+    or accept new responses in request body.
+
+    **Path Parameters:**
+    - session_id: ID of the session to submit
+
+    **Request Body (optional):**
+    - responses: List of responses to submit (for backward compatibility)
+
+    **Returns:**
+    - overall_score: Overall evaluation score
+    - category_scores: Category-wise scores
+    - feedback: AI-generated feedback
     """
     try:
         logger.info(f"[Submit Session] User {current_user.id} submitting session {session_id}")
@@ -1060,7 +1160,7 @@ async def submit_session_answers(
         logger.info(f"[Submit Session] Found {len(existing_db_responses)} existing responses in database")
 
         # Get responses from request body (if any)
-        responses_data = request.get("responses", []) if request else []
+        responses_data = request.responses if request else []
         logger.info(f"[Submit Session] Received {len(responses_data)} responses in request body")
 
         # If we have existing responses in DB, use those; otherwise use request data
@@ -1277,13 +1377,15 @@ async def submit_session_answers(
         logger.info(f"[Submit Session] Overall score: {overall_score:.2f}")
         logger.info(f"[Submit Session] Category scores: {category_scores}")
 
-        return {
-            "success": True,
-            "overall_score": overall_score,
-            "category_scores": category_scores,
-            "feedback": ai_feedback,
-            "message": "Session submitted and evaluated successfully"
-        }
+        return ApiResponse[SessionSubmitData](
+            success=True,
+            data=SessionSubmitData(
+                overall_score=overall_score,
+                category_scores=category_scores,
+                feedback=ai_feedback,
+                message="Session submitted and evaluated successfully"
+            )
+        )
 
     except HTTPException:
         raise
@@ -1294,13 +1396,24 @@ async def submit_session_answers(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.post("/session/{session_id}/complete")
+@router.post("/session/{session_id}/complete", response_model=ApiResponse[SessionCompleteData])
 async def complete_session(
     session_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
-) -> Dict[str, Any]:
-    """Mark a practice session as complete and calculate overall score"""
+) -> ApiResponse[SessionCompleteData]:
+    """
+    Mark a practice session as complete and calculate overall score.
+
+    **Path Parameters:**
+    - session_id: ID of the session to complete
+
+    **Returns:**
+    - overall_score: Overall evaluation score
+    - category_scores: Category-wise scores
+    - feedback: AI-generated feedback
+    - insights: Consolidated improvement insights
+    """
     try:
         # Get session
         result = await db.execute(
@@ -1412,14 +1525,16 @@ async def complete_session(
 
         await db.commit()
 
-        return {
-            "success": True,
-            "overall_score": overall_score,
-            "category_scores": category_scores,
-            "feedback": ai_feedback,
-            "insights": new_insights,
-            "message": "Session completed successfully"
-        }
+        return ApiResponse[SessionCompleteData](
+            success=True,
+            data=SessionCompleteData(
+                overall_score=overall_score,
+                category_scores=category_scores,
+                feedback=ai_feedback,
+                insights=new_insights,
+                message="Session completed successfully"
+            )
+        )
 
     except Exception as e:
         logger.error(f"Error completing session: {e}")
@@ -1476,11 +1591,19 @@ async def get_question_audio(
         raise HTTPException(status_code=500, detail="Failed to generate audio")
 
 
-@router.post("/transcribe")
+@router.post("/transcribe", response_model=ApiResponse[TranscriptionData])
 async def transcribe_audio(
     audio: UploadFile = File(...)
-):
-    """Transcribe audio to text using Google Speech-to-Text or mock for demo"""
+) -> ApiResponse[TranscriptionData]:
+    """
+    Transcribe audio to text using Google Speech-to-Text or mock for demo.
+
+    **Form Data:**
+    - audio: Audio file to transcribe
+
+    **Returns:**
+    - transcript: Transcribed text
+    """
     try:
         # For demo, return a mock transcription
         # In production, use Google Speech-to-Text or similar service
@@ -1502,28 +1625,35 @@ async def transcribe_audio(
         # Return a random mock transcript
         transcript = random.choice(mock_transcripts)
 
-        return {
-            "success": True,
-            "transcript": transcript
-        }
+        return ApiResponse[TranscriptionData](
+            success=True,
+            data=TranscriptionData(transcript=transcript)
+        )
 
     except Exception as e:
         logger.error(f"Error transcribing audio: {e}")
-        return {
-            "success": False,
-            "transcript": "Unable to transcribe audio at this time."
-        }
+        return ApiResponse[TranscriptionData](
+            success=False,
+            data=TranscriptionData(transcript="Unable to transcribe audio at this time."),
+            error={"code": "TRANSCRIPTION_ERROR", "message": str(e)}
+        )
 
 
 @router.post("/text-to-speech")
 async def text_to_speech(
-    request: Dict[str, str]
+    request: TextToSpeechRequest
 ):
-    """Generate text-to-speech audio for any text (no authentication required for demo)"""
+    """
+    Generate text-to-speech audio for any text (no authentication required for demo).
+
+    **Request Body:**
+    - text: Text to convert to speech (1-5000 characters)
+
+    **Returns:**
+    - Audio stream (audio/mp3)
+    """
     try:
-        text = request.get("text")
-        if not text:
-            raise HTTPException(status_code=400, detail="Text is required")
+        text = request.text
 
         # Generate audio using gTTS with optimized settings for interview questions
         tts = gTTS(

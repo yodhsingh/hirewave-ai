@@ -52,7 +52,7 @@ export default function JobDetailPage() {
 
   // Check if interview is available (only if applied but not yet submitted/scored)
   const canStartInterview = isApplied && inviteToken &&
-    ['invited', 'started', 'in_progress', 'INVITED', 'STARTED', 'IN_PROGRESS'].includes(applicationState || '');
+    ['INVITED', 'STARTED', 'IN_PROGRESS'].includes(applicationState?.toUpperCase() || '');
 
   // Apply mutation
   const applyMutation = useMutation({
@@ -459,10 +459,10 @@ export default function JobDetailPage() {
                       {applicationState && (
                         <div className="text-center">
                           <Badge className={`${
-                            applicationState === 'SHORTLISTED' || applicationState === 'shortlisted' ? 'bg-green-500/20 text-green-300' :
-                            applicationState === 'REJECTED' || applicationState === 'rejected' ? 'bg-red-500/20 text-red-300' :
-                            applicationState === 'SCORED' || applicationState === 'scored' ? 'bg-blue-500/20 text-blue-300' :
-                            applicationState === 'SUBMITTED' || applicationState === 'submitted' ? 'bg-cyan-500/20 text-cyan-300' :
+                            applicationState.toUpperCase() === 'SHORTLISTED' ? 'bg-green-500/20 text-green-300' :
+                            applicationState.toUpperCase() === 'REJECTED' ? 'bg-red-500/20 text-red-300' :
+                            applicationState.toUpperCase() === 'SCORED' ? 'bg-blue-500/20 text-blue-300' :
+                            applicationState.toUpperCase() === 'SUBMITTED' ? 'bg-cyan-500/20 text-cyan-300' :
                             'bg-yellow-500/20 text-yellow-300'
                           }`}>
                             Status: {applicationState.replace('_', ' ')}
@@ -482,7 +482,7 @@ export default function JobDetailPage() {
                       )}
 
                       {/* Show interview completed message if already submitted */}
-                      {isApplied && ['submitted', 'scored', 'shortlisted', 'SUBMITTED', 'SCORED', 'SHORTLISTED'].includes(applicationState || '') && (
+                      {isApplied && ['SUBMITTED', 'SCORED', 'SHORTLISTED'].includes(applicationState?.toUpperCase() || '') && (
                         <Alert className="bg-blue-500/10 border-blue-500/30">
                           <Award className="w-4 h-4 text-blue-400" />
                           <AlertDescription className="text-blue-200">

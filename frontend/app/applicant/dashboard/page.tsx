@@ -339,8 +339,9 @@ export default function ApplicantDashboard() {
             <CardContent>
               <div className="space-y-3">
                 {recentApplications.slice(0, 5).map((app: any, index: number) => {
+                  const statusUpper = app.status?.toUpperCase() || '';
                   const canStartInterview = app.inviteToken &&
-                    ['invited', 'started', 'in_progress'].includes(app.status?.toLowerCase() || '');
+                    ['INVITED', 'STARTED', 'IN_PROGRESS'].includes(statusUpper);
 
                   return (
                     <div key={`app-${index}`} className="flex items-center gap-4 p-3 bg-white/[0.03] rounded-lg border border-white/5 hover:border-white/10 transition-colors">
@@ -359,15 +360,15 @@ export default function ApplicantDashboard() {
                             className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1 h-7"
                           >
                             <Play className="w-3 h-3 mr-1" />
-                            {app.status === 'invited' ? 'Start' : 'Continue'}
+                            {statusUpper === 'INVITED' ? 'Start' : 'Continue'}
                           </Button>
                         )}
                         <Badge
                           variant="outline"
                           className={
-                            app.status === 'scored' || app.status === 'shortlisted' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
-                            app.status === 'submitted' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
-                            app.status === 'in_progress' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
+                            statusUpper === 'SCORED' || statusUpper === 'SHORTLISTED' ? 'bg-green-500/20 text-green-300 border-green-500/30' :
+                            statusUpper === 'SUBMITTED' ? 'bg-blue-500/20 text-blue-300 border-blue-500/30' :
+                            statusUpper === 'IN_PROGRESS' ? 'bg-orange-500/20 text-orange-300 border-orange-500/30' :
                             'bg-gray-500/20 text-gray-300 border-gray-500/30'
                           }
                         >

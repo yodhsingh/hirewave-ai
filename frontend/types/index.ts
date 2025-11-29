@@ -90,15 +90,15 @@ export interface QuestionCreate {
 }
 
 export type CandidateStatus =
-  | 'invited'
-  | 'started'
-  | 'in_progress'
-  | 'submitted'
-  | 'under_review'
-  | 'scored'
-  | 'shortlisted'
-  | 'rejected'
-  | 'hired';
+  | 'INVITED'
+  | 'STARTED'
+  | 'IN_PROGRESS'
+  | 'SUBMITTED'
+  | 'UNDER_REVIEW'
+  | 'SCORED'
+  | 'SHORTLISTED'
+  | 'REJECTED'
+  | 'HIRED';
 
 export interface Candidate {
   id: ID;

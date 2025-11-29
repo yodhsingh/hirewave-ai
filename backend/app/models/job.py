@@ -39,8 +39,8 @@ class Job(Base):
     description = Column(Text, nullable=False)
     department = Column(String(100), nullable=False)
     location = Column(String(255), nullable=False)
-    role_type = Column(String(50), nullable=False)
-    status = Column(String(20), nullable=False, default='ACTIVE')
+    role_type = Column(Enum(RoleType, name="role_type", native_enum=True, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False)
+    status = Column(Enum(JobStatus, name="job_status", native_enum=True, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False, default=JobStatus.DRAFT)
 
     company_id = Column(Integer, ForeignKey("companies.id", ondelete="SET NULL"), nullable=True)
     created_by = Column(Integer, ForeignKey("users.id"), nullable=False)
@@ -66,7 +66,7 @@ class Question(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     job_id = Column(Integer, ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False)
 
-    type = Column(String(50), nullable=False)
+    type = Column(Enum(QuestionType, name="question_type", native_enum=True, values_callable=lambda obj: [e.value for e in obj], create_type=False), nullable=False)
     question = Column("question_text", Text, nullable=False)
 
     time_limit = Column(Integer, nullable=True)  # seconds for video

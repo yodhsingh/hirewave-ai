@@ -81,15 +81,15 @@ import { useQuery } from '@tanstack/react-query';
 import { backendClient, apiKeys } from '@/lib/api/backend-client';
 import { toast } from 'sonner';
 
-// Mock pipeline stages with theme-consistent colors
+// Pipeline stages with theme-consistent colors (uppercase IDs to match backend)
 const PIPELINE_STAGES = [
-  { id: 'invited', label: 'Invited', color: 'from-blue-600 to-blue-500', textColor: 'text-blue-400', bgColor: 'bg-blue-600' },
-  { id: 'started', label: 'Started', color: 'from-yellow-500 to-yellow-400', textColor: 'text-yellow-400', bgColor: 'bg-yellow-500' },
-  { id: 'in_progress', label: 'In Progress', color: 'from-orange-500 to-orange-400', textColor: 'text-orange-400', bgColor: 'bg-orange-500' },
-  { id: 'submitted', label: 'Submitted', color: 'from-blue-600 to-cyan-600', textColor: 'text-blue-400', bgColor: 'bg-gradient-to-r from-blue-600 to-cyan-600' },
-  { id: 'scored', label: 'AI Scored', color: 'from-cyan-600 to-cyan-500', textColor: 'text-cyan-400', bgColor: 'bg-cyan-600' },
-  { id: 'shortlisted', label: 'Shortlisted', color: 'from-green-600 to-green-500', textColor: 'text-green-400', bgColor: 'bg-green-600' },
-  { id: 'rejected', label: 'Rejected', color: 'from-red-600 to-red-500', textColor: 'text-red-400', bgColor: 'bg-red-600' },
+  { id: 'INVITED', label: 'Invited', color: 'from-blue-600 to-blue-500', textColor: 'text-blue-400', bgColor: 'bg-blue-600' },
+  { id: 'STARTED', label: 'Started', color: 'from-yellow-500 to-yellow-400', textColor: 'text-yellow-400', bgColor: 'bg-yellow-500' },
+  { id: 'IN_PROGRESS', label: 'In Progress', color: 'from-orange-500 to-orange-400', textColor: 'text-orange-400', bgColor: 'bg-orange-500' },
+  { id: 'SUBMITTED', label: 'Submitted', color: 'from-blue-600 to-cyan-600', textColor: 'text-blue-400', bgColor: 'bg-gradient-to-r from-blue-600 to-cyan-600' },
+  { id: 'SCORED', label: 'AI Scored', color: 'from-cyan-600 to-cyan-500', textColor: 'text-cyan-400', bgColor: 'bg-cyan-600' },
+  { id: 'SHORTLISTED', label: 'Shortlisted', color: 'from-green-600 to-green-500', textColor: 'text-green-400', bgColor: 'bg-green-600' },
+  { id: 'REJECTED', label: 'Rejected', color: 'from-red-600 to-red-500', textColor: 'text-red-400', bgColor: 'bg-red-600' },
 ];
 
 const QUESTION_TYPE_ICONS = {

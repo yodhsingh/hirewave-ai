@@ -10,16 +10,16 @@ from app.db.base import Base
 
 
 class InterviewDifficulty(enum.Enum):
-    EASY = "easy"
-    MEDIUM = "medium"
-    HARD = "hard"
+    EASY = "EASY"
+    MEDIUM = "MEDIUM"
+    HARD = "HARD"
 
 
 class InterviewType(enum.Enum):
-    BEHAVIORAL = "behavioral"
-    TECHNICAL = "technical"
-    SITUATIONAL = "situational"
-    MIXED = "mixed"
+    BEHAVIORAL = "BEHAVIORAL"
+    TECHNICAL = "TECHNICAL"
+    SITUATIONAL = "SITUATIONAL"
+    MIXED = "MIXED"
 
 
 class PracticeSession(Base):

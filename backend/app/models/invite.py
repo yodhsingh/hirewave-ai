@@ -5,11 +5,11 @@ import enum
 
 # Enum class defining possible invitation statuses
 class InviteStatus(str, enum.Enum):
-    PENDING = "pending"  # Invitation created but not yet sent
-    SENT = "sent"    # Invitation email has been sent
-    OPENED = "opened"  # Invitation link has been opened
-    USED = "used"    # Invitation has been used for registration
-    EXPIRED = "expired"  # Invitation token has expired
+    PENDING = "PENDING"  # Invitation created but not yet sent
+    SENT = "SENT"  # Invitation email has been sent
+    OPENED = "OPENED"  # Invitation link has been opened
+    USED = "USED"  # Invitation has been used for registration
+    EXPIRED = "EXPIRED"  # Invitation token has expired
 
 
 class Invite(Base):

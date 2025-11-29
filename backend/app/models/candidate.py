@@ -7,15 +7,15 @@ import enum
 
 # Enum class to represent various stages of a candidate in the recruitment process
 class CandidateStatus(str, enum.Enum):
-    INVITED = "invited" # Candidate has been invited to take the test/interview
-    STARTED = "started" # Candidate has started the assessment
-    IN_PROGRESS = "in_progress" # Candidate is currently working on the assessment
-    SUBMITTED = "submitted" # Candidate has submitted their test or interview
-    UNDER_REVIEW = "under_review" # Candidate’s submission is being reviewed by HR/interviewer
-    SCORED = "scored" # Candidate’s performance has been evaluated/scored
-    SHORTLISTED = "shortlisted" # Candidate has been shortlisted for next rounds or selection
-    REJECTED = "rejected" # Candidate did not qualify for further rounds
-    HIRED = "hired" # Candidate is successfully hired
+    INVITED = "INVITED"  # Candidate has been invited to take the test/interview
+    STARTED = "STARTED"  # Candidate has started the assessment
+    IN_PROGRESS = "IN_PROGRESS"  # Candidate is currently working on the assessment
+    SUBMITTED = "SUBMITTED"  # Candidate has submitted their test or interview
+    UNDER_REVIEW = "UNDER_REVIEW"  # Candidate's submission is being reviewed by HR/interviewer
+    SCORED = "SCORED"  # Candidate's performance has been evaluated/scored
+    SHORTLISTED = "SHORTLISTED"  # Candidate has been shortlisted for next rounds or selection
+    REJECTED = "REJECTED"  # Candidate did not qualify for further rounds
+    HIRED = "HIRED"  # Candidate is successfully hired
 
 
 class Candidate(Base):
@@ -57,7 +57,7 @@ class InterviewResponse(Base):
     candidate_id = Column(Integer, ForeignKey("candidates.id", ondelete="CASCADE"), nullable=False)
     question_id = Column(Integer, ForeignKey("questions.id"), nullable=False)
 
-    type = Column(Enum("phone", "video", "text", "multiple_choice", "code", name="response_type"), nullable=False)
+    type = Column(Enum("PHONE", "VIDEO", "TEXT", "MULTIPLE_CHOICE", "CODE", name="response_type"), nullable=False)
     content = Column(Text, nullable=False)  # URL for video/audio, text for text responses
     transcript = Column(Text, nullable=True)  # For video/audio responses
 

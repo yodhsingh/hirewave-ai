@@ -37,12 +37,12 @@ async def get_applicant_dashboard(
 
     # Calculate stats
     total_applications = len(applications)
-    completed_interviews = len([c for c in applications if c.status in ['submitted', 'scored', 'shortlisted', 'hired']])
-    in_progress = len([c for c in applications if c.status == 'in_progress'])
-    pending = len([c for c in applications if c.status in ['invited', 'started']])
+    completed_interviews = len([c for c in applications if c.status in ['SUBMITTED', 'SCORED', 'SHORTLISTED', 'HIRED']])
+    in_progress = len([c for c in applications if c.status == 'IN_PROGRESS'])
+    pending = len([c for c in applications if c.status in ['INVITED', 'STARTED']])
 
     # Get scored applications
-    scored_applications = [c for c in applications if c.status == 'scored']
+    scored_applications = [c for c in applications if c.status == 'SCORED']
 
     # Calculate average score
     if scored_applications:

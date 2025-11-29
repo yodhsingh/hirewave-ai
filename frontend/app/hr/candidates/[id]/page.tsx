@@ -340,7 +340,7 @@ export default function CandidateDetailPage() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              {candidate.status === 'scored' && (
+              {candidate.status?.toUpperCase() === 'SCORED' && (
                 <>
                   <Button
                     variant="outline"

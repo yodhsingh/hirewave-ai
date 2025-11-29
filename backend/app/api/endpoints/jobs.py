@@ -439,7 +439,14 @@ async def update_job(
         setattr(job, field, value)
 
     await db.commit()
-    await db.refresh(job)
+
+    # Re-fetch job with questions loaded to avoid MissingGreenlet error
+    result = await db.execute(
+        select(Job)
+        .options(selectinload(Job.questions))
+        .filter(Job.id == job_id)
+    )
+    job = result.scalar_one()
 
     stats = await _get_job_stats(job.id, db)
     response = JobResponse.model_validate(job)

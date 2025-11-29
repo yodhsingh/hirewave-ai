@@ -16,20 +16,24 @@ import type {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
 
+// Debug mode - set to true to enable verbose logging
+const DEBUG_MODE = false;
+
 // Auth token storage
 const TOKEN_KEY = 'auth_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 
-// Helper to convert snake_case to camelCase
-function toCamelCase(obj: any): any {
+// Helper to convert snake_case to camelCase (recursive)
+function toCamelCase<T>(obj: T): T {
   if (Array.isArray(obj)) {
-    return obj.map(item => toCamelCase(item));
-  } else if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
-    return Object.keys(obj).reduce((acc, key) => {
+    return obj.map(item => toCamelCase(item)) as T;
+  }
+  if (obj !== null && typeof obj === 'object' && !(obj instanceof Date)) {
+    return Object.entries(obj as Record<string, unknown>).reduce((acc, [key, value]) => {
       const camelKey = key.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
-      acc[camelKey] = toCamelCase(obj[key]);
+      acc[camelKey] = toCamelCase(value);
       return acc;
-    }, {} as any);
+    }, {} as Record<string, unknown>) as T;
   }
   return obj;
 }
@@ -43,32 +47,25 @@ class BackendApiClient {
 
   // Token management
   private getToken(): string | null {
-    if (typeof window === 'undefined') {
-      console.log('[BackendClient.getToken] Server-side, no token');
-      return null;
-    }
+    if (typeof window === 'undefined') return null;
 
     // First check localStorage for standalone token storage
     const storedToken = localStorage.getItem(TOKEN_KEY);
-    console.log('[BackendClient.getToken] Standalone token:', storedToken ? `${storedToken.substring(0, 20)}...` : 'null');
     if (storedToken) return storedToken;
 
     // Then check Zustand auth-storage for token from authStore
     const authStorage = localStorage.getItem('auth-storage');
-    console.log('[BackendClient.getToken] Zustand auth-storage:', authStorage ? 'found' : 'null');
     if (authStorage) {
       try {
         const parsed = JSON.parse(authStorage);
-        console.log('[BackendClient.getToken] Parsed auth-storage token:', parsed?.state?.token ? `${parsed.state.token.substring(0, 20)}...` : 'null');
         if (parsed?.state?.token) {
           return parsed.state.token;
         }
-      } catch (e) {
-        console.error('[BackendClient.getToken] Error parsing auth-storage:', e);
+      } catch {
+        // Silently fail - token parsing errors shouldn't spam console
       }
     }
 
-    console.log('[BackendClient.getToken] No token found anywhere');
     return null;
   }
 
@@ -96,8 +93,9 @@ class BackendApiClient {
       const url = `${this.baseUrl}${endpoint}`;
       const token = this.getToken();
 
-      console.log('[BackendClient] Request to:', url);
-      console.log('[BackendClient] Token found:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
+      if (DEBUG_MODE) {
+        console.log('[BackendClient] Request:', options?.method || 'GET', url);
+      }
 
       const headers: HeadersInit = {
         'Content-Type': 'application/json',
@@ -108,18 +106,13 @@ class BackendApiClient {
       const publicEndpoints = [
         '/auth/register',
         '/auth/login',
-        '/text-to-speech',  // TTS is public for demo
-        '/transcribe'  // Transcription is public for demo
+        '/text-to-speech',
+        '/transcribe'
       ];
       const isPublicEndpoint = publicEndpoints.some(ep => endpoint.includes(ep));
 
       if (token && !isPublicEndpoint) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('[BackendClient] Authorization header set');
-      } else if (token && isPublicEndpoint) {
-        console.log('[BackendClient] Public endpoint - skipping auth header');
-      } else {
-        console.warn('[BackendClient] NO TOKEN - request will fail if auth required');
       }
 
       // Remove Content-Type for FormData
@@ -135,9 +128,8 @@ class BackendApiClient {
       let data: any;
       try {
         data = await response.json();
-      } catch (jsonError) {
-        console.error('[BackendClient] Failed to parse JSON response:', jsonError);
-        // Return a proper error response even if JSON parsing fails
+      } catch {
+        // Return a proper error response if JSON parsing fails
         return {
           success: false,
           error: {
@@ -150,9 +142,7 @@ class BackendApiClient {
 
       if (!response.ok) {
         // Only clear tokens on 401 (Unauthorized) - NOT on 500 errors!
-        // 500 errors are server issues, not auth issues
         if (response.status === 401) {
-          console.warn('401 Unauthorized - clearing tokens');
           this.removeTokens();
         }
 
@@ -203,8 +193,9 @@ class BackendApiClient {
       const responseData = data.data || data;
       const convertedData = toCamelCase(responseData);
 
-      console.log('[BackendClient] BEFORE toCamelCase:', JSON.stringify(responseData, null, 2));
-      console.log('[BackendClient] AFTER toCamelCase:', JSON.stringify(convertedData, null, 2));
+      if (DEBUG_MODE) {
+        console.log('[BackendClient] Response data converted to camelCase');
+      }
 
       return {
         success: true,
