@@ -143,10 +143,18 @@ export interface InterviewResponse {
   questionId: ID;
   type: 'PHONE' | 'VIDEO' | 'TEXT' | 'MULTIPLE_CHOICE' | 'CODE';
   content: string;
+  transcript?: string;
   duration?: number;
   videoBlobUrl?: string;
   retries: number;
   submittedAt: Date;
+  // Backend returns these fields directly (not nested in score object)
+  questionScore?: number;
+  questionFeedback?: Record<string, unknown>;
+  keywordsFound?: string[];
+  // Question text from generated interview questions
+  questionText?: string;
+  // Legacy field for backward compatibility
   score?: QuestionScore;
 }
 

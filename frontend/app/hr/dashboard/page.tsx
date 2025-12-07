@@ -109,7 +109,7 @@ export default function HRDashboard() {
   }, [jobsResponse, jobs, user]);
 
   const stats = {
-    activeJobs: jobs.filter((j: Job) => j.status === 'active').length,
+    activeJobs: jobs.filter((j: Job) => j.status === 'ACTIVE').length,
     totalCandidates: jobs.reduce((sum: number, job: Job) => sum + (job.stats?.total || 0), 0),
     interviewsToday: 12,
     avgCompletionRate: 78,
@@ -382,12 +382,12 @@ export default function HRDashboard() {
                             </h3>
                             <Badge
                               className={
-                                job.status === 'active'
+                                job.status === 'ACTIVE'
                                   ? 'bg-white-500/90 text-green-400 border-green-500/50'
                                   : 'bg-white-500/90 text-red-400 border-red-300/50'
                               }
                             >
-                              {job.status === 'active' ? 'Active' : job.status}
+                              {job.status === 'ACTIVE' ? 'Active' : job.status}
                             </Badge>
                             {/* {job.questions && job.questions.length > 0 && (
                               <Badge className="bg-gray-500/20 text-gray-100 border-grey-500/50">

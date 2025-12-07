@@ -187,8 +187,8 @@ export default function CandidateDetailPage() {
     );
   }
 
-  // Get phone interview response from responses
-  const phoneResponse = responses.find(r => r.type === 'phone');
+  // Get phone interview response from responses (type is uppercase from backend)
+  const phoneResponse = responses.find(r => r.type === 'PHONE');
   const phoneTranscript = phoneResponse && phoneResponse.transcript
     ? JSON.parse(phoneResponse.transcript)
     : [];
@@ -944,63 +944,71 @@ export default function CandidateDetailPage() {
               <CardHeader>
                 <CardTitle className="text-white">Interview Responses</CardTitle>
                 <CardDescription className="text-gray-300">
-                  All answers provided by the candidate
+                  All answers provided by the candidate ({responses.length} responses)
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Accordion type="single" collapsible className="space-y-4">
-                  {job.questions.map((question, index) => {
-                    const Icon = QUESTION_TYPE_ICONS[question.type as keyof typeof QUESTION_TYPE_ICONS] || FileText;
-                    const response = responses.find(r => r.questionId === question.id);
+                {responses.length > 0 ? (
+                  <Accordion type="single" collapsible className="space-y-4">
+                    {responses.map((response, index) => {
+                      const Icon = QUESTION_TYPE_ICONS[response.type as keyof typeof QUESTION_TYPE_ICONS] || FileText;
 
-                    return (
-                      <AccordionItem key={question.id} value={question.id} className="bg-gray-800 rounded-lg border border-gray-700">
-                        <AccordionTrigger className="px-4 hover:no-underline">
-                          <div className="flex items-center gap-3 text-left">
-                            <div className={`p-2 bg-gradient-to-r ${gradients.cardHeader} rounded-lg`}>
-                              <Icon className="w-5 h-5 text-blue-400" />
+                      return (
+                        <AccordionItem key={response.id} value={`response-${response.id}`} className="bg-gray-800 rounded-lg border border-gray-700">
+                          <AccordionTrigger className="px-4 hover:no-underline">
+                            <div className="flex items-center gap-3 text-left">
+                              <div className={`p-2 bg-gradient-to-r ${gradients.cardHeader} rounded-lg`}>
+                                <Icon className="w-5 h-5 text-blue-400" />
+                              </div>
+                              <div>
+                                <p className="font-medium text-white">Question {index + 1}</p>
+                                <p className="text-sm text-gray-400">{response.questionText || 'Interview Question'}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium text-white">Question {index + 1}</p>
-                              <p className="text-sm text-gray-400">{question.question}</p>
-                            </div>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-4 pb-4">
-                          {response ? (
+                          </AccordionTrigger>
+                          <AccordionContent className="px-4 pb-4">
                             <div className="space-y-3">
                               <div className="bg-gray-700 rounded-lg p-4">
-                                <p className="text-sm text-gray-200">
-                                  {question.type === 'phone' ? (
-                                    <span className="italic">See Phone Interview tab for full conversation</span>
-                                  ) : question.type === 'video' ? (
-                                    <span className="italic">Video response available - [Mock video player would go here]</span>
-                                  ) : (
-                                    response.content || 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. I have extensive experience with the technologies mentioned and have successfully delivered similar projects.'
-                                  )}
+                                <p className="text-sm text-gray-200 whitespace-pre-wrap">
+                                  {response.transcript || response.content || 'No transcript available'}
                                 </p>
                               </div>
-                              {response.score && (
-                                <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                {response.questionScore != null && (
                                   <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-500/30">
-                                    AI Score: {response.score.score}/{response.score.maxScore}
+                                    AI Score: {Math.round(response.questionScore)}/100
                                   </Badge>
-                                  {response.duration && (
-                                    <span className="text-xs text-gray-400">
-                                      Duration: {Math.floor(response.duration / 60)}:{(response.duration % 60).toString().padStart(2, '0')}
-                                    </span>
-                                  )}
+                                )}
+                                {response.duration != null && response.duration > 0 && (
+                                  <span className="text-xs text-gray-400">
+                                    Duration: {Math.floor(response.duration / 60)}:{(response.duration % 60).toString().padStart(2, '0')}
+                                  </span>
+                                )}
+                                {response.type && (
+                                  <Badge variant="outline" className="text-gray-400 border-gray-600">
+                                    {response.type}
+                                  </Badge>
+                                )}
+                              </div>
+                              {response.questionFeedback && (
+                                <div className="mt-2 p-3 bg-gray-800/50 rounded-lg">
+                                  <p className="text-xs text-gray-400 mb-1">AI Feedback:</p>
+                                  <p className="text-sm text-gray-300">
+                                    {typeof response.questionFeedback === 'object' && 'feedback' in response.questionFeedback
+                                      ? String(response.questionFeedback.feedback)
+                                      : JSON.stringify(response.questionFeedback)}
+                                  </p>
                                 </div>
                               )}
                             </div>
-                          ) : (
-                            <p className="text-gray-500 italic">No response recorded</p>
-                          )}
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
-                </Accordion>
+                          </AccordionContent>
+                        </AccordionItem>
+                      );
+                    })}
+                  </Accordion>
+                ) : (
+                  <p className="text-gray-500 italic text-center py-8">No responses recorded yet</p>
+                )}
               </CardContent>
             </Card>
           </TabsContent>

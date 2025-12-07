@@ -111,6 +111,8 @@ class InterviewResponseFull(InterviewResponseBase):
     question_score: Optional[float] = None
     question_feedback: Optional[dict] = None
     keywords_found: Optional[List[str]] = None
+    # Question text for display (from generated interview questions)
+    question_text: Optional[str] = None
 
     class Config:
         from_attributes = True

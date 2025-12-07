@@ -7,9 +7,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 from app.db.base import get_db
 from app.models.user import User
-from app.models.job import Job
+from app.models.job import Job, QuestionType
 from app.models.candidate import Candidate, CandidateStatus
 from app.models.invite import Invite, InviteStatus
+from app.models.generated_interview import CandidateInterviewQuestion, CandidateInterviewResponse
 from app.schemas.candidate import (
     CandidateResponse,
     CandidateListItem,
@@ -122,24 +123,66 @@ async def get_candidate(
             proctoring_score_penalty=cs.proctoring_score_penalty if hasattr(cs, 'proctoring_score_penalty') else 0.0,
         )
 
-    # Build responses array
+    # Build responses array - fetch from CandidateInterviewQuestion/Response tables
+    # which is where the actual interview responses are stored
     responses_list = []
-    for resp in candidate.responses:
-        response_item = InterviewResponseFull(
-            id=resp.id,
-            candidate_id=resp.candidate_id,
-            question_id=resp.question_id,
-            type=resp.type,
-            content=resp.content,
-            duration=resp.duration,
-            retries=resp.retries,
-            transcript=resp.transcript,
-            submitted_at=resp.submitted_at,
-            question_score=resp.question_score,
-            question_feedback=resp.question_feedback,
-            keywords_found=resp.keywords_found,
-        )
-        responses_list.append(response_item)
+
+    # First try the new AI-generated interview system (CandidateInterviewQuestion/Response)
+    interview_questions_result = await db.execute(
+        select(CandidateInterviewQuestion)
+        .options(selectinload(CandidateInterviewQuestion.response))
+        .filter(CandidateInterviewQuestion.candidate_id == candidate.id)
+        .order_by(CandidateInterviewQuestion.order_index)
+    )
+    interview_questions = interview_questions_result.scalars().all()
+
+    for idx, question in enumerate(interview_questions):
+        if question.response:
+            resp = question.response
+            # Map question_type to QuestionType enum
+            question_type = QuestionType.PHONE  # Default
+            if question.question_type == "technical":
+                question_type = QuestionType.CODE
+            elif question.question_type == "behavioral":
+                question_type = QuestionType.VIDEO
+            elif question.question_type == "situational":
+                question_type = QuestionType.TEXT
+
+            response_item = InterviewResponseFull(
+                id=resp.id,
+                candidate_id=candidate.id,
+                question_id=question.id,  # Use the generated question ID
+                type=question_type,
+                content=resp.transcript or "",  # Use transcript as content
+                duration=resp.duration,
+                retries=0,
+                transcript=resp.transcript,
+                submitted_at=resp.submitted_at,
+                question_score=resp.ai_score,
+                question_feedback={"feedback": resp.ai_feedback} if resp.ai_feedback else None,
+                keywords_found=resp.key_points_covered if resp.key_points_covered else None,
+                question_text=question.question_text,  # Include question text for display
+            )
+            responses_list.append(response_item)
+
+    # Fallback to old InterviewResponse table if no responses found in new system
+    if not responses_list:
+        for resp in candidate.responses:
+            response_item = InterviewResponseFull(
+                id=resp.id,
+                candidate_id=resp.candidate_id,
+                question_id=resp.question_id,
+                type=resp.type,
+                content=resp.content,
+                duration=resp.duration,
+                retries=resp.retries,
+                transcript=resp.transcript,
+                submitted_at=resp.submitted_at,
+                question_score=resp.question_score,
+                question_feedback=resp.question_feedback,
+                keywords_found=resp.keywords_found,
+            )
+            responses_list.append(response_item)
 
     # Build response manually to avoid model_validate trying to auto-populate score
     response = CandidateResponse(
