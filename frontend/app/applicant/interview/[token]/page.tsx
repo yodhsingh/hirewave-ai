@@ -86,6 +86,7 @@ export default function ActualInterviewPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [interviewStarted, setInterviewStarted] = useState(false);  // Track if user has entered fullscreen and started
   const [interviewTerminated, setInterviewTerminated] = useState(false);  // Track if interview was force-terminated
+  const [interviewSubmitted, setInterviewSubmitted] = useState(false);  // Track if interview has been successfully submitted
   const interviewContainerRef = useRef<HTMLDivElement>(null);
   const hasAutoSubmittedRef = useRef(false);  // Prevent multiple auto-submits
   
@@ -266,7 +267,7 @@ export default function ActualInterviewPage() {
     }
   }, [isLoading, sessionState.questions.length, hasCameraPermission, hasMediaPermission]);
 
-  // Handle fullscreen change events - AUTO SUBMIT if user exits after starting
+  // Handle fullscreen change events - AUTO SUBMIT if user exits after starting (but NOT after submission)
   useEffect(() => {
     const handleFullscreenChange = async () => {
       const isNowFullscreen = document.fullscreenElement !== null;
@@ -279,7 +280,8 @@ export default function ActualInterviewPage() {
       }
       
       // If user exits fullscreen AFTER interview started, auto-submit immediately
-      if (!isNowFullscreen && interviewStarted && !hasAutoSubmittedRef.current) {
+      // BUT only if interview hasn't been successfully submitted yet
+      if (!isNowFullscreen && interviewStarted && !hasAutoSubmittedRef.current && !interviewSubmitted) {
         console.log('🚨 User exited fullscreen after interview started - AUTO SUBMITTING');
         hasAutoSubmittedRef.current = true;
         await forceSubmitInterview('fullscreen_exit');
@@ -288,12 +290,12 @@ export default function ActualInterviewPage() {
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, [sessionState.questions.length, interviewStarted]);
+  }, [sessionState.questions.length, interviewStarted, interviewSubmitted]);
 
-  // Handle tab visibility change - AUTO SUBMIT if user switches tabs after starting
+  // Handle tab visibility change - AUTO SUBMIT if user switches tabs after starting (but NOT after submission)
   useEffect(() => {
     const handleVisibilityChange = async () => {
-      if (document.hidden && interviewStarted && !hasAutoSubmittedRef.current) {
+      if (document.hidden && interviewStarted && !hasAutoSubmittedRef.current && !interviewSubmitted) {
         console.log('🚨 User switched tabs after interview started - AUTO SUBMITTING');
         hasAutoSubmittedRef.current = true;
         await forceSubmitInterview('tab_switch');
@@ -302,7 +304,7 @@ export default function ActualInterviewPage() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [interviewStarted]);
+  }, [interviewStarted, interviewSubmitted]);
 
   // Run proctoring when question changes AND video is ready
   useEffect(() => {
@@ -665,6 +667,10 @@ export default function ActualInterviewPage() {
 
       if (result.ok && data.success) {
         const responseData = data.data;
+        
+        // Mark interview as successfully submitted BEFORE exiting fullscreen
+        // This prevents the fullscreen exit handler from triggering a false violation
+        setInterviewSubmitted(true);
         
         // Show cheating warning if detected
         let description = `AI evaluation complete. Score: ${responseData.overallScore || 'Processing'}`;
