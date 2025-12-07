@@ -168,6 +168,13 @@ export interface Score {
   aiInsights?: AIInsights;
   skillsExtracted?: ExtractedSkill[];
   competencyRanking?: CompetencyRanking;
+  // Proctoring/Cheating info
+  cheating_detected?: boolean;
+  cheatingDetected?: boolean;  // also support camelCase
+  cheating_evidence?: CheatingEvidence[];
+  cheatingEvidence?: CheatingEvidence[];  // also support camelCase
+  proctoring_score_penalty?: number;
+  proctoringScorePenalty?: number;  // also support camelCase
 }
 
 export interface ScoreBreakdown {
@@ -186,6 +193,14 @@ export interface AIInsights {
   redFlags?: string[];
   recommendations: string[];
   confidenceLevel: number; 
+}
+
+export interface CheatingEvidence {
+  timestamp: string;
+  question_id?: number | null;
+  confidence: number;
+  reason: string;
+  evidence_type: string;
 }
 
 export interface ExtractedSkill {

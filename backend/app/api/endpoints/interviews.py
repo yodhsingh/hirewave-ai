@@ -498,6 +498,258 @@ async def save_interview_answer(
 
 
 @router.post(
+    "/{token}/analyze-proctoring",
+    response_model=ApiResponse,
+    summary="Analyze proctoring images for cheating detection",
+    description="""
+    Analyze 5 captured images to detect if the candidate is using a phone or external device.
+    Images should be base64 encoded. If cheating is detected, it will be recorded.
+    """
+)
+async def analyze_proctoring(
+    token: str,
+    request: Dict[str, Any],
+    db: AsyncSession = Depends(get_db),
+):
+    """Analyze captured images for cheating detection using Gemini"""
+    # Find candidate
+    result = await db.execute(
+        select(Candidate).filter(Candidate.invite_token == token)
+    )
+    candidate = result.scalar_one_or_none()
+
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Invalid invitation token")
+
+    images = request.get("images", [])
+    question_id = request.get("question_id")
+    
+    if not images or len(images) == 0:
+        raise HTTPException(status_code=400, detail="No images provided")
+
+    # Debug: Log when proctoring images are received
+    print(f"\n{'='*60}")
+    print(f"🎥 PROCTORING: Received {len(images)} images for analysis")
+    print(f"   Candidate Token: {token[:20]}...")
+    print(f"   Question ID: {question_id}")
+    print(f"{'='*60}")
+
+    try:
+        # Use gemini-2.5-flash-lite for image proctoring (faster and cheaper)
+        import google.generativeai as genai
+        proctoring_model = genai.GenerativeModel("gemini-2.5-flash-lite")
+        
+        # Build image parts for Gemini
+        image_parts = []
+        for idx, img_base64 in enumerate(images[:5]):  # Limit to 5 images
+            # Remove data URL prefix if present
+            if "," in img_base64:
+                img_base64 = img_base64.split(",")[1]
+            
+            image_parts.append({
+                "inline_data": {
+                    "mime_type": "image/jpeg",
+                    "data": img_base64
+                }
+            })
+
+        # Debug: Log before sending to Gemini
+        print(f"📤 PROCTORING: Sending {len(image_parts)} images to Gemini (gemini-2.5-flash-lite) for analysis...")
+
+        prompt = """You are a proctoring AI assistant for an online interview. 
+Analyze these 5 images of a candidate taken during their interview.
+
+Look for signs of cheating such as:
+1. Using a phone or mobile device
+2. Looking at another screen or monitor
+3. Reading from notes or papers
+4. Another person visible in the frame
+5. Headphones/earbuds that could be receiving audio assistance
+
+Respond with a JSON object:
+{
+    "cheating_detected": true/false,
+    "confidence": 0.0-1.0,
+    "reason": "Brief explanation of what was detected or why no cheating was found",
+    "evidence_type": "phone|screen|notes|person|earbuds|none"
+}
+
+Be strict but fair. Only flag as cheating if you have clear evidence."""
+
+        response = await proctoring_model.generate_content_async([prompt] + image_parts)
+        response_text = response.text.strip()
+        
+        # Debug: Log response received from Gemini
+        print(f"📥 PROCTORING: Received response from Gemini")
+        print(f"   Raw response length: {len(response_text)} chars")
+        
+        # Parse JSON from response
+        if "```json" in response_text:
+            response_text = response_text.split("```json")[1].split("```")[0].strip()
+        elif "```" in response_text:
+            response_text = response_text.split("```")[1].split("```")[0].strip()
+        
+        analysis = json.loads(response_text)
+        cheating_detected = analysis.get("cheating_detected", False)
+        
+        # Debug: Log analysis result
+        print(f"{'🚨' if cheating_detected else '✅'} PROCTORING RESULT:")
+        print(f"   Cheating Detected: {cheating_detected}")
+        print(f"   Confidence: {analysis.get('confidence', 0.0)}")
+        print(f"   Reason: {analysis.get('reason', 'N/A')}")
+        print(f"   Evidence Type: {analysis.get('evidence_type', 'none')}")
+        print(f"{'='*60}\n")
+        
+        # If cheating detected, record it
+        if cheating_detected:
+            # Get or create score record
+            from app.models.candidate import CandidateScore
+            result = await db.execute(
+                select(CandidateScore).filter(CandidateScore.candidate_id == candidate.id)
+            )
+            score_record = result.scalar_one_or_none()
+            
+            if not score_record:
+                score_record = CandidateScore(
+                    candidate_id=candidate.id,
+                    cheating_detected=True,
+                    cheating_evidence=[],
+                    proctoring_score_penalty=15.0  # 15% penalty
+                )
+                db.add(score_record)
+            else:
+                score_record.cheating_detected = True
+                if score_record.cheating_evidence is None:
+                    score_record.cheating_evidence = []
+                score_record.proctoring_score_penalty = 15.0
+            
+            # Add evidence
+            evidence_entry = {
+                "timestamp": datetime.utcnow().isoformat(),
+                "question_id": question_id,
+                "confidence": analysis.get("confidence", 0.0),
+                "reason": analysis.get("reason", ""),
+                "evidence_type": analysis.get("evidence_type", "unknown")
+            }
+            if score_record.cheating_evidence:
+                score_record.cheating_evidence = score_record.cheating_evidence + [evidence_entry]
+            else:
+                score_record.cheating_evidence = [evidence_entry]
+            
+            await db.commit()
+        
+        return ApiResponse(
+            success=True,
+            data={
+                "cheating_detected": cheating_detected,
+                "confidence": analysis.get("confidence", 0.0),
+                "reason": analysis.get("reason", ""),
+                "evidence_type": analysis.get("evidence_type", "none")
+            }
+        )
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse proctoring analysis: {e}")
+        return ApiResponse(
+            success=True,
+            data={
+                "cheating_detected": False,
+                "confidence": 0.0,
+                "reason": "Analysis failed - assuming no cheating",
+                "evidence_type": "none"
+            }
+        )
+    except Exception as e:
+        logger.error(f"Proctoring analysis error: {e}")
+        raise HTTPException(status_code=500, detail=f"Proctoring analysis failed: {str(e)}")
+
+
+@router.post(
+    "/{token}/transcribe",
+    response_model=ApiResponse,
+    summary="Transcribe audio to text using Gemini",
+    description="Convert audio recording to text using Gemini's audio understanding capabilities."
+)
+async def transcribe_audio(
+    token: str,
+    audio: UploadFile = File(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Transcribe audio to text using Gemini"""
+    # Find candidate
+    result = await db.execute(
+        select(Candidate).filter(Candidate.invite_token == token)
+    )
+    candidate = result.scalar_one_or_none()
+
+    if not candidate:
+        raise HTTPException(status_code=404, detail="Invalid invitation token")
+
+    # Validate file type
+    content_type = audio.content_type or ""
+    if not content_type.startswith("audio/"):
+        raise HTTPException(status_code=400, detail="File must be an audio file")
+
+    try:
+        # Read audio data
+        audio_data = await audio.read()
+        import base64
+        audio_base64 = base64.b64encode(audio_data).decode("utf-8")
+        
+        # Determine mime type
+        mime_type = content_type
+        if "webm" in content_type:
+            mime_type = "audio/webm"
+        elif "wav" in content_type:
+            mime_type = "audio/wav"
+        elif "mp3" in content_type or "mpeg" in content_type:
+            mime_type = "audio/mp3"
+        
+        # Debug: Log audio transcription request
+        print(f"\n{'='*60}")
+        print(f"🎤 TRANSCRIPTION: Received audio for transcription")
+        print(f"   Candidate Token: {token[:20]}...")
+        print(f"   Audio Size: {len(audio_data) / 1024:.2f} KB")
+        print(f"   MIME Type: {mime_type}")
+        print(f"📤 TRANSCRIPTION: Sending audio to Gemini...")
+        print(f"{'='*60}")
+        
+        model = get_gemini_model()
+        
+        prompt = """Transcribe the following audio recording of a candidate answering an interview question.
+Provide ONLY the transcription text, nothing else. If the audio is unclear, transcribe what you can hear.
+If the audio is completely inaudible, respond with: [Audio unclear - could not transcribe]"""
+
+        audio_part = {
+            "inline_data": {
+                "mime_type": mime_type,
+                "data": audio_base64
+            }
+        }
+        
+        response = await model.generate_content_async([prompt, audio_part])
+        transcript = response.text.strip()
+        
+        # Debug: Log transcription result
+        print(f"📥 TRANSCRIPTION: Received response from Gemini")
+        print(f"   Transcript length: {len(transcript)} chars")
+        print(f"   Preview: {transcript[:100]}{'...' if len(transcript) > 100 else ''}")
+        print(f"{'='*60}\n")
+        
+        return ApiResponse(
+            success=True,
+            data={
+                "transcript": transcript,
+                "success": True
+            }
+        )
+        
+    except Exception as e:
+        logger.error(f"Transcription error: {e}")
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
+
+
+@router.post(
     "/{token}/submit",
     response_model=ApiResponse,
     summary="Submit interview for AI evaluation",
@@ -526,6 +778,13 @@ async def submit_interview(
     if not candidate:
         raise HTTPException(status_code=404, detail="Invalid invitation token")
 
+    # Check if this is a force submit (e.g., user exited fullscreen or switched tabs)
+    is_force_submit = submission and submission.force_submit
+    termination_reason = submission.termination_reason if submission else None
+    
+    if is_force_submit:
+        logger.warning(f"Force submit for candidate {candidate.id}: {termination_reason}")
+
     # Get all questions for this candidate
     result = await db.execute(
         select(CandidateInterviewQuestion)
@@ -543,7 +802,8 @@ async def submit_interview(
     responses = result.scalars().all()
     response_map = {r.question_id: r for r in responses}
 
-    if not responses:
+    # Only enforce "at least one answer" for normal submissions, not force submit
+    if not responses and not is_force_submit:
         raise HTTPException(status_code=400, detail="No answers found. Please answer at least one question.")
 
     # Score each response with AI
@@ -571,6 +831,74 @@ async def submit_interview(
 
     # Calculate overall score
     overall_score = sum(all_scores) / len(all_scores) if all_scores else 0
+
+    # Check for cheating and apply penalty
+    from app.models.candidate import CandidateScore
+    result = await db.execute(
+        select(CandidateScore).filter(CandidateScore.candidate_id == candidate.id)
+    )
+    score_record = result.scalar_one_or_none()
+    
+    cheating_detected = False
+    penalty_applied = 0.0
+    session_terminated = False
+    
+    # Handle force submit (session terminated due to fullscreen exit or tab switch)
+    if is_force_submit and termination_reason:
+        session_terminated = True
+        cheating_detected = True
+        penalty_applied = 50.0  # Heavy penalty for session termination
+        
+        # Apply penalty - score is halved for terminated sessions
+        overall_score = overall_score * 0.5
+        
+        # Create proper evidence entry matching CheatingEvidence schema
+        termination_evidence = [{
+            "timestamp": datetime.utcnow().isoformat(),
+            "question_id": None,
+            "confidence": 1.0,
+            "reason": f"Session terminated: {termination_reason}",
+            "evidence_type": "session_termination"
+        }]
+        
+        if score_record:
+            score_record.cheating_detected = True
+            score_record.proctoring_score_penalty = penalty_applied
+            # Append termination to existing evidence
+            existing_evidence = score_record.cheating_evidence or []
+            score_record.cheating_evidence = existing_evidence + termination_evidence
+            score_record.overall_score = overall_score
+            score_record.ai_score = overall_score
+        else:
+            score_record = CandidateScore(
+                candidate_id=candidate.id,
+                overall_score=overall_score,
+                ai_score=overall_score,
+                cheating_detected=True,
+                cheating_evidence=termination_evidence,
+                proctoring_score_penalty=penalty_applied
+            )
+            db.add(score_record)
+    elif score_record and score_record.cheating_detected:
+        cheating_detected = True
+        penalty_applied = score_record.proctoring_score_penalty or 15.0
+        # Apply percentage penalty to overall score
+        overall_score = overall_score * (1 - penalty_applied / 100)
+        score_record.overall_score = overall_score
+        score_record.ai_score = overall_score
+    elif not score_record:
+        # Create score record if it doesn't exist
+        score_record = CandidateScore(
+            candidate_id=candidate.id,
+            overall_score=overall_score,
+            ai_score=overall_score,
+            cheating_detected=False,
+            proctoring_score_penalty=0.0
+        )
+        db.add(score_record)
+    else:
+        score_record.overall_score = overall_score
+        score_record.ai_score = overall_score
 
     # Update candidate status
     candidate.status = CandidateStatus.SUBMITTED
@@ -609,13 +937,17 @@ async def submit_interview(
     return ApiResponse(
         success=True,
         data={
-            "message": "Interview submitted successfully. AI analysis complete.",
+            "message": "Interview submitted successfully. AI analysis complete." if not session_terminated else "Interview session terminated due to policy violation.",
             "candidateId": candidate.id,
             "overallScore": round(overall_score, 1),
             "questionsAnswered": len(all_scores),
             "totalQuestions": len(all_questions),
             "submittedAt": candidate.submitted_at.isoformat() if candidate.submitted_at else None,
-            "feedback": questions_feedback
+            "feedback": questions_feedback,
+            "cheatingDetected": cheating_detected,
+            "penaltyApplied": penalty_applied,
+            "sessionTerminated": session_terminated,
+            "terminationReason": termination_reason
         }
     )
 

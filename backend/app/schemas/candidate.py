@@ -50,6 +50,15 @@ class AIInsights(BaseModel):
     confidence_level: float
 
 
+class CheatingEvidence(BaseModel):
+    """Cheating evidence entry"""
+    timestamp: str
+    question_id: Optional[int] = None
+    confidence: float
+    reason: str
+    evidence_type: str
+
+
 class Score(BaseModel):
     """Candidate score schema"""
 
@@ -62,6 +71,10 @@ class Score(BaseModel):
     ai_insights: Optional[AIInsights] = None
     skills_extracted: Optional[List[ExtractedSkill]] = None
     competency_ranking: Optional[CompetencyRanking] = None
+    # Proctoring/Cheating info
+    cheating_detected: bool = False
+    cheating_evidence: Optional[List[CheatingEvidence]] = None
+    proctoring_score_penalty: float = 0.0
 
 
 class InterviewResponseBase(BaseModel):
@@ -182,7 +195,9 @@ class BulkInviteResponse(BaseModel):
 class InterviewSubmitRequest(BaseModel):
     """Interview submission request"""
 
-    responses: List[InterviewResponseCreate] = Field(..., min_items=1)
+    responses: List[InterviewResponseCreate] = Field(default_factory=list)
+    force_submit: Optional[bool] = False
+    termination_reason: Optional[str] = None  # 'fullscreen_exit', 'tab_switch', etc.
 
 
 class InterviewSubmitResponse(BaseModel):

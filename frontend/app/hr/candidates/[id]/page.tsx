@@ -32,7 +32,11 @@ import {
   Bell,
   Settings,
   LogOut,
-  Home
+  Home,
+  Shield,
+  Camera,
+  AlertTriangle,
+  Eye
 } from 'lucide-react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -637,6 +641,133 @@ export default function CandidateDetailPage() {
                 </Card>
               </div>
             )}
+
+            {/* Proctoring & Integrity Section */}
+            <Card className={`bg-gray-900/90 backdrop-blur-md border-gray-700 ${
+              candidate.score?.cheating_detected 
+                ? 'border-red-500/50 shadow-red-500/20 shadow-lg' 
+                : 'border-green-500/30'
+            }`}>
+              <CardHeader className={`border-b border-gray-800 ${
+                (candidate.score?.cheating_detected || candidate.score?.cheatingDetected)
+                  ? 'bg-red-500/10' 
+                  : 'bg-green-500/10'
+              }`}>
+                <CardTitle className="text-lg text-white flex items-center gap-2">
+                  <Shield className={`w-5 h-5 ${
+                    (candidate.score?.cheating_detected || candidate.score?.cheatingDetected) ? 'text-red-400' : 'text-green-400'
+                  }`} />
+                  Proctoring & Integrity Report
+                  {(candidate.score?.cheating_detected || candidate.score?.cheatingDetected) ? (
+                    <Badge className="ml-2 bg-red-500/20 text-red-400 border-red-500/30">
+                      <AlertTriangle className="w-3 h-3 mr-1" />
+                      Violations Detected
+                    </Badge>
+                  ) : (
+                    <Badge className="ml-2 bg-green-500/20 text-green-400 border-green-500/30">
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      No Issues
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                {(candidate.score?.cheating_detected || candidate.score?.cheatingDetected) ? (
+                  <>
+                    {/* Violation Summary */}
+                    <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <AlertTriangle className="w-5 h-5 text-red-400" />
+                        <h4 className="font-semibold text-red-400">Integrity Violations Found</h4>
+                      </div>
+                      <p className="text-sm text-gray-300 mb-3">
+                        Our AI proctoring system detected potential violations during the interview session.
+                        Review the evidence below.
+                      </p>
+                      {(candidate.score?.proctoring_score_penalty || candidate.score?.proctoringScorePenalty) && (candidate.score?.proctoring_score_penalty || candidate.score?.proctoringScorePenalty) > 0 && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-gray-400">Score Penalty Applied:</span>
+                          <span className="font-semibold text-red-400">
+                            -{(candidate.score?.proctoring_score_penalty || candidate.score?.proctoringScorePenalty)}%
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Evidence Details */}
+                    {(candidate.score?.cheating_evidence || candidate.score?.cheatingEvidence) && (candidate.score?.cheating_evidence || candidate.score?.cheatingEvidence)?.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-300 mb-3 flex items-center gap-2">
+                          <Eye className="w-4 h-4" />
+                          Violation Evidence ({(candidate.score?.cheating_evidence || candidate.score?.cheatingEvidence)?.length} incidents)
+                        </h4>
+                        <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                          {(candidate.score?.cheating_evidence || candidate.score?.cheatingEvidence)?.map((evidence: { question_id?: number; timestamp?: string; evidence_type?: string; reason?: string; confidence?: number; frame_data?: string }, idx: number) => (
+                            <div key={idx} className="bg-gray-800/50 border border-red-500/20 rounded-lg p-3">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Camera className="w-4 h-4 text-red-400" />
+                                  <span className="text-sm font-medium text-white">
+                                    {evidence.evidence_type ? evidence.evidence_type.charAt(0).toUpperCase() + evidence.evidence_type.slice(1) : 'Evidence'} {idx + 1}
+                                  </span>
+                                </div>
+                                {evidence.timestamp && (
+                                  <span className="text-xs text-gray-400">
+                                    {new Date(evidence.timestamp).toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="space-y-2">
+                                {evidence.evidence_type && (
+                                  <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-xs">
+                                    {evidence.evidence_type.toUpperCase()}
+                                  </Badge>
+                                )}
+                                {evidence.reason && (
+                                  <p className="text-sm text-gray-300">{evidence.reason}</p>
+                                )}
+                                {evidence.confidence && (
+                                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                                    <span>AI Confidence:</span>
+                                    <div className="w-16 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full bg-red-500 rounded-full"
+                                        style={{ width: `${Math.round(evidence.confidence * 100)}%` }}
+                                      />
+                                    </div>
+                                    <span>{Math.round(evidence.confidence * 100)}%</span>
+                                  </div>
+                                )}
+                                {evidence.frame_data && (
+                                  <div className="mt-2">
+                                    <img
+                                      src={evidence.frame_data.startsWith('data:') ? evidence.frame_data : `data:image/jpeg;base64,${evidence.frame_data}`}
+                                      alt={`Violation evidence ${idx + 1}`}
+                                      className="w-full max-w-[200px] h-auto rounded border border-red-500/30"
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="w-5 h-5 text-green-400" />
+                      <h4 className="font-semibold text-green-400">Interview Integrity Verified</h4>
+                    </div>
+                    <p className="text-sm text-gray-300">
+                      Our AI proctoring system did not detect any violations during the interview session.
+                      The candidate maintained proper interview conduct throughout.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Notes Section */}
             <Card className="bg-gray-900/90 backdrop-blur-md border-gray-700">
