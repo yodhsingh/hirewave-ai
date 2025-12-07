@@ -4,19 +4,20 @@ import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  Mic, MicOff, Send, Clock, CheckCircle,
+  Mic, Send, Clock, CheckCircle,
   AlertCircle, ChevronRight, ChevronLeft, Loader2,
-  Briefcase, Sparkles, Home, Volume2, StopCircle, MessageSquare,
-  Building, Award
+  Briefcase, Home, Volume2, StopCircle,
+  Building
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { gradients } from '@/lib/theme';
 import Link from 'next/link';
 import { useToast } from '@/components/ui/use-toast';
+import { useCameraStore } from '@/lib/store/cameraStore';
+import { backendClient } from '@/lib/api/backend-client';
 
 interface Question {
   id: number;
@@ -55,6 +56,8 @@ export default function ActualInterviewPage() {
   const audioChunksRef = useRef<Blob[]>([]);
   const startTimeRef = useRef<number>(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const currentQuestionIndexRef = useRef<number>(0);  // Track current question for async callbacks
+  const sessionStateRef = useRef<SessionState | null>(null);  // Track session state for async callbacks
 
   const [sessionState, setSessionState] = useState<SessionState>({
     job: null,
@@ -62,6 +65,12 @@ export default function ActualInterviewPage() {
     currentQuestionIndex: 0,
     responses: new Map(),
   });
+  
+  // Keep refs in sync with state for use in async callbacks
+  useEffect(() => {
+    sessionStateRef.current = sessionState;
+    currentQuestionIndexRef.current = sessionState.currentQuestionIndex;
+  }, [sessionState]);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isRecording, setIsRecording] = useState(false);
@@ -69,11 +78,25 @@ export default function ActualInterviewPage() {
   const [audioLevel, setAudioLevel] = useState(0);
   const [recordingTime, setRecordingTime] = useState(0);
   const [hasMediaPermission, setHasMediaPermission] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(false);
-  const [responseMode, setResponseMode] = useState<'text' | 'voice'>('text');
-  const [textAnswer, setTextAnswer] = useState('');
+  const [isTranscribing, setIsTranscribing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [interviewStarted, setInterviewStarted] = useState(false);  // Track if user has entered fullscreen and started
+  const [interviewTerminated, setInterviewTerminated] = useState(false);  // Track if interview was force-terminated
+  const interviewContainerRef = useRef<HTMLDivElement>(null);
+  const hasAutoSubmittedRef = useRef(false);  // Prevent multiple auto-submits
+  
+  // Proctoring state - local camera stream (not from store since no setup page)
+  const [localCameraStream, setLocalCameraStream] = useState<MediaStream | null>(null);
+  const [isVideoReady, setIsVideoReady] = useState(false);  // Track when video is ready for capture
+  const { cheatingDetected, setCheatingDetected } = useCameraStore();
+  const [isProctoringActive, setIsProctoringActive] = useState(false);
+  const hiddenVideoRef = useRef<HTMLVideoElement>(null);
+  const hiddenCanvasRef = useRef<HTMLCanvasElement>(null);
+  const proctoringDoneRef = useRef(false);  // Track if cheating already detected
 
   // Load interview questions on mount
   useEffect(() => {
@@ -133,8 +156,241 @@ export default function ActualInterviewPage() {
     if (token) {
       loadInterview();
       requestMediaPermission();
+      requestCameraPermission();
     }
   }, [token]);
+
+  // Request camera permission for proctoring
+  const requestCameraPermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 640 }, height: { ideal: 480 } } 
+      });
+      console.log('📷 Camera permission granted, stream active:', stream.active);
+      console.log('📷 Video tracks:', stream.getVideoTracks().map(t => ({ label: t.label, enabled: t.enabled, readyState: t.readyState })));
+      setLocalCameraStream(stream);
+      setHasCameraPermission(true);
+    } catch (error) {
+      console.error('Camera permission denied:', error);
+      setHasCameraPermission(false);
+      toast({
+        title: 'Camera Required',
+        description: 'Camera access is required for proctoring during the interview. Please allow camera access and try again.',
+        variant: 'destructive',
+      });
+      // Redirect to home after a short delay
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
+    }
+  };
+
+  // Initialize hidden video for proctoring with camera stream
+  // This needs to run whenever localCameraStream changes OR when loading completes (so video element exists)
+  useEffect(() => {
+    // Only try to connect when we have a stream AND we're not loading (so video element exists)
+    if (!localCameraStream || isLoading) {
+      console.log('📹 Skipping video connection:', { hasStream: !!localCameraStream, isLoading });
+      return;
+    }
+    
+    if (!hiddenVideoRef.current) {
+      console.log('📹 Video ref not available yet, will retry...');
+      // Retry after a short delay to allow DOM to update
+      const retryTimeout = setTimeout(() => {
+        if (hiddenVideoRef.current && localCameraStream) {
+          setupVideoElement(hiddenVideoRef.current, localCameraStream);
+        }
+      }, 100);
+      return () => clearTimeout(retryTimeout);
+    }
+    
+    setupVideoElement(hiddenVideoRef.current, localCameraStream);
+  }, [localCameraStream, isLoading]);
+  
+  // Helper function to set up video element
+  const setupVideoElement = (video: HTMLVideoElement, stream: MediaStream) => {
+    console.log('📹 Connecting stream to video element...');
+    
+    // Reset video ready state
+    setIsVideoReady(false);
+    
+    // Set up event handlers BEFORE setting srcObject
+    video.onloadedmetadata = () => {
+      console.log(`📹 Video metadata loaded: ${video.videoWidth}x${video.videoHeight}`);
+    };
+    
+    video.onloadeddata = () => {
+      console.log(`📹 Video data loaded, readyState: ${video.readyState}`);
+    };
+    
+    video.oncanplay = () => {
+      console.log(`📹 Video can play, dimensions: ${video.videoWidth}x${video.videoHeight}`);
+      setIsVideoReady(true);
+    };
+    
+    video.onerror = (e) => {
+      console.error('❌ Video error:', e);
+    };
+    
+    // Now connect the stream
+    video.srcObject = stream;
+    
+    // Try to play
+    video.play()
+      .then(() => console.log('▶️ Video playing'))
+      .catch(err => console.error('❌ Video play failed:', err));
+  };
+
+  // Fullscreen management
+  const enterFullscreen = async () => {
+    try {
+      if (interviewContainerRef.current && document.fullscreenElement === null) {
+        await interviewContainerRef.current.requestFullscreen();
+        setIsFullscreen(true);
+        console.log('🖥️ Entered fullscreen mode');
+      }
+    } catch (error) {
+      console.warn('Fullscreen not supported or denied:', error);
+    }
+  };
+
+  // Enter fullscreen when interview loads successfully
+  useEffect(() => {
+    if (!isLoading && sessionState.questions.length > 0 && hasCameraPermission && hasMediaPermission) {
+      // Short delay to ensure DOM is ready
+      const timeout = setTimeout(() => {
+        enterFullscreen();
+      }, 500);
+      return () => clearTimeout(timeout);
+    }
+  }, [isLoading, sessionState.questions.length, hasCameraPermission, hasMediaPermission]);
+
+  // Handle fullscreen change events - AUTO SUBMIT if user exits after starting
+  useEffect(() => {
+    const handleFullscreenChange = async () => {
+      const isNowFullscreen = document.fullscreenElement !== null;
+      setIsFullscreen(isNowFullscreen);
+      
+      // If user entered fullscreen for the first time, mark interview as started
+      if (isNowFullscreen && !interviewStarted && sessionState.questions.length > 0) {
+        console.log('🎬 Interview officially started - fullscreen entered');
+        setInterviewStarted(true);
+      }
+      
+      // If user exits fullscreen AFTER interview started, auto-submit immediately
+      if (!isNowFullscreen && interviewStarted && !hasAutoSubmittedRef.current) {
+        console.log('🚨 User exited fullscreen after interview started - AUTO SUBMITTING');
+        hasAutoSubmittedRef.current = true;
+        await forceSubmitInterview('fullscreen_exit');
+      }
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, [sessionState.questions.length, interviewStarted]);
+
+  // Handle tab visibility change - AUTO SUBMIT if user switches tabs after starting
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.hidden && interviewStarted && !hasAutoSubmittedRef.current) {
+        console.log('🚨 User switched tabs after interview started - AUTO SUBMITTING');
+        hasAutoSubmittedRef.current = true;
+        await forceSubmitInterview('tab_switch');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [interviewStarted]);
+
+  // Run proctoring when question changes AND video is ready
+  useEffect(() => {
+    const runProctoring = async () => {
+      // Skip if already done proctoring (cheating detected) or video not ready
+      if (proctoringDoneRef.current || !isVideoReady || !hiddenVideoRef.current || !hiddenCanvasRef.current) {
+        console.log('Proctoring skipped:', { 
+          done: proctoringDoneRef.current, 
+          videoReady: isVideoReady, 
+          video: !!hiddenVideoRef.current,
+          canvas: !!hiddenCanvasRef.current 
+        });
+        return;
+      }
+
+      const currentQuestion = sessionState.questions[sessionState.currentQuestionIndex];
+      if (!currentQuestion) return;
+
+      const video = hiddenVideoRef.current;
+      
+      // Video should already be ready, but double check
+      console.log(`📹 Video state: readyState: ${video.readyState}, dimensions: ${video.videoWidth}x${video.videoHeight}`);
+      
+      if (video.videoWidth === 0 || video.videoHeight === 0) {
+        console.error('❌ Video dimensions are 0, cannot capture');
+        return;
+      }
+      
+      // Small delay to ensure frame is rendered
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log(`✅ Video ready: ${video.videoWidth}x${video.videoHeight}, readyState: ${video.readyState}`);
+
+      setIsProctoringActive(true);
+      const images: string[] = [];
+      const canvas = hiddenCanvasRef.current;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) return;
+      
+      console.log(`📸 Capturing frames: video ${video.videoWidth}x${video.videoHeight}`);
+
+      // Capture 5 frames at 1-second intervals
+      for (let i = 0; i < 5; i++) {
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const frame = canvas.toDataURL('image/jpeg', 0.8);
+        images.push(frame);
+        console.log(`📸 Frame ${i + 1} captured, size: ${frame.length} bytes`);
+        
+        if (i < 4) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      // Send to backend for analysis
+      try {
+        const response = await backendClient.analyzeProctoring(token, images, currentQuestion.id);
+        
+        if (response.success && response.data?.cheating_detected) {
+          proctoringDoneRef.current = true;  // Stop future proctoring
+          setCheatingDetected(true, {
+            questionId: currentQuestion.id,
+            reason: response.data.reason,
+            confidence: response.data.confidence,
+            evidenceType: response.data.evidence_type,
+          });
+          
+          toast({
+            title: 'Warning',
+            description: 'Suspicious activity detected. This will be reviewed.',
+            variant: 'destructive',
+          });
+        }
+      } catch (error) {
+        console.error('Proctoring analysis error:', error);
+      } finally {
+        setIsProctoringActive(false);
+      }
+    };
+
+    // Only run proctoring when video is actually ready
+    if (!isLoading && sessionState.questions.length > 0 && isVideoReady) {
+      console.log('🎬 Starting proctoring - video is ready');
+      runProctoring();
+    }
+  }, [sessionState.currentQuestionIndex, isLoading, sessionState.questions.length, isVideoReady, token]);
 
   // Request microphone permission
   const requestMediaPermission = async () => {
@@ -186,46 +442,73 @@ export default function ActualInterviewPage() {
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType || 'audio/webm' });
         const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
 
-        const currentQuestion = sessionState.questions[sessionState.currentQuestionIndex];
-        if (currentQuestion) {
+        // Use ref to get current question (avoids stale closure)
+        const currentState = sessionStateRef.current;
+        const currentQuestion = currentState?.questions[currentQuestionIndexRef.current];
+        
+        console.log('📼 Recording stopped, processing...');
+        console.log(`   Question: ${currentQuestion?.id}, Duration: ${duration}s, Blob size: ${audioBlob.size} bytes`);
+        
+        if (currentQuestion && audioBlob.size > 0) {
+          // Show transcribing state
+          setIsTranscribing(true);
+          
           toast({
-            title: 'Processing...',
-            description: 'Transcribing your answer...',
+            title: 'Transcribing...',
+            description: 'Your answer is being processed by AI. Please wait.',
             variant: 'default'
           });
 
           try {
-            const formData = new FormData();
-            formData.append('audio', audioBlob, 'recording.webm');
-
-            const response = await fetch('http://localhost:8000/api/v1/practice/transcribe', {
-              method: 'POST',
-              body: formData,
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-              }
-            });
+            console.log('📤 Sending audio to Gemini for transcription...');
+            // Use the new Gemini-based transcription endpoint
+            const response = await backendClient.transcribeAudio(token, audioBlob);
+            console.log('📥 Transcription response:', response);
 
             let transcript = 'Recording saved (transcription pending)';
-            if (response.ok) {
-              const data = await response.json();
-              transcript = data.transcript || transcript;
+            if (response.success && response.data?.transcript) {
+              transcript = response.data.transcript;
             }
 
+            // Save to local state using the question ID from ref
+            const questionId = currentQuestion.id;
             setSessionState(prev => ({
               ...prev,
-              responses: new Map(prev.responses).set(currentQuestion.id, {
+              responses: new Map(prev.responses).set(questionId, {
                 content: transcript,
                 duration,
                 type: 'phone'
               })
             }));
 
+            // Also save to backend
+            await fetch(`http://localhost:8000/api/v1/interviews/${token}/save-answer/${questionId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ answer_text: transcript, duration }),
+            });
+
             toast({
-              title: 'Answer Recorded',
-              description: 'Your response has been transcribed.',
+              title: 'Answer Saved!',
+              description: 'Your response has been transcribed and saved successfully.',
               variant: 'default'
             });
+            
+            // Auto-advance to next question if not last
+            // Use ref to get current index to avoid stale closure
+            const currentIdx = currentQuestionIndexRef.current;
+            const totalQuestions = sessionStateRef.current?.questions.length || 0;
+            
+            if (currentIdx < totalQuestions - 1) {
+              setTimeout(() => {
+                setSessionState(prev => ({ 
+                  ...prev, 
+                  currentQuestionIndex: prev.currentQuestionIndex + 1 
+                }));
+                setRecordingTime(0);
+                setAudioLevel(0);
+              }, 1500);
+            }
           } catch (error) {
             console.error('Transcription error:', error);
             setSessionState(prev => ({
@@ -236,6 +519,14 @@ export default function ActualInterviewPage() {
                 type: 'phone'
               })
             }));
+            
+            toast({
+              title: 'Transcription Failed',
+              description: 'Could not transcribe audio. Your recording was saved.',
+              variant: 'destructive'
+            });
+          } finally {
+            setIsTranscribing(false);
           }
         }
 
@@ -278,62 +569,78 @@ export default function ActualInterviewPage() {
     }
   };
 
-  // Save text answer
-  const saveTextAnswer = async () => {
-    if (!textAnswer.trim()) {
-      toast({
-        title: 'Empty Answer',
-        description: 'Please type your answer before saving.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const currentQuestion = sessionState.questions[sessionState.currentQuestionIndex];
-    if (!currentQuestion) return;
-
-    // Save to backend using new save-answer endpoint
+  // Force submit interview (when user violates proctoring rules)
+  const forceSubmitInterview = async (reason: 'fullscreen_exit' | 'tab_switch') => {
+    console.log(`🚨 Force submitting interview due to: ${reason}`);
+    setInterviewTerminated(true);
+    setIsSubmitting(true);
+    
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/interviews/${token}/save-answer/${currentQuestion.id}`, {
+      // Exit fullscreen if still in it
+      if (document.fullscreenElement) {
+        await document.exitFullscreen().catch(() => {});
+      }
+
+      // Submit whatever answers we have
+      const result = await fetch(`http://localhost:8000/api/v1/interviews/${token}/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          answer_text: textAnswer.trim(),
-          duration: 0
-        }),
+          force_submit: true,
+          termination_reason: reason
+        })
       });
 
-      if (response.ok) {
-        setSessionState(prev => ({
-          ...prev,
-          responses: new Map(prev.responses).set(currentQuestion.id, {
-            content: textAnswer.trim(),
-            type: 'text'
-          })
-        }));
+      const data = await result.json();
 
+      if (result.ok && data.success) {
         toast({
-          title: 'Answer Saved',
-          description: 'Your answer has been saved.',
-          variant: 'default',
+          title: 'Interview Terminated',
+          description: reason === 'fullscreen_exit' 
+            ? 'You exited fullscreen mode. Your interview has been automatically submitted.'
+            : 'You switched tabs during the interview. Your interview has been automatically submitted.',
+          variant: 'destructive'
         });
       } else {
-        const data = await response.json();
-        throw new Error(data.detail || 'Failed to save answer');
+        // Even if submit fails, mark as terminated
+        toast({
+          title: 'Interview Terminated',
+          description: 'Your interview session has ended due to a policy violation.',
+          variant: 'destructive'
+        });
       }
-    } catch (error: any) {
+    } catch (error) {
+      console.error('Force submit error:', error);
       toast({
-        title: 'Save Failed',
-        description: error.message || 'Failed to save answer.',
-        variant: 'destructive',
+        title: 'Interview Terminated',
+        description: 'Your interview session has ended.',
+        variant: 'destructive'
       });
+    } finally {
+      setIsSubmitting(false);
+      // Redirect after showing message
+      setTimeout(() => {
+        router.push('/applicant/dashboard');
+      }, 3000);
     }
   };
 
   // Submit all answers
   const submitAllAnswers = async () => {
+    // Check if ALL questions are answered
+    const unansweredCount = sessionState.questions.filter(q => !sessionState.responses.has(q.id)).length;
+    
+    if (unansweredCount > 0) {
+      toast({
+        title: 'Incomplete Interview',
+        description: `Please answer all questions before submitting. You have ${unansweredCount} unanswered question(s).`,
+        variant: 'destructive'
+      });
+      return;
+    }
+
     if (!sessionState.job || sessionState.responses.size === 0) {
       toast({
         title: 'No Answers',
@@ -358,11 +665,23 @@ export default function ActualInterviewPage() {
 
       if (result.ok && data.success) {
         const responseData = data.data;
+        
+        // Show cheating warning if detected
+        let description = `AI evaluation complete. Score: ${responseData.overallScore || 'Processing'}`;
+        if (responseData.cheatingDetected) {
+          description += ' (Penalty applied for suspicious activity)';
+        }
+        
         toast({
           title: 'Interview Submitted!',
-          description: `AI evaluation complete. Score: ${responseData.overallScore || 'Processing'}`,
+          description,
           variant: 'default'
         });
+
+        // Exit fullscreen before redirecting
+        if (document.fullscreenElement) {
+          await document.exitFullscreen().catch(() => {});
+        }
 
         setTimeout(() => {
           router.push('/applicant/dashboard');
@@ -430,22 +749,29 @@ export default function ActualInterviewPage() {
     setIsSpeaking(false);
   };
 
-  // Navigation
+  // Navigation - restrict forward navigation to only answered questions
   const navigateToQuestion = (index: number) => {
     if (!sessionState.job || sessionState.questions.length === 0) return;
     if (index >= 0 && index < sessionState.questions.length) {
+      // Only allow going back or to the next unanswered question
+      // Check if trying to go forward beyond answered questions
+      if (index > sessionState.currentQuestionIndex) {
+        // Check if current question is answered before allowing forward navigation
+        const currentQuestion = sessionState.questions[sessionState.currentQuestionIndex];
+        if (currentQuestion && !sessionState.responses.has(currentQuestion.id)) {
+          toast({
+            title: 'Answer Required',
+            description: 'Please answer the current question before moving to the next one.',
+            variant: 'destructive'
+          });
+          return;
+        }
+      }
+      
       stopSpeaking();
       setSessionState(prev => ({ ...prev, currentQuestionIndex: index }));
       setRecordingTime(0);
       setAudioLevel(0);
-
-      const questionId = sessionState.questions[index]?.id;
-      const existingResponse = sessionState.responses.get(questionId);
-      if (existingResponse?.content) {
-        setTextAnswer(existingResponse.content);
-      } else {
-        setTextAnswer('');
-      }
 
       if (autoSpeak) {
         setTimeout(() => {
@@ -496,16 +822,119 @@ export default function ActualInterviewPage() {
 
   const currentQuestion = sessionState.questions[sessionState.currentQuestionIndex];
   const hasResponse = sessionState.responses.has(currentQuestion?.id || 0);
+  
+  // Check if all questions are answered
+  const allQuestionsAnswered = sessionState.questions.every(q => sessionState.responses.has(q.id));
 
   return (
-    <div className="min-h-screen bg-[#0F0F0F] text-white">
+    <div ref={interviewContainerRef} className="min-h-screen bg-[#0F0F0F] text-white">
+      {/* Hidden video and canvas for proctoring - NOT VISIBLE TO USER */}
+      <video
+        ref={hiddenVideoRef}
+        autoPlay
+        playsInline
+        muted
+        width={640}
+        height={480}
+        style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, pointerEvents: 'none' }}
+      />
+      <canvas
+        ref={hiddenCanvasRef}
+        width={640}
+        height={480}
+        style={{ position: 'absolute', left: '-9999px', top: '-9999px', opacity: 0, pointerEvents: 'none' }}
+      />
+
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none -z-10">
         <div className="absolute inset-0 bg-gradient-to-b from-blue-950/20 via-transparent to-transparent" />
       </div>
 
+      {/* Fullscreen Warning Banner - Show when NOT in fullscreen */}
+      {!isFullscreen && sessionState.questions.length > 0 && !interviewTerminated && (
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center">
+          <Card className="bg-white/5 backdrop-blur-xl border-white/10 max-w-lg mx-4">
+            <CardContent className="p-8 text-center">
+              <div className="w-20 h-20 bg-yellow-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle className="w-10 h-10 text-yellow-500" />
+              </div>
+              <h2 className="text-2xl font-bold mb-4">Fullscreen Required</h2>
+              <p className="text-gray-400 mb-6">
+                {interviewStarted 
+                  ? "⚠️ You exited fullscreen mode. The interview will be submitted automatically."
+                  : "To maintain interview integrity, you must enter fullscreen mode to view and answer questions. Exiting fullscreen or switching tabs will automatically submit your interview."}
+              </p>
+              {!interviewStarted && (
+                <>
+                  <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6 text-left">
+                    <h3 className="text-red-400 font-semibold mb-2">⚠️ Important Rules:</h3>
+                    <ul className="text-sm text-gray-300 space-y-1">
+                      <li>• Do NOT exit fullscreen during the interview</li>
+                      <li>• Do NOT switch tabs or windows</li>
+                      <li>• Violations will auto-submit your interview</li>
+                      <li>• You cannot re-attempt after termination</li>
+                    </ul>
+                  </div>
+                  <Button
+                    onClick={enterFullscreen}
+                    className="bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white px-8 py-3 text-lg"
+                  >
+                    Enter Fullscreen & Start Interview
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Interview Terminated Screen */}
+      {interviewTerminated && (
+        <div className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center">
+          <Card className="bg-white/5 backdrop-blur-xl border-white/10 max-w-lg mx-4">
+            <CardContent className="p-8 text-center">
+              <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <AlertCircle className="w-10 h-10 text-red-500" />
+              </div>
+              <h2 className="text-2xl font-bold mb-4 text-red-400">Interview Terminated</h2>
+              <p className="text-gray-400 mb-6">
+                Your interview has been automatically submitted due to a policy violation. 
+                You cannot re-attempt this interview.
+              </p>
+              <p className="text-sm text-gray-500">Redirecting to dashboard...</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Cheating Warning Banner */}
+      {cheatingDetected && (
+        <div className={`fixed ${!isFullscreen ? 'top-12' : 'top-0'} left-0 right-0 z-50 bg-red-600/90 backdrop-blur-sm py-3 px-4`}>
+          <div className="container mx-auto flex items-center justify-center gap-2 text-white">
+            <AlertCircle className="w-5 h-5" />
+            <span className="font-medium">Warning: Suspicious activity detected. This will be reviewed by the hiring team.</span>
+          </div>
+        </div>
+      )}
+
+      {/* Proctoring Active Indicator (small, subtle) */}
+      {isProctoringActive && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 text-xs text-gray-400">
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+          <span>Verifying...</span>
+        </div>
+      )}
+
+      {/* Fullscreen Indicator */}
+      {isFullscreen && (
+        <div className="fixed top-4 left-4 z-50 flex items-center gap-2 text-xs text-gray-400">
+          <div className="w-2 h-2 bg-blue-500 rounded-full" />
+          <span>Fullscreen Mode</span>
+        </div>
+      )}
+
       {/* Navigation */}
-      <nav className="relative z-10 border-b border-white/10 bg-black/40 backdrop-blur-xl">
+      <nav className={`relative z-10 border-b border-white/10 bg-black/40 backdrop-blur-xl ${cheatingDetected ? 'mt-12' : ''}`}>
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <Link href="/applicant/dashboard" className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors">
@@ -647,46 +1076,30 @@ export default function ActualInterviewPage() {
         <Card className="bg-white/[0.02] backdrop-blur-xl border-white/10 mb-6 rounded-2xl overflow-hidden shadow-2xl">
           <CardContent className="p-6">
             <div className="space-y-5">
-              {/* Response Mode Tabs - Hide for multiple choice questions */}
-              {currentQuestion?.type !== 'MULTIPLE_CHOICE' && (
-                <div className="flex items-center gap-3 p-1 bg-white/5 rounded-xl border border-white/10">
-                  <Button
-                    onClick={() => setResponseMode('text')}
-                    variant="ghost"
-                    className={`flex-1 transition-all rounded-lg ${
-                      responseMode === 'text'
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-                        : 'bg-transparent hover:bg-white/5 text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    <MessageSquare className="w-4 h-4 mr-2" />
-                    <span className="font-medium">Type Answer</span>
-                  </Button>
-                  <Button
-                    onClick={() => setResponseMode('voice')}
-                    variant="ghost"
-                    className={`flex-1 transition-all rounded-lg ${
-                      responseMode === 'voice'
-                        ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg'
-                        : 'bg-transparent hover:bg-white/5 text-gray-400 hover:text-white'
-                    }`}
-                  >
-                    <Mic className="w-4 h-4 mr-2" />
-                    <span className="font-medium">Record Answer</span>
-                  </Button>
+              {/* Voice Recording Info Banner */}
+              {currentQuestion?.type !== 'MULTIPLE_CHOICE' && !hasResponse && (
+                <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Mic className="w-5 h-5 text-blue-400" />
+                    <div>
+                      <p className="font-medium text-blue-300">Voice Recording Only</p>
+                      <p className="text-sm text-gray-400">Record your answer using the microphone. Your response will be transcribed by AI.</p>
+                    </div>
+                  </div>
                 </div>
               )}
 
-              {/* Saved Answer Display */}
+              {/* Saved Answer Display (Read-only) */}
               {hasResponse && sessionState.responses.get(currentQuestion?.id || 0)?.content && (
                 <div className="p-5 bg-green-500/5 border border-green-500/20 rounded-xl">
                   <div className="flex items-start gap-3">
                     <CheckCircle className="w-5 h-5 text-green-400 mt-0.5 flex-shrink-0" />
                     <div className="flex-1">
-                      <p className="font-semibold text-green-400 mb-2 text-sm">Your Saved Answer</p>
+                      <p className="font-semibold text-green-400 mb-2 text-sm">Your Saved Answer (Read-only)</p>
                       <p className="text-gray-200 whitespace-pre-wrap leading-relaxed">
                         {sessionState.responses.get(currentQuestion?.id || 0)?.content}
                       </p>
+                      <p className="text-xs text-gray-500 mt-2">To change your answer, record a new response below.</p>
                     </div>
                   </div>
                 </div>
@@ -727,10 +1140,11 @@ export default function ActualInterviewPage() {
                           } else {
                             throw new Error('Failed to save answer');
                           }
-                        } catch (error: any) {
+                        } catch (error: unknown) {
+                          const errorMessage = error instanceof Error ? error.message : 'Failed to save answer.';
                           toast({
                             title: 'Save Failed',
-                            description: error.message || 'Failed to save answer.',
+                            description: errorMessage,
                             variant: 'destructive',
                           });
                         }
@@ -748,37 +1162,8 @@ export default function ActualInterviewPage() {
                 </div>
               )}
 
-              {/* Text Input Mode - Only show for non-multiple-choice questions */}
-              {currentQuestion?.type !== 'MULTIPLE_CHOICE' && responseMode === 'text' && !hasResponse && (
-                <div className="space-y-4">
-                  <textarea
-                    value={textAnswer}
-                    onChange={(e) => setTextAnswer(e.target.value)}
-                    placeholder="Type your answer here..."
-                    className="w-full h-48 px-4 py-4 bg-white/5 border border-white/10 rounded-xl
-                             focus:border-blue-500/50 focus:bg-white/[0.07] focus:outline-none focus:ring-2 focus:ring-blue-500/20
-                             text-white placeholder-gray-500 transition-all resize-none text-base leading-relaxed"
-                  />
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-400 font-medium">{textAnswer.length} characters</span>
-                    <span className="text-gray-500">Minimum 50 characters recommended</span>
-                  </div>
-                  <Button
-                    onClick={saveTextAnswer}
-                    size="lg"
-                    disabled={!textAnswer.trim()}
-                    className="w-full h-12 rounded-xl font-semibold transition-all
-                             bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800
-                             text-white shadow-lg shadow-blue-500/20 disabled:opacity-50"
-                  >
-                    <CheckCircle className="w-5 h-5 mr-2" />
-                    Save Answer
-                  </Button>
-                </div>
-              )}
-
-              {/* Voice Recording Mode - Only show for non-multiple-choice questions */}
-              {currentQuestion?.type !== 'MULTIPLE_CHOICE' && responseMode === 'voice' && (
+              {/* Voice Recording Mode - ONLY option for non-multiple-choice questions */}
+              {currentQuestion?.type !== 'MULTIPLE_CHOICE' && (
                 <div className="text-center space-y-4">
                   {!hasMediaPermission && (
                     <Alert className="mb-4 bg-orange-500/10 border-orange-500/30">
@@ -789,7 +1174,21 @@ export default function ActualInterviewPage() {
                     </Alert>
                   )}
 
-                  {isRecording && (
+                  {/* Transcribing State */}
+                  {isTranscribing && (
+                    <div className="p-6 bg-blue-500/10 border border-blue-500/30 rounded-xl">
+                      <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="w-10 h-10 animate-spin text-blue-400" />
+                        <div>
+                          <p className="text-blue-300 font-semibold text-lg">Transcribing with Gemini AI...</p>
+                          <p className="text-gray-400 text-sm mt-1">Converting your speech to text. Please wait.</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recording Visualization */}
+                  {isRecording && !isTranscribing && (
                     <div className="flex items-center justify-center gap-1 h-12">
                       {[...Array(20)].map((_, i) => (
                         <motion.div
@@ -802,7 +1201,10 @@ export default function ActualInterviewPage() {
                     </div>
                   )}
 
-                  <div className="text-3xl font-mono">{formatTime(recordingTime)}</div>
+                  {/* Timer - only show when recording or not yet answered */}
+                  {!isTranscribing && !hasResponse && (
+                    <div className="text-3xl font-mono">{formatTime(recordingTime)}</div>
+                  )}
 
                   <div className="flex items-center justify-center gap-4">
                     {!hasMediaPermission ? (
@@ -814,11 +1216,20 @@ export default function ActualInterviewPage() {
                         <AlertCircle className="w-5 h-5 mr-2" />
                         Enable Microphone
                       </Button>
+                    ) : isTranscribing ? (
+                      <Button
+                        size="lg"
+                        disabled
+                        className="bg-blue-600/50 cursor-wait"
+                      >
+                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                        Transcribing...
+                      </Button>
                     ) : !isRecording ? (
                       <Button
                         onClick={startRecording}
                         size="lg"
-                        disabled={hasResponse}
+                        disabled={hasResponse || isTranscribing}
                         className={`${
                           hasResponse
                             ? 'bg-gray-600 cursor-not-allowed opacity-50'
@@ -828,7 +1239,7 @@ export default function ActualInterviewPage() {
                         {hasResponse ? (
                           <>
                             <CheckCircle className="w-5 h-5 mr-2" />
-                            Already Recorded
+                            Answer Saved
                           </>
                         ) : (
                           <>
@@ -849,20 +1260,54 @@ export default function ActualInterviewPage() {
                       </Button>
                     )}
                   </div>
+
+                  {/* Re-record option if already answered */}
+                  {hasResponse && !isRecording && !isTranscribing && (
+                    <div className="pt-4">
+                      <Button
+                        onClick={() => {
+                          // Clear the saved response to allow re-recording
+                          const currentQuestion = sessionState.questions[sessionState.currentQuestionIndex];
+                          if (currentQuestion) {
+                            const newResponses = new Map(sessionState.responses);
+                            newResponses.delete(currentQuestion.id);
+                            setSessionState(prev => ({
+                              ...prev,
+                              responses: newResponses
+                            }));
+                          }
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="text-orange-400 border-orange-400/50 hover:bg-orange-500/10"
+                      >
+                        <Mic className="w-4 h-4 mr-2" />
+                        Re-record Answer
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
 
               {/* Submit All Button */}
-              {sessionState.responses.size > 0 && !isRecording && (
+              {!isRecording && (
                 <div className="pt-4 border-t border-white/10">
                   <p className="text-sm text-gray-400 mb-3">
                     {sessionState.responses.size} of {sessionState.questions.length} questions answered
+                    {!allQuestionsAnswered && (
+                      <span className="text-yellow-400 ml-2">• Answer all questions to submit</span>
+                    )}
                   </p>
                   <Button
                     onClick={submitAllAnswers}
                     size="lg"
-                    disabled={isSubmitting}
-                    className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:opacity-90 transition-all"
+                    disabled={isSubmitting || !allQuestionsAnswered}
+                    title={!allQuestionsAnswered ? 'Answer all questions before submitting' : ''}
+                    className={`w-full transition-all ${
+                      allQuestionsAnswered 
+                        ? 'bg-gradient-to-r from-green-600 to-emerald-600 hover:opacity-90' 
+                        : 'bg-gray-600 cursor-not-allowed'
+                    }`}
                   >
                     {isSubmitting ? (
                       <>
@@ -872,7 +1317,7 @@ export default function ActualInterviewPage() {
                     ) : (
                       <>
                         <Send className="w-5 h-5 mr-2" />
-                        Submit Interview for AI Evaluation
+                        {allQuestionsAnswered ? 'Submit Interview for AI Evaluation' : `Answer ${sessionState.questions.length - sessionState.responses.size} More Question(s)`}
                       </>
                     )}
                   </Button>

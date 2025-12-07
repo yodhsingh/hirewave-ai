@@ -87,6 +87,25 @@ async def get_candidate(
                 "confidence_level": cs.confidence_level or 0,
             }
 
+        # Process cheating evidence - handle both old string format and new dict format
+        processed_evidence = None
+        raw_evidence = cs.cheating_evidence if hasattr(cs, 'cheating_evidence') else None
+        if raw_evidence:
+            processed_evidence = []
+            for item in raw_evidence:
+                if isinstance(item, dict):
+                    # Already in proper format
+                    processed_evidence.append(item)
+                elif isinstance(item, str):
+                    # Convert old string format to new format
+                    processed_evidence.append({
+                        "timestamp": datetime.utcnow().isoformat(),
+                        "question_id": None,
+                        "confidence": 1.0,
+                        "reason": item,
+                        "evidence_type": "legacy"
+                    })
+
         score = Score(
             overall=cs.overall_score,
             ai_score=cs.ai_score,
@@ -97,6 +116,10 @@ async def get_candidate(
             ai_insights=ai_insights,
             skills_extracted=cs.skills_extracted or [],
             competency_ranking=cs.competency_ranking,
+            # Proctoring/Cheating info
+            cheating_detected=cs.cheating_detected if hasattr(cs, 'cheating_detected') else False,
+            cheating_evidence=processed_evidence,
+            proctoring_score_penalty=cs.proctoring_score_penalty if hasattr(cs, 'proctoring_score_penalty') else 0.0,
         )
 
     # Build responses array

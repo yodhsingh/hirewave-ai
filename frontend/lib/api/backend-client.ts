@@ -410,9 +410,39 @@ class BackendApiClient {
       message: string;
       candidate_id: string;
       submitted_at: string;
+      cheatingDetected?: boolean;
+      penaltyApplied?: number;
     }>(`/interviews/${token}/submit`, {
       method: 'POST',
       body: JSON.stringify({ responses }),
+    });
+  }
+
+  // Proctoring - Analyze images for cheating detection
+  async analyzeProctoring(token: string, images: string[], questionId?: number) {
+    return this.request<{
+      cheating_detected: boolean;
+      confidence: number;
+      reason: string;
+      evidence_type: string;
+    }>(`/interviews/${token}/analyze-proctoring`, {
+      method: 'POST',
+      body: JSON.stringify({ images, question_id: questionId }),
+    });
+  }
+
+  // Audio transcription using Gemini
+  async transcribeAudio(token: string, audioBlob: Blob) {
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.webm');
+
+    return this.request<{
+      transcript: string;
+      success: boolean;
+    }>(`/interviews/${token}/transcribe`, {
+      method: 'POST',
+      body: formData,
+      headers: {}, // Let browser set Content-Type with boundary
     });
   }
 

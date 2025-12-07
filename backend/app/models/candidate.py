@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import Column, String, Text, DateTime, Enum, ForeignKey, Integer, Float
+from sqlalchemy import Column, String, Text, DateTime, Enum, ForeignKey, Integer, Float, Boolean
 from sqlalchemy.dialects.postgresql import JSONB, ARRAY
 from sqlalchemy.orm import relationship
 from app.db.base import Base
@@ -102,6 +102,11 @@ class CandidateScore(Base):
     red_flags = Column(ARRAY(String), nullable=True)
     recommendations = Column(ARRAY(String), nullable=True)
     confidence_level = Column(Float, nullable=True)
+
+    # Proctoring/Cheating detection
+    cheating_detected = Column(Boolean, default=False, nullable=False)
+    cheating_evidence = Column(JSONB, nullable=True)  # Array of detection events with timestamps
+    proctoring_score_penalty = Column(Float, default=0.0, nullable=False)  # Percentage penalty to apply
 
     # Extracted skills
     skills_extracted = Column(JSONB, nullable=True)  # Array of skill objects
