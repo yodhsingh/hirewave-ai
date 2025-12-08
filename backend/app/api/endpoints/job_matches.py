@@ -20,6 +20,7 @@ from app.api.dependencies.auth import get_current_user
 from app.core.config import settings
 
 import google.generativeai as genai
+from app.core.gemini import configure_genai_with_rotation
 import json
 import logging
 
@@ -31,7 +32,6 @@ router = APIRouter(prefix="/job-matches", tags=["Job Matches"])
 class JobMatchResponse(BaseModel):
     job_id: int
     match_score: int
-    match_reasons: List[str] = []
     missing_skills: List[str] = []
     calculated_at: datetime
     needs_recalculation: bool = False
@@ -70,7 +70,7 @@ async def calculate_match_with_ai(
 ) -> dict:
     """Use AI to calculate match score between job and candidate profile"""
     try:
-        genai.configure(api_key=settings.GOOGLE_GEMINI_API_KEY)
+        configure_genai_with_rotation()
         model = genai.GenerativeModel(settings.GEMINI_MODEL)
 
         # Flatten skills from the JSONB structure

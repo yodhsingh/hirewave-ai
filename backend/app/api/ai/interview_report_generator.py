@@ -4,18 +4,18 @@ import json
 import time
 from dotenv import load_dotenv
 
+from app.core.gemini import configure_genai_with_rotation
+
 from pydantic import BaseModel, Field, validator
 from typing import List, Optional, Union, Literal
 from datetime import datetime
 
 load_dotenv()
 
-gemini_api_key = os.environ.get('GOOGLE_GEMINI_API_KEY')
-if not gemini_api_key:
-    raise ValueError("GOOGLE_GEMINI_API_KEY environment variable is not set")
-
-# Configure genai library
-genai.configure(api_key=gemini_api_key)
+try:
+    configure_genai_with_rotation()
+except ValueError as exc:
+    raise ValueError("GOOGLE_GEMINI_API_KEY environment variable is not set") from exc
 
 
 # PYDANTIC SCHEMAS FOR VALIDATION

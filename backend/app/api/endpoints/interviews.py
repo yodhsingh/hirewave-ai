@@ -23,6 +23,7 @@ from app.schemas.common import ApiResponse
 from app.services.storage import storage_service
 from app.tasks.interview_tasks import process_interview_submission
 from app.core.config import settings
+from app.core.gemini import configure_genai_with_rotation
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +32,14 @@ router = APIRouter(prefix="/interviews", tags=["Interviews"])
 
 def get_gemini_model():
     """Get or initialize the Gemini model"""
-    api_key = os.getenv("GOOGLE_GEMINI_API_KEY") or settings.GOOGLE_GEMINI_API_KEY
-    if not api_key:
+    try:
+        configure_genai_with_rotation()
+    except ValueError:
         logger.error("GOOGLE_GEMINI_API_KEY not found")
         raise HTTPException(
             status_code=500,
             detail="Gemini API key not configured"
         )
-    genai.configure(api_key=api_key)
     return genai.GenerativeModel(settings.GEMINI_MODEL)
 
 

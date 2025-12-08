@@ -8,12 +8,12 @@ from io import BytesIO
 from fastapi import UploadFile
 
 from app.core.config import settings
+from app.core.gemini import configure_genai_with_rotation
 
 
 # Function to load and configure API key
 def configure_genai():
-    api_key = settings.GOOGLE_GEMINI_API_KEY
-    genai.configure(api_key=api_key)
+    configure_genai_with_rotation()
 
 
 # Function to extract text from PDF
