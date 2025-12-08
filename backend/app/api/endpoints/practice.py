@@ -27,6 +27,7 @@ from app.models.practice_interview import (
     InterviewDifficulty
 )
 from app.core.config import settings
+from app.core.gemini import configure_genai_with_rotation
 from app.schemas.common import ApiResponse
 from app.schemas.practice import (
     PracticeSessionRequest,
@@ -63,14 +64,14 @@ router = APIRouter(prefix="/practice", tags=["practice"])
 # Configure Google Gemini (will be initialized when needed)
 def get_gemini_model():
     """Get or initialize the Gemini model"""
-    api_key = os.getenv("GOOGLE_GEMINI_API_KEY") or settings.GOOGLE_GEMINI_API_KEY
-    if not api_key:
+    try:
+        configure_genai_with_rotation()
+    except ValueError:
         logger.error("GOOGLE_GEMINI_API_KEY not found")
         raise HTTPException(
             status_code=500,
             detail="Gemini API key not configured. Please set GOOGLE_GEMINI_API_KEY in environment variables."
         )
-    genai.configure(api_key=api_key)
     return genai.GenerativeModel(settings.GEMINI_MODEL)
 
 

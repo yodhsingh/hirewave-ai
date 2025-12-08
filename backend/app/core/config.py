@@ -58,6 +58,7 @@ class Settings(BaseSettings):
 
     # Google Gemini AI (optional - only needed for resume parsing)
     GOOGLE_GEMINI_API_KEY: Optional[str] = None
+    GOOGLE_GEMINI_API_KEYS: Optional[str] = None  # Comma-separated for key rotation
     GEMINI_MODEL: str = "gemini-2.5-flash"
 
     # Email (optional - only needed for sending invitations)

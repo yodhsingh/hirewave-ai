@@ -15,6 +15,7 @@ from fastapi import UploadFile
 import tempfile
 
 from app.core.config import settings
+from app.core.gemini import configure_genai_with_rotation
 from app.schemas.interview import InterviewReportSchema
 
 
@@ -29,10 +30,10 @@ def configure_genai() -> None:
     Raises:
         ValueError: If GOOGLE_GEMINI_API_KEY is not configured
     """
-    if not settings.GOOGLE_GEMINI_API_KEY:
-        raise ValueError("GOOGLE_GEMINI_API_KEY is not configured in environment variables")
-    
-    genai.configure(api_key=settings.GOOGLE_GEMINI_API_KEY)
+    try:
+        configure_genai_with_rotation()
+    except ValueError as exc:
+        raise ValueError("GOOGLE_GEMINI_API_KEY is not configured in environment variables") from exc
 
 
 # =============================================================================

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
@@ -99,7 +99,198 @@ export default function ActualInterviewPage() {
   const hiddenCanvasRef = useRef<HTMLCanvasElement>(null);
   const proctoringDoneRef = useRef(false);  // Track if cheating already detected
 
-  // Load interview questions on mount
+  // Stop and release the camera stream when no longer needed
+  const stopCameraStream = useCallback(() => {
+    if (localCameraStream) {
+      localCameraStream.getTracks().forEach(track => track.stop());
+      setLocalCameraStream(null);
+      setIsVideoReady(false);
+      console.log('🛑 Camera stream stopped');
+    }
+
+    if (hiddenVideoRef.current) {
+      hiddenVideoRef.current.srcObject = null;
+    }
+  }, [localCameraStream]);
+
+  // Request microphone permission - wrap in useCallback
+  const requestMediaPermission = useCallback(async () => {
+    try {
+      console.log('🎤 Requesting microphone permission...');
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Media recording not supported in this browser');
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const analyser = audioContext.createAnalyser();
+      const microphone = audioContext.createMediaStreamSource(stream);
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      microphone.connect(analyser);
+
+      const checkAudioLevel = () => {
+        analyser.getByteFrequencyData(dataArray);
+        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+        setAudioLevel(average);
+        if (isRecording) {
+          requestAnimationFrame(checkAudioLevel);
+        }
+      };
+
+      let mimeType = 'audio/webm;codecs=opus';
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        mimeType = 'audio/webm';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          mimeType = '';
+        }
+      }
+
+      const mediaRecorderOptions = mimeType ? { mimeType } : undefined;
+      const mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstart = () => {
+        checkAudioLevel();
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType || 'audio/webm' });
+        const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
+
+        // Use ref to get current question (avoids stale closure)
+        const currentState = sessionStateRef.current;
+        const currentQuestion = currentState?.questions[currentQuestionIndexRef.current];
+        
+        console.log('📼 Recording stopped, processing...');
+        console.log(`   Question: ${currentQuestion?.id}, Duration: ${duration}s, Blob size: ${audioBlob.size} bytes`);
+        
+        if (currentQuestion && audioBlob.size > 0) {
+          // Show transcribing state
+          setIsTranscribing(true);
+          
+          toast({
+            title: 'Transcribing...',
+            description: 'Your answer is being processed by AI. Please wait.',
+            variant: 'default'
+          });
+
+          try {
+            console.log('📤 Sending audio to Gemini for transcription...');
+            // Use the new Gemini-based transcription endpoint
+            const response = await backendClient.transcribeAudio(token, audioBlob);
+            console.log('📥 Transcription response:', response);
+
+            let transcript = 'Recording saved (transcription pending)';
+            if (response.success && response.data?.transcript) {
+              transcript = response.data.transcript;
+            }
+
+            // Save to local state using the question ID from ref
+            const questionId = currentQuestion.id;
+            setSessionState(prev => ({
+              ...prev,
+              responses: new Map(prev.responses).set(questionId, {
+                content: transcript,
+                duration,
+                type: 'phone'
+              })
+            }));
+
+            // Also save to backend
+            await fetch(`http://localhost:8000/api/v1/interviews/${token}/save-answer/${questionId}`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ answer_text: transcript, duration }),
+            });
+
+            toast({
+              title: 'Answer Saved!',
+              description: 'Your response has been transcribed and saved successfully.',
+              variant: 'default'
+            });
+            
+            // Auto-advance to next question if not last
+            // Use ref to get current index to avoid stale closure
+            const currentIdx = currentQuestionIndexRef.current;
+            const totalQuestions = sessionStateRef.current?.questions.length || 0;
+            
+            if (currentIdx < totalQuestions - 1) {
+              setTimeout(() => {
+                setSessionState(prev => ({ 
+                  ...prev, 
+                  currentQuestionIndex: prev.currentQuestionIndex + 1 
+                }));
+                setRecordingTime(0);
+                setAudioLevel(0);
+              }, 1500);
+            }
+          } catch (error) {
+            console.error('Transcription error:', error);
+            setSessionState(prev => ({
+              ...prev,
+              responses: new Map(prev.responses).set(currentQuestion.id, {
+                content: 'Audio recording saved',
+                duration,
+                type: 'phone'
+              })
+            }));
+            
+            toast({
+              title: 'Transcription Failed',
+              description: 'Could not transcribe audio. Your recording was saved.',
+              variant: 'destructive'
+            });
+          } finally {
+            setIsTranscribing(false);
+          }
+        }
+
+        audioChunksRef.current = [];
+      };
+
+      mediaRecorderRef.current = mediaRecorder;
+      setHasMediaPermission(true);
+      console.log('🎤 Microphone permission granted');
+    } catch (error) {
+      console.error('❌ Failed to get microphone permission:', error);
+      setHasMediaPermission(false);
+    }
+  }, [token, toast]);
+
+  // Request camera permission for proctoring
+  const requestCameraPermission = useCallback(async () => {
+    try {
+      console.log('📷 Requesting camera permission...');
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 640 }, height: { ideal: 480 } } 
+      });
+      console.log('📷 Camera permission granted, stream active:', stream.active);
+      console.log('📷 Video tracks:', stream.getVideoTracks().map(t => ({ label: t.label, enabled: t.enabled, readyState: t.readyState })));
+      setLocalCameraStream(stream);
+      setHasCameraPermission(true);
+    } catch (error) {
+      console.error('❌ Camera permission denied:', error);
+      setHasCameraPermission(false);
+      toast({
+        title: 'Camera Required',
+        description: 'Camera access is required for proctoring during the interview. Please allow camera access and try again.',
+        variant: 'destructive',
+      });
+      // Redirect to home after a short delay
+      setTimeout(() => {
+        router.push('/');
+      }, 2000);
+    }
+  }, [router, toast]);
+
+  // Load interview and request permissions
   useEffect(() => {
     const loadInterview = async () => {
       try {
@@ -159,32 +350,7 @@ export default function ActualInterviewPage() {
       requestMediaPermission();
       requestCameraPermission();
     }
-  }, [token]);
-
-  // Request camera permission for proctoring
-  const requestCameraPermission = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: { ideal: 640 }, height: { ideal: 480 } } 
-      });
-      console.log('📷 Camera permission granted, stream active:', stream.active);
-      console.log('📷 Video tracks:', stream.getVideoTracks().map(t => ({ label: t.label, enabled: t.enabled, readyState: t.readyState })));
-      setLocalCameraStream(stream);
-      setHasCameraPermission(true);
-    } catch (error) {
-      console.error('Camera permission denied:', error);
-      setHasCameraPermission(false);
-      toast({
-        title: 'Camera Required',
-        description: 'Camera access is required for proctoring during the interview. Please allow camera access and try again.',
-        variant: 'destructive',
-      });
-      // Redirect to home after a short delay
-      setTimeout(() => {
-        router.push('/');
-      }, 2000);
-    }
-  };
+  }, [token, requestMediaPermission, requestCameraPermission, toast]);
 
   // Initialize hidden video for proctoring with camera stream
   // This needs to run whenever localCameraStream changes OR when loading completes (so video element exists)
@@ -394,155 +560,6 @@ export default function ActualInterviewPage() {
     }
   }, [sessionState.currentQuestionIndex, isLoading, sessionState.questions.length, isVideoReady, token]);
 
-  // Request microphone permission
-  const requestMediaPermission = async () => {
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error('Media recording not supported in this browser');
-      }
-
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const analyser = audioContext.createAnalyser();
-      const microphone = audioContext.createMediaStreamSource(stream);
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-      microphone.connect(analyser);
-
-      const checkAudioLevel = () => {
-        analyser.getByteFrequencyData(dataArray);
-        const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
-        setAudioLevel(average);
-        if (isRecording) {
-          requestAnimationFrame(checkAudioLevel);
-        }
-      };
-
-      let mimeType = 'audio/webm;codecs=opus';
-      if (!MediaRecorder.isTypeSupported(mimeType)) {
-        mimeType = 'audio/webm';
-        if (!MediaRecorder.isTypeSupported(mimeType)) {
-          mimeType = '';
-        }
-      }
-
-      const mediaRecorderOptions = mimeType ? { mimeType } : undefined;
-      const mediaRecorder = new MediaRecorder(stream, mediaRecorderOptions);
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstart = () => {
-        checkAudioLevel();
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType || 'audio/webm' });
-        const duration = Math.round((Date.now() - startTimeRef.current) / 1000);
-
-        // Use ref to get current question (avoids stale closure)
-        const currentState = sessionStateRef.current;
-        const currentQuestion = currentState?.questions[currentQuestionIndexRef.current];
-        
-        console.log('📼 Recording stopped, processing...');
-        console.log(`   Question: ${currentQuestion?.id}, Duration: ${duration}s, Blob size: ${audioBlob.size} bytes`);
-        
-        if (currentQuestion && audioBlob.size > 0) {
-          // Show transcribing state
-          setIsTranscribing(true);
-          
-          toast({
-            title: 'Transcribing...',
-            description: 'Your answer is being processed by AI. Please wait.',
-            variant: 'default'
-          });
-
-          try {
-            console.log('📤 Sending audio to Gemini for transcription...');
-            // Use the new Gemini-based transcription endpoint
-            const response = await backendClient.transcribeAudio(token, audioBlob);
-            console.log('📥 Transcription response:', response);
-
-            let transcript = 'Recording saved (transcription pending)';
-            if (response.success && response.data?.transcript) {
-              transcript = response.data.transcript;
-            }
-
-            // Save to local state using the question ID from ref
-            const questionId = currentQuestion.id;
-            setSessionState(prev => ({
-              ...prev,
-              responses: new Map(prev.responses).set(questionId, {
-                content: transcript,
-                duration,
-                type: 'phone'
-              })
-            }));
-
-            // Also save to backend
-            await fetch(`http://localhost:8000/api/v1/interviews/${token}/save-answer/${questionId}`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ answer_text: transcript, duration }),
-            });
-
-            toast({
-              title: 'Answer Saved!',
-              description: 'Your response has been transcribed and saved successfully.',
-              variant: 'default'
-            });
-            
-            // Auto-advance to next question if not last
-            // Use ref to get current index to avoid stale closure
-            const currentIdx = currentQuestionIndexRef.current;
-            const totalQuestions = sessionStateRef.current?.questions.length || 0;
-            
-            if (currentIdx < totalQuestions - 1) {
-              setTimeout(() => {
-                setSessionState(prev => ({ 
-                  ...prev, 
-                  currentQuestionIndex: prev.currentQuestionIndex + 1 
-                }));
-                setRecordingTime(0);
-                setAudioLevel(0);
-              }, 1500);
-            }
-          } catch (error) {
-            console.error('Transcription error:', error);
-            setSessionState(prev => ({
-              ...prev,
-              responses: new Map(prev.responses).set(currentQuestion.id, {
-                content: 'Audio recording saved',
-                duration,
-                type: 'phone'
-              })
-            }));
-            
-            toast({
-              title: 'Transcription Failed',
-              description: 'Could not transcribe audio. Your recording was saved.',
-              variant: 'destructive'
-            });
-          } finally {
-            setIsTranscribing(false);
-          }
-        }
-
-        audioChunksRef.current = [];
-      };
-
-      mediaRecorderRef.current = mediaRecorder;
-      setHasMediaPermission(true);
-    } catch (error: any) {
-      console.error('Failed to get media permission:', error);
-      setHasMediaPermission(false);
-    }
-  };
-
   // Recording controls
   const startRecording = () => {
     if (!mediaRecorderRef.current || isRecording) return;
@@ -621,6 +638,7 @@ export default function ActualInterviewPage() {
         variant: 'destructive'
       });
     } finally {
+      stopCameraStream();
       setIsSubmitting(false);
       // Redirect after showing message
       setTimeout(() => {
@@ -671,6 +689,9 @@ export default function ActualInterviewPage() {
         // Mark interview as successfully submitted BEFORE exiting fullscreen
         // This prevents the fullscreen exit handler from triggering a false violation
         setInterviewSubmitted(true);
+
+        // Stop camera access now that the interview is complete
+        stopCameraStream();
         
         // Show cheating warning if detected
         let description = `AI evaluation complete. Score: ${responseData.overallScore || 'Processing'}`;
@@ -792,6 +813,14 @@ export default function ActualInterviewPage() {
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Auto-stop camera after interview is submitted or terminated
+  useEffect(() => {
+    if ((interviewSubmitted || interviewTerminated) && localCameraStream) {
+      console.log('🛑 Stopping camera after interview completion');
+      stopCameraStream();
+    }
+  }, [interviewSubmitted, interviewTerminated, localCameraStream, stopCameraStream]);
 
   // Loading state
   if (isLoading) {

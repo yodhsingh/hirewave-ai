@@ -11,6 +11,7 @@ import PyPDF2
 from docx import Document
 
 from app.core.config import settings
+from app.core.gemini import configure_genai_with_rotation
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +21,11 @@ class ResumeParser:
 
     def __init__(self):
         """Initialize the resume parser with Gemini AI"""
-        if not settings.GOOGLE_GEMINI_API_KEY:
-            raise ValueError("Google Gemini API key is not configured")
+        try:
+            configure_genai_with_rotation()
+        except ValueError as exc:
+            raise ValueError("Google Gemini API key is not configured") from exc
 
-        # Configure Gemini AI
-        genai.configure(api_key=settings.GOOGLE_GEMINI_API_KEY)
         self.model = genai.GenerativeModel(settings.GEMINI_MODEL)
 
     def extract_text_from_pdf(self, file_content: bytes) -> str:
@@ -293,5 +294,5 @@ class ResumeParser:
         }
 
 
-# Create a singleton instance
-resume_parser = ResumeParser() if settings.GOOGLE_GEMINI_API_KEY else None
+# Create a singleton instance when at least one Gemini key is configured
+resume_parser = ResumeParser() if (settings.GOOGLE_GEMINI_API_KEYS or settings.GOOGLE_GEMINI_API_KEY) else None
