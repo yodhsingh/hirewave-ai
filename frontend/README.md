@@ -61,11 +61,6 @@ frontend/
 - Framework: React,Next.js
 - Styling: Tailwind
 
-### Backend
-- Framework: [To be decided - Python with FastAPI/Flask]
-- ORM: [To be decided - SQLAlchemy or no ORM]
-- Database: [To be decided - PostgreSQL]
-- Authentication: [To be decided]
 
 ## Getting Started
 
@@ -91,7 +86,7 @@ npm run dev
 #### Backend Setup
 ```bash
 cd backend
-uv synch
+uv sync
 ```
 
 # UI Design
