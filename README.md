@@ -1,73 +1,131 @@
-# HireWave.ai
+Yes. In that case, I would keep **everything frontend-related in one README**: what the frontend does, how to initialize it, its structure, and a short UI/UX section. No backend details, no team information, and no long design specification.
 
-### GenAI-First Interview Platform
+Use this as your final `frontend/README.md`:
 
-HireWave.ai is a full-stack, AI-powered interview platform designed to help organizations conduct structured asynchronous interviews and evaluate candidates beyond traditional resumes.
+````markdown
+# HireWave.ai Frontend
 
-The project was originally developed as a collaborative Software Engineering project at IIT Madras. I am maintaining a personal copy to document my work, contributions, and continued development.
+The frontend of HireWave.ai, a GenAI powered interview platform designed to make candidate screening and asynchronous interviews more structured, efficient, and accessible.
 
----
+Built with Next.js, React, TypeScript, and Tailwind CSS, the frontend provides separate experiences for candidates and HR teams while keeping the interface simple and consistent.
 
 ## What It Does
 
-- AI-assisted interview generation
-- Candidate interview workflow
-- HR dashboard and candidate management
-- Structured interview evaluation
-- Job and interview management
-- Backend APIs and persistent data storage
-- Responsive web interface
+The frontend supports
 
----
+- Candidate interview workflows
+- HR job and candidate management
+- Interview and application tracking
+- AI powered interview experiences
+- HR and candidate dashboards
+- Public platform pages
+- Backend API integration
 
-## My Focus & Contributions
+## Technology
 
-My work on the project focused on:
+Next.js  
+React  
+TypeScript  
+Tailwind CSS  
+Framer Motion  
+Zod
 
-- Full-stack application development
-- AI/GenAI integration
-- Frontend architecture and user workflows
-- Backend/API integration
-- Data and application flow design
-- Project architecture and technical coordination
-- Connecting multiple components into an end-to-end product
-
-> This repository contains collaborative work. Individual contributions should be interpreted in the context of the original team project.
-
----
-
-## System Overview
+## Structure
 
 ```text
-                    HireWave.ai
+frontend/
+├── app/
+│   ├── (applicant)/        Candidate experience
+│   ├── (hr)/               HR dashboard
+│   ├── (public)/           Public pages
+│   └── api/                Application API routes
+│
+├── components/
+│   ├── hr/                 HR components
+│   ├── layout/             Shared layout
+│   └── ui/                 Reusable UI components
+│
+├── lib/                    API, state and validation
+├── public/                 Static assets
+├── types/                  TypeScript types
+├── globals.css             Global styles
+└── next.config.ts          Next.js configuration
+````
 
-                         │
-                         ▼
-                ┌─────────────────┐
-                │   Web Frontend  │
-                │ React / Next.js  │
-                └────────┬────────┘
-                         │
-                         ▼
-                ┌─────────────────┐
-                │   Application   │
-                │   Backend / API │
-                └────────┬────────┘
-                         │
-              ┌──────────┴──────────┐
-              ▼                     ▼
-       ┌─────────────┐       ┌─────────────┐
-       │  Database   │       │  GenAI / AI │
-       │ PostgreSQL  │       │   Services  │
-       └─────────────┘       └─────────────┘
+## UI and UX
 
-                         │
-                         ▼
-                 Interview Results
-                         │
-                         ▼
-                  HR / Candidate
-                     Dashboard
+The interface is designed around clarity, consistency, and ease of use.
 
+The visual system uses a dark theme with glass surfaces, subtle motion, strong typography, and responsive layouts.
 
+Key design principles include
 
+* Clear separation between HR and candidate workflows
+* Reusable components and consistent interaction patterns
+* Minimal visual clutter
+* Responsive layouts across screen sizes
+* Clear hierarchy between actions and information
+* Subtle animation to improve interaction without distraction
+
+The primary visual language uses DM Sans typography, dark surfaces, high contrast text, glass effects, and carefully controlled decorative elements.
+
+## Screenshots
+
+### Landing Page
+
+Add screenshot here.
+
+### HR Dashboard
+
+Add screenshot here.
+
+### Candidate Interview
+
+Add screenshot here.
+
+### AI Interview Experience
+
+Add screenshot here.
+
+## Getting Started
+
+### Requirements
+
+Node.js 22 or later
+npm
+
+### Installation
+
+From the project root
+
+```bash
+cd frontend
+npm install
+```
+
+### Development
+
+```bash
+npm run dev
+```
+
+Open the application at
+
+```text
+http://localhost:3000
+```
+
+### Production Build
+
+```bash
+npm run build
+npm start
+```
+
+## Development Approach
+
+The frontend follows a modular component based structure.
+
+Candidate and HR experiences are separated at the application level, while shared components, utilities, validation, and styling are kept reusable across the platform.
+
+The goal is to make the interface easy to extend as new interview, AI, and hiring workflows are introduced.
