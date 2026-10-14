@@ -1,6 +1,3 @@
-Yes. In that case, I would keep **everything frontend-related in one README**: what the frontend does, how to initialize it, its structure, and a short UI/UX section. No backend details, no team information, and no long design specification.
-
-Use this as your final `frontend/README.md`:
 
 ````markdown
 # HireWave.ai Frontend
@@ -129,3 +126,5 @@ The frontend follows a modular component based structure.
 Candidate and HR experiences are separated at the application level, while shared components, utilities, validation, and styling are kept reusable across the platform.
 
 The goal is to make the interface easy to extend as new interview, AI, and hiring workflows are introduced.
+
+[Sheet Link](https://docs.google.com/spreadsheets/d/16DyrLolVekmVpV2RqJknUtmDxR2YTgNZ-CwweH9NxdY/edit?gid=0#gid=0)
